@@ -1,0 +1,122 @@
+{
+  "2026 ENERO": {
+    "ano": 2026,
+    "mes": "ENERO",
+    "totalRows": 81540,
+    "faRows": 71509,
+    "dvRows": 10031,
+    "totalFA": 26380141.700001396,
+    "totalDV": -8140905.700000018,
+    "totalNeto": 18239236.00000037,
+    "totalCajas": 1503244.9000000535,
+    "totalKgs": 5127173.799999843
+  },
+  "2026 FEBRERO": {
+    "ano": 2026,
+    "mes": "FEBRERO",
+    "totalRows": 21153,
+    "faRows": 18325,
+    "dvRows": 2828,
+    "totalFA": 5590925.199999894,
+    "totalDV": -1337445.400000002,
+    "totalNeto": 4253479.799999947,
+    "totalCajas": 531177.8999999965,
+    "totalKgs": 1531935.5000000056
+  },
+  "2026 MARZO": {
+    "ano": 2026,
+    "mes": "MARZO",
+    "totalRows": 27964,
+    "faRows": 24483,
+    "dvRows": 3481,
+    "totalFA": 9487438.399999829,
+    "totalDV": -2553427.799999998,
+    "totalNeto": 6934010.599999853,
+    "totalCajas": 751999.0000000035,
+    "totalKgs": 2850878.500000023
+  },
+  "2026 ABRIL": {
+    "ano": 2026,
+    "mes": "ABRIL",
+    "totalRows": 25797,
+    "faRows": 22140,
+    "dvRows": 3657,
+    "totalFA": 11354755.699999955,
+    "totalDV": -4344108.099999986,
+    "totalNeto": 7010647.599999998,
+    "totalCajas": 819693.1000000082,
+    "totalKgs": 2813592.1000000355
+  },
+  "2026 MAYO": {
+    "ano": 2026,
+    "mes": "MAYO",
+    "totalRows": 24661,
+    "faRows": 21726,
+    "dvRows": 2935,
+    "totalFA": 8931632.900000187,
+    "totalDV": -2083118.000000005,
+    "totalNeto": 6848514.900000067,
+    "totalCajas": 730793.7000000018,
+    "totalKgs": 2779323.8000000054
+  },
+  "2026 JUNIO": {
+    "ano": 2026,
+    "mes": "JUNIO",
+    "totalRows": 27053,
+    "faRows": 23274,
+    "dvRows": 3779,
+    "totalFA": 8311879.60000013,
+    "totalDV": -2522247.1000000006,
+    "totalNeto": 5789632.50000011,
+    "totalCajas": 657775.1000000014,
+    "totalKgs": 2312397.699999995
+  },
+  "2026 JULIO": {
+    "ano": 2026,
+    "mes": "JULIO",
+    "totalRows": 29628,
+    "faRows": 25844,
+    "dvRows": 3784,
+    "totalFA": 13061318.000000138,
+    "totalDV": -6700327.199999995,
+    "totalNeto": 6360990.799999998,
+    "totalCajas": 887776.2000000082,
+    "totalKgs": 2754665.000000011
+  },
+  "2026 AGOSTO": {
+    "ano": 2026,
+    "mes": "AGOSTO",
+    "totalRows": 29352,
+    "faRows": 25436,
+    "dvRows": 3916,
+    "totalFA": 27196061.800000075,
+    "totalDV": -20743829.899999995,
+    "totalNeto": 6452231.9000000255,
+    "totalCajas": 931257.6000000098,
+    "totalKgs": 2835278.7000000454
+  },
+  "2026 SEPTIEMBRE": {
+    "ano": 2026,
+    "mes": "SEPTIEMBRE",
+    "totalRows": 22078,
+    "faRows": 19536,
+    "dvRows": 2540,
+    "totalFA": 4531309.460000026,
+    "totalDV": -433171.0600000016,
+    "totalNeto": 4098138.4000000064,
+    "totalCajas": 563544.4000000012,
+    "totalKgs": 1474745.7499999998
+  },
+  "2026 OCTUBRE": {
+    "ano": 2026,
+    "mes": "OCTUBRE",
+    "totalRows": 13167,
+    "faRows": 11849,
+    "dvRows": 1318,
+    "totalFA": 2725724.06,
+    "totalDV": -153503.47,
+    "totalNeto": 2572220.59,
+    "totalCajas": 316881.69,
+    "totalKgs": 997535.5
+  }
+}

@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <script>
+      // Suppress benign [vite] websocket/HMR connection notices in sandboxed iframe environment
+      (function() {
+        function shouldSuppress(msg) {
+          if (!msg) return false;
+          const s = String(msg);
+          return s.includes('[vite]') || s.includes('failed to connect to websocket');
+        }
+        ['error', 'warn', 'log', 'info'].forEach(function(m) {
+          const orig = console[m];
+          console[m] = function(...args) {
+            if (args.some(arg => shouldSuppress(arg))) {
+              return;
+            }
+            orig.apply(console, args);
+          };
+        });
+        window.addEventListener('error', function(e) {
+          if (shouldSuppress(e.message) || shouldSuppress(e.filename)) {
+            e.stopImmediatePropagation();
+            e.preventDefault();
+          }
+        }, true);
+        window.addEventListener('unhandledrejection', function(e) {
+          if (shouldSuppress(e.reason && (e.reason.message || e.reason))) {
+            e.stopImmediatePropagation();
+            e.preventDefault();
+          }
+        }, true);
+      })();
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Codizulca Dashboard</title>
+    <meta name="description" content="Sistema integral de gestión comercial, cuotas, inventario, trade marketing y portal de campo offline para Codizulca." />
+    <meta property="og:title" content="Codizulca Dashboard" />
+    <meta property="og:description" content="Sistema integral de gestión comercial, cuotas, inventario, trade marketing y portal de campo offline para Codizulca." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#dc2626" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Codizulca" />
+    <link rel="apple-touch-icon" href="https://placehold.co/180x180/dc2626/ffffff.png?text=C&font=sans-serif" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

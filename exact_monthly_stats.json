@@ -1,0 +1,141 @@
+{
+  "monthlyStats": {
+    "2026 ENERO": {
+      "count": 17000,
+      "faCount": 14161,
+      "dvCount": 2839,
+      "totalFA": 5607609.499999959,
+      "totalDV": -2001364.5000000012,
+      "totalNeto": 3606244.999999992,
+      "totalCajas": -74800.40000000036,
+      "totalKgs": 630209.9999999978
+    },
+    "2026 FEBRERO": {
+      "count": 4000,
+      "faCount": 3483,
+      "dvCount": 517,
+      "totalFA": 1021336.5000000027,
+      "totalDV": -190809.40000000005,
+      "totalNeto": 830527.1000000016,
+      "totalCajas": 106675.50000000013,
+      "totalKgs": 282653.2000000004
+    },
+    "2026 MARZO": {
+      "count": 5657,
+      "faCount": 5177,
+      "dvCount": 480,
+      "totalFA": 1943678.4000000062,
+      "totalDV": -303813.1,
+      "totalNeto": 1639865.3000000024,
+      "totalCajas": 164644.79999999987,
+      "totalKgs": 717516.4000000006
+    },
+    "2026 ABRIL": {
+      "count": 5343,
+      "faCount": 4856,
+      "dvCount": 487,
+      "totalFA": 1860709.1000000057,
+      "totalDV": -361425.2999999997,
+      "totalNeto": 1499283.8000000042,
+      "totalCajas": 186825.1999999997,
+      "totalKgs": 583662.499999998
+    },
+    "2026 MAYO": {
+      "count": 5000,
+      "faCount": 4489,
+      "dvCount": 511,
+      "totalFA": 2013047.0999999973,
+      "totalDV": -444220.40000000014,
+      "totalNeto": 1568826.7000000002,
+      "totalCajas": 139007.80000000013,
+      "totalKgs": 663807.3999999996
+    },
+    "2026 JUNIO": {
+      "count": 5000,
+      "faCount": 4276,
+      "dvCount": 724,
+      "totalFA": 1511538.7999999952,
+      "totalDV": -508815.3999999999,
+      "totalNeto": 1002723.4000000037,
+      "totalCajas": 101941.90000000014,
+      "totalKgs": 418642.70000000094
+    },
+    "2026 JULIO": {
+      "count": 6000,
+      "faCount": 5367,
+      "dvCount": 633,
+      "totalFA": 1617495.8999999994,
+      "totalDV": -385865.09999999986,
+      "totalNeto": 1231630.7999999973,
+      "totalCajas": 164093.89999999997,
+      "totalKgs": 550470.9999999986
+    },
+    "2026 AGOSTO": {
+      "count": 6000,
+      "faCount": 5422,
+      "dvCount": 578,
+      "totalFA": 2013825.2000000014,
+      "totalDV": -466967.60000000003,
+      "totalNeto": 1546857.600000002,
+      "totalCajas": 241512.99999999942,
+      "totalKgs": 702294.3999999975
+    }
+  },
+  "sampleProduct": [
+    {
+      "ano": 2026,
+      "mes": "ENERO",
+      "id_articulo": 629,
+      "articulo": "MUSLO CUADRIL DESPRESADO POR KG",
+      "cajas": 17992,
+      "kgs_lts": 18104.100000000002,
+      "monto": 282737.7999999999,
+      "montoFA": 458589.2000000002,
+      "montoDV": -175851.40000000017
+    },
+    {
+      "ano": 2026,
+      "mes": "ENERO",
+      "id_articulo": 681,
+      "articulo": "FILET EN BOLSA CONG DESPRESADO POR KG",
+      "cajas": 4605,
+      "kgs_lts": 4608.6,
+      "monto": 35093.3,
+      "montoFA": 70686,
+      "montoDV": -35592.700000000004
+    },
+    {
+      "ano": 2026,
+      "mes": "ENERO",
+      "id_articulo": 1464,
+      "articulo": "MORT NAVIDEÑA ASTURIAS XKG",
+      "cajas": 269.8000000000001,
+      "kgs_lts": 3284.999999999998,
+      "monto": 22789.2,
+      "montoFA": 26934.899999999994,
+      "montoDV": -4145.7
+    },
+    {
+      "ano": 2026,
+      "mes": "ENERO",
+      "id_articulo": 1206,
+      "articulo": "ARROZ GLORIA CLASICO 24X1KG",
+      "cajas": 892,
+      "kgs_lts": 21408,
+      "monto": 28428.8,
+      "montoFA": 52245.2,
+      "montoDV": -23816.40000000001
+    },
+    {
+      "ano": 2026,
+      "mes": "ENERO",
+      "id_articulo": 1445,
+      "articulo": "TOCINO FRESCO ASTURIAS X KG",
+      "cajas": 6070,
+      "kgs_lts": 6089.800000000003,
+      "monto": 77522.8,
+      "montoFA": 81035.00000000001,
+      "montoDV": -3512.1999999999985
+    }
+  ]
+}

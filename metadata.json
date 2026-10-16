@@ -1,0 +1,6 @@
+{
+  "name": "Codizulca Dashboard",
+  "description": "Sistema integral de gestión comercial, cuotas, inventario, trade marketing y portal de campo offline para Codizulca.",
+  "requestFramePermissions": ["camera", "geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

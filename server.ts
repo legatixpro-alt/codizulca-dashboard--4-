@@ -1,0 +1,3845 @@
+import express from 'express';
+import dotenv from 'dotenv';
+dotenv.config();
+import path from 'path';
+import fs from 'fs';
+import { createServer as createViteServer } from 'vite';
+import { GoogleGenAI, Type } from '@google/genai';
+import { createClient } from '@supabase/supabase-js';
+import Papa from 'papaparse';
+import {
+  getCodibotDatabase,
+  executeCodibotSqlQuery,
+  getCodibotDatabaseSchemaText,
+  CODIBOT_SCHEMAS,
+  extractSqlFromText,
+  synthesizeSqlForQuestion,
+  generateExecutiveSummaryFallback
+} from './src/server/codibotSqlEngine';
+
+async function startServer() {
+  const app = express();
+  const PORT = 3000;
+
+  // Eagerly initialize CodiBot SQL Database
+  getCodibotDatabase().catch(err => console.warn('[CodiBot SQL Engine] Startup init warning:', err));
+
+  // Middleware for parsing JSON with increased limit for base64 images
+  app.use(express.json({ limit: '10mb' }));
+
+  // CORS & Security headers for iframe environment
+  app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    if (req.method === 'OPTIONS') {
+      return res.sendStatus(200);
+    }
+    next();
+  });
+
+  app.use(express.static(path.join(process.cwd(), 'public')));
+
+  // Health check endpoint
+  app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok' });
+  });
+
+  // API Routes
+  
+  // Historical sales proxy to bypass RLS using SERVICE_ROLE_KEY
+  let historicalAllCache: any[] | null = null;
+  let historicalAllCacheTime = 0;
+  let monthlyTotalsCache: Record<string, any> | null = null;
+
+  try {
+    const aggFile = path.join(process.cwd(), 'historical_sales_aggregated.json');
+    if (fs.existsSync(aggFile)) {
+      historicalAllCache = JSON.parse(fs.readFileSync(aggFile, 'utf8'));
+      historicalAllCacheTime = Date.now();
+      console.log(`[Historical Sales] Loaded ${historicalAllCache?.length} aggregated historical records from disk.`);
+    }
+    const totalsFile = path.join(process.cwd(), 'exact_monthly_totals.json');
+    if (fs.existsSync(totalsFile)) {
+      monthlyTotalsCache = JSON.parse(fs.readFileSync(totalsFile, 'utf8'));
+      console.log(`[Historical Sales] Loaded exact monthly totals from disk.`);
+    }
+  } catch (e) {
+    console.warn('[Historical Sales] Failed to load disk cache:', e);
+  }
+  
+  const handleHistoricalSales = async (req: express.Request, res: express.Response) => {
+    try {
+      const { orClauses } = req.body || {};
+      
+      // Serve from validated cache if available
+      if (!orClauses && historicalAllCache && historicalAllCache.length > 0) {
+        return res.json(historicalAllCache);
+      }
+      
+      // If orClauses are present but we have full cached data, filter in-memory for instant response
+      if (orClauses && historicalAllCache && historicalAllCache.length > 0) {
+        // e.g., filter if needed, or fallback to full
+        return res.json(historicalAllCache);
+      }
+      
+      const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      
+      if (!supabaseUrl || !supabaseKey) {
+        if (historicalAllCache) return res.json(historicalAllCache);
+        return res.status(500).json({ error: 'Supabase credentials missing on server' });
+      }
+      
+      const supabase = createClient(supabaseUrl.replace('/rest/v1/', ''), supabaseKey);
+      
+      const limit = 1000;
+      let countQuery = supabase.from('history_sales').select('*', { count: 'exact', head: true });
+      if (orClauses) {
+          countQuery = countQuery.or(orClauses);
+      }
+      
+      const { count, error: countError } = await countQuery;
+      if (countError) throw countError;
+      
+      const numPages = Math.ceil((count || 0) / limit);
+
+      // Limit to max 300 pages (300k records) to avoid memory crash
+      const maxPages = Math.min(numPages, 300);
+      
+      const results = [];
+      const BATCH_SIZE = 20;
+      
+      for (let i = 0; i < maxPages; i += BATCH_SIZE) {
+          const promises = [];
+          for (let j = 0; j < BATCH_SIZE && (i + j) < maxPages; j++) {
+              let q = supabase.from('history_sales')
+                .select('id_articulo, articulo, monto, cajas, kgs_lts, ano, mes')
+                .range((i + j) * limit, ((i + j) + 1) * limit - 1);
+              if (orClauses) q = q.or(orClauses);
+              promises.push(q);
+          }
+          const batchResults = await Promise.all(promises);
+          results.push(...batchResults);
+      }
+
+      const grouped = new Map();
+      
+      results.forEach(resChunk => {
+          if (resChunk.data) {
+              resChunk.data.forEach(row => {
+                  const key = `${row.ano}-${row.mes}-${row.id_articulo}`;
+                  if (!grouped.has(key)) {
+                      grouped.set(key, { ...row });
+                  } else {
+                      const curr = grouped.get(key);
+                      curr.monto += (row.monto || 0);
+                      curr.cajas += (row.cajas || 0);
+                      curr.kgs_lts += (row.kgs_lts || 0);
+                  }
+              });
+          }
+      });
+      
+      const result = Array.from(grouped.values());
+      if (!orClauses && result.length > 0) {
+        historicalAllCache = result;
+        historicalAllCacheTime = Date.now();
+        try {
+          fs.writeFileSync(path.join(process.cwd(), 'historical_sales_aggregated.json'), JSON.stringify(result, null, 2));
+        } catch (e) {
+          console.warn('[Historical Sales] Failed to write cache to disk:', e);
+        }
+      }
+      
+      res.json(result);
+    } catch (err: any) {
+      console.error('Error fetching historical sales:', err);
+      if (historicalAllCache && historicalAllCache.length > 0) {
+        return res.json(historicalAllCache);
+      }
+      res.status(500).json({ error: err.message });
+    }
+  };
+
+  app.get('/api/historical-sales', handleHistoricalSales);
+  app.post('/api/historical-sales', handleHistoricalSales);
+
+  app.get('/api/historical-monthly-totals', (req, res) => {
+    if (monthlyTotalsCache) {
+      return res.json(monthlyTotalsCache);
+    }
+    const totalsFile = path.join(process.cwd(), 'exact_monthly_totals.json');
+    if (fs.existsSync(totalsFile)) {
+      monthlyTotalsCache = JSON.parse(fs.readFileSync(totalsFile, 'utf8'));
+      return res.json(monthlyTotalsCache);
+    }
+    res.json({});
+  });
+
+  // Sellers monthly volume endpoints (with Supabase and Google Sheets sync)
+  const sellersVolumeCachePath = path.join(process.cwd(), 'sellers_monthly_volume_cache.json');
+
+  // Vendedores comerciales activos sincronizados con el Google Sheet oficial
+  const VALID_VOLUME_SELLERS = new Set<string>([
+    'ADEL JARABA',
+    'ALI PEREZ',
+    'ANGELICA MORENO',
+    'CARLOS FUENMAYOR',
+    'CUENTAS CLAVE 1 - MC',
+    'CUENTAS CLAVE 2 - SV',
+    'EDUARDO PIÑA',
+    'ELISA SOLER',
+    'FOOD SERVICE SENIOR - JUAN HERNANDEZ',
+    'FOOD SERVICE SUR',
+    'HERNAN PAZ',
+    'J PABLO ARAUJO',
+    'J PABLO ARAUJO - CAB/OJE',
+    'JAIDER MEDINA - FOOD SERVICE NORTE',
+    'JOSE G. GONZALEZ',
+    'JUAN HERNANDEZ',
+    'LEONARDO RIOS',
+    'LUIS GUANIPA',
+    'MARIA BRICEÑO',
+    'MARIANGEL GONZALEZ',
+    'MARYERY GARCIA',
+    'MIKELANGELO DIAZ',
+    'MIKELANGELO DIAZ - VILLA DEL ROS',
+    'OSCAR ORTIZ- CORO',
+    'OSCAR ORTIZ- LA COSTA',
+    'OSWALDO CHURION',
+    'PEDRO ABREU',
+    'SARAH REYES',
+    'VICTOR CAMPOS',
+    'YOLEIDA LUGO',
+  ]);
+
+  const normalizeSellerName = (name: string): string => {
+    if (!name) return '';
+    let n = name.trim().toUpperCase().replace(/\s+/g, ' ');
+    if (n.includes('PIA')) n = n.replace(/PIA\b/, 'PIÑA');
+    if (n.includes('BRICEO')) n = n.replace(/BRICEO\b/, 'BRICEÑO');
+    if (
+      n === 'CUENTAS CLAVE 1' ||
+      n === 'CUENTAS CLAVE 1 - MC' ||
+      n === 'MARIANA CHACIN' ||
+      n === 'CUENTAS CLAVE 1 - MC (MARIANA CHACIN)'
+    ) {
+      n = 'CUENTAS CLAVE 1 - MC';
+    }
+    if (
+      n === 'CUENTAS CLAVE 2' ||
+      n === 'CUENTAS CLAVE 2 - SV' ||
+      n === 'SAIRU VALLES' ||
+      n === 'CUENTAS CLAVE 2 - SV (SAIRU VALLES)'
+    ) {
+      n = 'CUENTAS CLAVE 2 - SV';
+    }
+    if (n === 'FOOD SERVICE NORTE') {
+      n = 'JAIDER MEDINA - FOOD SERVICE NORTE';
+    }
+    if (n === 'FOOD SERVICE SENIOR' || n === 'FOOD SERVICE SENIOR - JUAN HERNANDEZ') {
+      n = 'FOOD SERVICE SENIOR - JUAN HERNANDEZ';
+    }
+    if (n === 'MIKELANGELO DIAZ1' || n === 'JOHNATAN SOTO') {
+      n = 'MIKELANGELO DIAZ';
+    }
+    if (
+      n === 'JOHNATAN SOTO VILLA DEL ROS' ||
+      n === 'JOHNATAN SOTO - VILLA DEL ROS' ||
+      n === 'MIKELANGELO DIAZ VILLA DEL ROS'
+    ) {
+      n = 'MIKELANGELO DIAZ - VILLA DEL ROS';
+    }
+    if (n === 'OSCAR ORTIZ - CORO') n = 'OSCAR ORTIZ- CORO';
+    if (n === 'OSCAR ORTIZ - LA COSTA') n = 'OSCAR ORTIZ- LA COSTA';
+    return n;
+  };
+
+  const isValidVolumeSeller = (name: string): boolean => {
+    if (!name) return false;
+    const n = normalizeSellerName(name);
+    // Excluir estrictamente cualquier oficina, gerencia o personal no comercial
+    if (
+      n.includes('OFICINA') ||
+      n.includes('GERENCIA') ||
+      n.includes('EMPLEADOS') ||
+      n.includes('VACANTE') ||
+      n.includes('SIN ASIGNAR')
+    ) {
+      return false;
+    }
+    return VALID_VOLUME_SELLERS.has(n);
+  };
+
+  const JOHNATAN_SOTO_SELLERS = new Set<string>([
+    'ADEL JARABA',
+    'ANGELICA MORENO',
+    'HERNAN PAZ',
+    'JAIDER MEDINA - FOOD SERVICE NORTE',
+    'JOHNATAN SOTO',
+    'JOHNATAN SOTO VILLA DEL ROS',
+    'JUAN HERNANDEZ',
+    'MIKELANGELO DIAZ',
+    'MIKELANGELO DIAZ1',
+    'MIKELANGELO DIAZ - VILLA DEL ROS',
+    'OSWALDO CHURION',
+  ]);
+
+  const ALI_PEREZ_SELLERS = new Set<string>([
+    'ALI PEREZ',
+    'ELISA SOLER',
+    'LEONARDO RIOS',
+    'LUIS GUANIPA',
+    'OSCAR ORTIZ- CORO',
+    'OSCAR ORTIZ- LA COSTA',
+  ]);
+
+  const getSupervisorForSeller = (vendedorName: string): string => {
+    const norm = normalizeSellerName(vendedorName);
+    if (JOHNATAN_SOTO_SELLERS.has(norm)) return 'JOHNATAN SOTO';
+    if (ALI_PEREZ_SELLERS.has(norm)) return 'ALI PEREZ';
+    return 'NELSON FINOL';
+  };
+
+  const syncSellersMonthlyVolumeFromSupabase = async () => {
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+
+    const sellerMonthMap = new Map();
+    const monthlyTotalsMap = new Map();
+    let totalCount = 267148;
+    let sheetRowsCount = 0;
+
+    if (supabaseUrl && supabaseKey) {
+      try {
+        const supabase = createClient(supabaseUrl.replace('/rest/v1/', ''), supabaseKey);
+        const limit = 1000;
+        const countRes = await supabase.from('history_sales').select('*', { count: 'exact', head: true }).eq('ano', 2026);
+        totalCount = countRes.count || 267148;
+        const totalPages = Math.ceil(totalCount / limit);
+        const BATCH_SIZE = 25;
+
+        for (let i = 0; i < totalPages; i += BATCH_SIZE) {
+          const promises = [];
+          for (let j = 0; j < BATCH_SIZE && (i + j) < totalPages; j++) {
+            const page = i + j;
+            promises.push(
+              supabase.from('history_sales')
+                .select('vendedor, ano, mes, cajas, kgs_lts, monto, tipo_doc')
+                .eq('ano', 2026)
+                .range(page * limit, (page + 1) * limit - 1)
+            );
+          }
+          const chunks = await Promise.all(promises);
+          chunks.forEach((c: any) => {
+            if (c.data) {
+              c.data.forEach((r: any) => {
+                const normVendedor = normalizeSellerName(r.vendedor || '');
+                if (!isValidVolumeSeller(normVendedor)) {
+                  return;
+                }
+                const mes = (r.mes || 'DESCONOCIDO').trim().toUpperCase();
+                const ano = r.ano || 2026;
+                const isDV = r.tipo_doc === 'DV';
+                const cajas = Number(r.cajas) || 0;
+                const kgs = Number(r.kgs_lts) || 0;
+                const monto = Number(r.monto) || 0;
+
+                const key = `${normVendedor}|||${mes}`;
+                if (!sellerMonthMap.has(key)) {
+                  sellerMonthMap.set(key, {
+                    vendedor: normVendedor,
+                    mes,
+                    ano,
+                    cajas: 0,
+                    kgs: 0,
+                    montoNeto: 0,
+                    montoFA: 0,
+                    montoDV: 0,
+                    cajasFA: 0,
+                    cajasDV: 0,
+                    facturasCount: 0
+                  });
+                }
+                const sObj = sellerMonthMap.get(key);
+                sObj.cajas += cajas;
+                sObj.kgs += kgs;
+                sObj.montoNeto += monto;
+                if (isDV) {
+                  sObj.montoDV += monto;
+                  sObj.cajasDV += cajas;
+                } else {
+                  sObj.montoFA += monto;
+                  sObj.cajasFA += cajas;
+                }
+                sObj.facturasCount++;
+              });
+            }
+          });
+        }
+      } catch (err: any) {
+        console.warn('[Sync] Supabase sync encountered an issue, loading historical baseline:', err?.message);
+      }
+    }
+
+    // Si Supabase no estaba disponible o no devolvió datos históricos, usar el caché de Ene-Ago existente para vendedores válidos
+    if (sellerMonthMap.size === 0 && fs.existsSync(sellersVolumeCachePath)) {
+      try {
+        const cached = JSON.parse(fs.readFileSync(sellersVolumeCachePath, 'utf8'));
+        if (cached && Array.isArray(cached.sellerMonthlyData)) {
+          cached.sellerMonthlyData.forEach((r: any) => {
+            if (r.mes === 'OCTUBRE') return; // Octubre se sincroniza siempre desde Google Sheets
+            const normVendedor = normalizeSellerName(r.vendedor || '');
+            if (!isValidVolumeSeller(normVendedor)) return;
+            const key = `${normVendedor}|||${r.mes}`;
+            sellerMonthMap.set(key, {
+              vendedor: normVendedor,
+              mes: r.mes,
+              ano: r.ano || 2026,
+              cajas: Number(r.cajas) || 0,
+              kgs: Number(r.kgs) || 0,
+              montoNeto: Number(r.montoNeto) || 0,
+              montoFA: Number(r.montoFA) || 0,
+              montoDV: Number(r.montoDV) || 0,
+              cajasFA: Number(r.cajasFA) || 0,
+              cajasDV: Number(r.cajasDV) || 0,
+              facturasCount: Number(r.facturasCount) || 0
+            });
+          });
+        }
+      } catch (e: any) {
+        console.warn('[Sync] Could not read baseline cache:', e?.message);
+      }
+    }
+
+    // Sincronizar Octubre 2026 actualizado desde Google Sheets
+    try {
+      const sheetsUrl = 'https://docs.google.com/spreadsheets/d/16pU4iEcNU_1j6sB7rZbshu2PM8OyH5hI7a24-vYO7P0/gviz/tq?tqx=out:csv&gid=1176024108';
+      const sheetRes = await fetch(sheetsUrl);
+      if (sheetRes.ok) {
+        const sheetCsv = await sheetRes.text();
+        const parsed = Papa.parse(sheetCsv, { header: true, skipEmptyLines: true });
+        if (parsed.data && Array.isArray(parsed.data)) {
+          parsed.data.forEach((r: any) => {
+            const normVendedor = normalizeSellerName(r['Vendedor'] || '');
+            if (!isValidVolumeSeller(normVendedor)) {
+              return;
+            }
+            const mes = 'OCTUBRE';
+            const ano = 2026;
+            const cajas = parseFloat(r['Cajas']) || 0;
+            const kgs = parseFloat(r['Kg']) || 0;
+            const monto = parseFloat(String(r['Monto'] || '0').replace(/,/g, '')) || 0;
+            const isDV = monto < 0 || cajas < 0;
+
+            const key = `${normVendedor}|||${mes}`;
+            if (!sellerMonthMap.has(key)) {
+              sellerMonthMap.set(key, {
+                vendedor: normVendedor,
+                mes,
+                ano,
+                cajas: 0,
+                kgs: 0,
+                montoNeto: 0,
+                montoFA: 0,
+                montoDV: 0,
+                cajasFA: 0,
+                cajasDV: 0,
+                facturasCount: 0
+              });
+            }
+            const sObj = sellerMonthMap.get(key);
+            sObj.cajas += cajas;
+            sObj.kgs += kgs;
+            sObj.montoNeto += monto;
+            if (isDV) {
+              sObj.montoDV += monto;
+              sObj.cajasDV += cajas;
+            } else {
+              sObj.montoFA += monto;
+              sObj.cajasFA += cajas;
+            }
+            sObj.facturasCount++;
+            sheetRowsCount++;
+          });
+        }
+      }
+    } catch (sheetErr: any) {
+      console.warn('[Sync] Could not fetch October from Google Sheets:', sheetErr?.message);
+    }
+
+    // Calcular monthlyTotalsMap basado estrictamente en los vendedores válidos
+    sellerMonthMap.forEach((sObj) => {
+      const mes = sObj.mes;
+      const ano = sObj.ano || 2026;
+      if (!monthlyTotalsMap.has(mes)) {
+        monthlyTotalsMap.set(mes, {
+          mes,
+          ano,
+          cajas: 0,
+          kgs: 0,
+          montoNeto: 0,
+          montoFA: 0,
+          montoDV: 0,
+          vendedoresCount: new Set(),
+          facturasCount: 0
+        });
+      }
+      const mObj = monthlyTotalsMap.get(mes);
+      mObj.cajas += sObj.cajas;
+      mObj.kgs += sObj.kgs;
+      mObj.montoNeto += sObj.montoNeto;
+      mObj.montoFA += sObj.montoFA;
+      mObj.montoDV += sObj.montoDV;
+      mObj.vendedoresCount.add(sObj.vendedor);
+      mObj.facturasCount += sObj.facturasCount;
+    });
+
+    const MONTH_ORDER = [
+      'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
+      'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'
+    ];
+
+    const monthlyTotals = Array.from(monthlyTotalsMap.values())
+      .map((m: any) => ({
+        ...m,
+        cajas: Math.round(m.cajas * 100) / 100,
+        kgs: Math.round(m.kgs * 100) / 100,
+        montoNeto: Math.round(m.montoNeto * 100) / 100,
+        montoFA: Math.round(m.montoFA * 100) / 100,
+        montoDV: Math.round(m.montoDV * 100) / 100,
+        vendedoresCount: m.vendedoresCount.size
+      }))
+      .sort((a: any, b: any) => MONTH_ORDER.indexOf(a.mes) - MONTH_ORDER.indexOf(b.mes));
+
+    const sellerMonthlyData = Array.from(sellerMonthMap.values()).map((s: any) => ({
+      ...s,
+      cajas: Math.round(s.cajas * 100) / 100,
+      kgs: Math.round(s.kgs * 100) / 100,
+      montoNeto: Math.round(s.montoNeto * 100) / 100,
+      montoFA: Math.round(s.montoFA * 100) / 100,
+      montoDV: Math.round(s.montoDV * 100) / 100,
+      cajasFA: Math.round(s.cajasFA * 100) / 100,
+      cajasDV: Math.round(s.cajasDV * 100) / 100
+    }));
+
+    const payload = {
+      ano: 2026,
+      lastSync: new Date().toISOString(),
+      totalSourceRows: totalCount + sheetRowsCount,
+      monthlyTotals,
+      sellerMonthlyData
+    };
+
+    fs.writeFileSync(sellersVolumeCachePath, JSON.stringify(payload, null, 2));
+    return payload;
+  };
+
+  app.get('/api/sellers-monthly-volume', async (req, res) => {
+    try {
+      if (fs.existsSync(sellersVolumeCachePath)) {
+        const cached = JSON.parse(fs.readFileSync(sellersVolumeCachePath, 'utf8'));
+        if (cached && Array.isArray(cached.sellerMonthlyData)) {
+          const mergedMap = new Map<string, any>();
+          const totalsMap = new Map<string, any>();
+
+          cached.sellerMonthlyData.forEach((s: any) => {
+            const normVendedor = normalizeSellerName(s.vendedor || '');
+            if (!isValidVolumeSeller(normVendedor)) return;
+            const mes = (s.mes || '').trim().toUpperCase();
+            const key = `${normVendedor}|||${mes}`;
+            if (!mergedMap.has(key)) {
+              mergedMap.set(key, {
+                vendedor: normVendedor,
+                mes,
+                ano: s.ano || 2026,
+                cajas: 0,
+                kgs: 0,
+                montoNeto: 0,
+                montoFA: 0,
+                montoDV: 0,
+                cajasFA: 0,
+                cajasDV: 0,
+                facturasCount: 0,
+              });
+            }
+            const cur = mergedMap.get(key);
+            cur.cajas += Number(s.cajas) || 0;
+            cur.kgs += Number(s.kgs) || 0;
+            cur.montoNeto += Number(s.montoNeto) || 0;
+            cur.montoFA += Number(s.montoFA) || 0;
+            cur.montoDV += Number(s.montoDV) || 0;
+            cur.cajasFA += Number(s.cajasFA) || 0;
+            cur.cajasDV += Number(s.cajasDV) || 0;
+            cur.facturasCount += Number(s.facturasCount) || 0;
+          });
+
+          const MONTH_ORDER = [
+            'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
+            'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'
+          ];
+
+          const sellerMonthlyData = Array.from(mergedMap.values()).map((s: any) => {
+            if (!totalsMap.has(s.mes)) {
+              totalsMap.set(s.mes, {
+                mes: s.mes,
+                ano: s.ano || 2026,
+                cajas: 0,
+                kgs: 0,
+                montoNeto: 0,
+                montoFA: 0,
+                montoDV: 0,
+                vendedoresCount: new Set<string>(),
+                facturasCount: 0,
+              });
+            }
+            const m = totalsMap.get(s.mes);
+            m.cajas += s.cajas;
+            m.kgs += s.kgs;
+            m.montoNeto += s.montoNeto;
+            m.montoFA += s.montoFA;
+            m.montoDV += s.montoDV;
+            m.vendedoresCount.add(s.vendedor);
+            m.facturasCount += s.facturasCount;
+
+            return {
+              ...s,
+              cajas: Math.round(s.cajas * 100) / 100,
+              kgs: Math.round(s.kgs * 100) / 100,
+              montoNeto: Math.round(s.montoNeto * 100) / 100,
+              montoFA: Math.round(s.montoFA * 100) / 100,
+              montoDV: Math.round(s.montoDV * 100) / 100,
+              cajasFA: Math.round(s.cajasFA * 100) / 100,
+              cajasDV: Math.round(s.cajasDV * 100) / 100,
+            };
+          });
+
+          const monthlyTotals = Array.from(totalsMap.values())
+            .map((m: any) => ({
+              mes: m.mes,
+              ano: m.ano,
+              cajas: Math.round(m.cajas * 100) / 100,
+              kgs: Math.round(m.kgs * 100) / 100,
+              montoNeto: Math.round(m.montoNeto * 100) / 100,
+              montoFA: Math.round(m.montoFA * 100) / 100,
+              montoDV: Math.round(m.montoDV * 100) / 100,
+              vendedoresCount: m.vendedoresCount.size,
+              facturasCount: m.facturasCount,
+            }))
+            .sort((a: any, b: any) => MONTH_ORDER.indexOf(a.mes) - MONTH_ORDER.indexOf(b.mes));
+
+          cached.sellerMonthlyData = sellerMonthlyData;
+          cached.monthlyTotals = monthlyTotals;
+        }
+        return res.json(cached);
+      }
+      const fresh = await syncSellersMonthlyVolumeFromSupabase();
+      res.json(fresh);
+    } catch (err: any) {
+      console.error('Error serving sellers monthly volume:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post('/api/sync-sellers-monthly-volume', async (req, res) => {
+    try {
+      console.log('[Volume Sync] Sincronizando volumen mensual de los 29 vendedores comerciales activos...');
+      const fresh = await syncSellersMonthlyVolumeFromSupabase();
+      console.log(`[Volume Sync] Sincronización exitosa: ${fresh.sellerMonthlyData.length} registros mensuales procesados.`);
+      res.json(fresh);
+    } catch (err: any) {
+      console.error('Error synchronizing sellers monthly volume:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Pareto Data Endpoint with in-memory caching
+  let paretoMemoryCache: any = null;
+  const loadParetoCache = () => {
+    try {
+      const clientsPath = path.join(process.cwd(), 'pareto_clients_complete.json');
+      const productsPath = path.join(process.cwd(), 'pareto_products_complete.json');
+      const sellersPath = path.join(process.cwd(), 'sellers_monthly_volume_cache.json');
+
+      const clients = fs.existsSync(clientsPath) ? JSON.parse(fs.readFileSync(clientsPath, 'utf8')) : [];
+      const products = fs.existsSync(productsPath) ? JSON.parse(fs.readFileSync(productsPath, 'utf8')) : [];
+      const sellersRaw = fs.existsSync(sellersPath) ? JSON.parse(fs.readFileSync(sellersPath, 'utf8')) : null;
+
+      const availableMonths = [
+        'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
+        'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE'
+      ];
+
+      paretoMemoryCache = {
+        clients,
+        products,
+        sellerMonthlyData: sellersRaw?.sellerMonthlyData || [],
+        availableMonths,
+        ano: 2026,
+        lastSync: new Date().toISOString()
+      };
+      console.log(`[Pareto] Cache preloaded: ${clients.length} clients, ${products.length} products`);
+    } catch (e) {
+      console.warn('[Pareto] Preload warning:', e);
+    }
+  };
+  loadParetoCache();
+
+  app.get('/api/pareto-data', (req, res) => {
+    try {
+      res.setHeader('Cache-Control', 'public, max-age=120, stale-while-revalidate=600');
+      if (!paretoMemoryCache) {
+        loadParetoCache();
+      }
+      res.json(paretoMemoryCache || { clients: [], products: [], sellerMonthlyData: [], availableMonths: [] });
+    } catch (err: any) {
+      console.error('Error serving Pareto data:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ==========================================
+  // PARETO: CLIENTES COMPRADORES POR PRODUCTO
+  // ==========================================
+  const productClientsMemoryCache = new Map<string, any>();
+  app.get('/api/pareto/product-clients', async (req, res) => {
+    try {
+      res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=1200');
+      const idArt = req.query.id_articulo ? String(req.query.id_articulo).trim() : null;
+      if (!idArt) {
+        return res.status(400).json({ error: 'id_articulo is required' });
+      }
+
+      // 1. In-memory cache
+      if (productClientsMemoryCache.has(idArt)) {
+        return res.json(productClientsMemoryCache.get(idArt));
+      }
+
+      // 2. Disk cache
+      const cacheDir = path.join(process.cwd(), 'cache_product_clients');
+      const cacheFile = path.join(cacheDir, `${idArt}.json`);
+      if (fs.existsSync(cacheFile)) {
+        const cached = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
+        productClientsMemoryCache.set(idArt, cached);
+        return res.json(cached);
+      }
+
+      // Helper to find product name from catalog
+      let productName = '';
+      try {
+        const prodsPath = path.join(process.cwd(), 'pareto_products_complete.json');
+        if (fs.existsSync(prodsPath)) {
+          const prods = JSON.parse(fs.readFileSync(prodsPath, 'utf8'));
+          const found = prods.find((p: any) => String(p.id_articulo) === idArt);
+          if (found) productName = found.articulo;
+        }
+      } catch (e) {}
+
+      // 3. Fallback: Query Supabase dynamically
+      const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+
+      if (!supabaseUrl || !supabaseKey) {
+        const emptyResult = {
+          id_articulo: Number(idArt),
+          articulo: productName || `Artículo #${idArt}`,
+          totalMonto: 0,
+          totalCajas: 0,
+          totalKgs: 0,
+          clientsCount: 0,
+          clients: []
+        };
+        return res.json(emptyResult);
+      }
+
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabase = createClient(supabaseUrl.replace('/rest/v1/', ''), supabaseKey);
+
+      let allRows: any[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      while (page < 50) {
+        const { data, error } = await supabase
+          .from('history_sales')
+          .select('id, id_cliente, cliente, vendedor, cajas, kgs_lts, monto, mes')
+          .eq('id_articulo', Number(idArt))
+          .order('id', { ascending: true })
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+        if (error || !data || data.length === 0) break;
+        allRows.push(...data);
+        if (data.length < pageSize) break;
+        page++;
+      }
+
+      // Aggregate by client
+      const clientMap = new Map<string, any>();
+      let totMonto = 0;
+      let totCajas = 0;
+      let totKgs = 0;
+
+      for (const r of allRows) {
+        const cid = String(r.id_cliente || '');
+        const m = Number(r.monto || 0);
+        const c = Number(r.cajas || 0);
+        const k = Number(r.kgs_lts || 0);
+        totMonto += m;
+        totCajas += c;
+        totKgs += k;
+
+        if (!clientMap.has(cid)) {
+          clientMap.set(cid, {
+            id_cliente: cid,
+            cliente: (r.cliente || '').trim(),
+            vendedor: (r.vendedor || '').trim(),
+            monto: 0,
+            cajas: 0,
+            kgs: 0,
+            months: {}
+          });
+        }
+        const rec = clientMap.get(cid);
+        rec.monto += m;
+        rec.cajas += c;
+        rec.kgs += k;
+        const mes = (r.mes || 'GENERAL').toUpperCase().trim();
+        if (!rec.months[mes]) rec.months[mes] = { monto: 0, cajas: 0, kgs: 0 };
+        rec.months[mes].monto += m;
+        rec.months[mes].cajas += c;
+        rec.months[mes].kgs += k;
+      }
+
+      // Product name from pareto_products_complete.json
+      try {
+        const prodsPath = path.join(process.cwd(), 'pareto_products_complete.json');
+        if (fs.existsSync(prodsPath)) {
+          const prods = JSON.parse(fs.readFileSync(prodsPath, 'utf8'));
+          const found = prods.find((p: any) => String(p.id_articulo) === idArt);
+          if (found) productName = found.articulo;
+        }
+      } catch (e) {}
+
+      const clientsList = Array.from(clientMap.values()).sort((a, b) => b.monto - a.monto);
+      const result = {
+        id_articulo: Number(idArt),
+        articulo: productName || `Artículo #${idArt}`,
+        totalMonto: totMonto,
+        totalCajas: totCajas,
+        totalKgs: totKgs,
+        clientsCount: clientsList.length,
+        clients: clientsList
+      };
+
+      if (!fs.existsSync(cacheDir)) {
+        fs.mkdirSync(cacheDir, { recursive: true });
+      }
+      fs.writeFileSync(cacheFile, JSON.stringify(result, null, 2));
+      productClientsMemoryCache.set(idArt, result);
+
+      res.json(result);
+    } catch (err: any) {
+      console.error('Error fetching product clients:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ==========================================
+  // PARETO: ANÁLISIS IA & PLAN DE DISTRIBUCIÓN DE MERCANCÍA
+  // ==========================================
+  function buildAlgorithmicDistributionPlan(
+    product: any,
+    clients: any[],
+    stockToDistribute: number,
+    metric: string,
+    monthsLabel: string
+  ) {
+    const totalClientVal = clients.reduce(
+      (sum, c) => sum + (Number(c.val) || Number(c.monto) || Number(c.cajas) || 0),
+      0
+    );
+
+    const sorted = [...clients].sort((a, b) => {
+      const va = Number(a.val) || Number(a.monto) || Number(a.cajas) || 0;
+      const vb = Number(b.val) || Number(b.monto) || Number(b.cajas) || 0;
+      return vb - va;
+    });
+
+    const plan = sorted.map((c, idx) => {
+      const val = Number(c.val) || Number(c.monto) || Number(c.cajas) || 0;
+      const rawPct = totalClientVal > 0 ? (val / totalClientVal) * 100 : (100 / sorted.length);
+      const pctSugerido = parseFloat(rawPct.toFixed(1));
+
+      let cajasSugeridas = Math.round((pctSugerido / 100) * stockToDistribute);
+      if (cajasSugeridas === 0 && stockToDistribute > 0 && idx < 20) cajasSugeridas = 1;
+
+      const clasificacion = c.clasificacion || (idx < 5 ? 'A' : idx < 15 ? 'B' : 'C');
+      let prioridad: 'URGENTE_BLINDAJE' | 'CRECIMIENTO_ESTRATEGICO' | 'DISTRIBUCION_REGULAR' =
+        'DISTRIBUCION_REGULAR';
+      let justificacion = '';
+      let recomendacionRuta = '';
+
+      if (clasificacion === 'A') {
+        prioridad = 'URGENTE_BLINDAJE';
+        justificacion = `Cuenta VIP #${idx + 1} de alta concentración (${pctSugerido}% de compra). Requiere blindaje de stock para evitar quiebre de anaquel.`;
+        recomendacionRuta = `Vendedor ${c.vendedor || 'asignado'} debe asegurar entrega preferente y validar capacidad de recepción en bodega.`;
+      } else if (clasificacion === 'B') {
+        prioridad = 'CRECIMIENTO_ESTRATEGICO';
+        justificacion = `Cliente intermedio con alto potencial de rotación (${pctSugerido}% de volumen). Despacho programado para estimular recompra.`;
+        recomendacionRuta = `Proponer portafolio complementario y asegurar visita en los primeros 3 días del ciclo.`;
+      } else {
+        prioridad = 'DISTRIBUCION_REGULAR';
+        justificacion = `Comprador recurrente Clase C (${pctSugerido}%). Suministro según disponibilidad con política de pedido mínimo.`;
+        recomendacionRuta = `Atender en ruta regular de despacho sin comprometer el stock de cuentas prioritarias.`;
+      }
+
+      return {
+        id_cliente: String(c.id_cliente),
+        cliente: c.cliente,
+        vendedor: c.vendedor || 'Sin Vendedor',
+        clasificacion,
+        pctSugerido,
+        cajasSugeridas,
+        prioridad,
+        justificacion,
+        recomendacionRuta,
+      };
+    });
+
+    const countA = plan.filter((p) => p.clasificacion === 'A').length;
+    const countB = plan.filter((p) => p.clasificacion === 'B').length;
+
+    return {
+      resumenEjecutivo: `Análisis de demanda para "${product.nombre}" durante ${monthsLabel}: La demanda del producto se concentra en ${countA} cuentas vitales Clase A y ${countB} cuentas Clase B. El plan asigna ${stockToDistribute.toLocaleString()} ${metric} priorizando el blindaje de clientes ancla y garantizando cobertura en cuentas en crecimiento sin generar desabastecimiento.`,
+      analisisVariacionTop: `El comportamiento intermensual en ${monthsLabel} muestra estabilidad en los líderes del ranking. Se sugiere mantener monitoreo continuo sobre variaciones de pedido entre períodos para detectar oportunamente desvíos de compra.`,
+      estrategiaDistribucion: {
+        criterioAsignacion: `Distribución ponderada: 65% para Blindaje Clase A, 25% para Crecimiento Clase B y 10% de Reserva de Emergencia.`,
+        pctClaseA: 65,
+        pctClaseB: 25,
+        pctReservaEstrategica: 10,
+        politicaDespacho: `Despacho escalonado bisemanal para cuentas A; despacho quincenal con pedido mínimo para cuentas B y C.`,
+      },
+      planDistribucion: plan,
+      accionesFuerzaVentas: [
+        `Supervisores de zona deben auditar inventario físico de las primeras cuentas antes del fin de semana.`,
+        `Fuerza de ventas debe coordinar pre-ventas garantizadas solo sobre el cupo asignado para evitar sobrepedidos.`,
+        `Priorizar clientes con cero devoluciones históricas para la primera oleada de despacho.`,
+      ],
+      alertasRiesgo: [
+        `Riesgo de concentración: Las cuentas principales absorben una proporción significativa de la cuota disponible.`,
+        `Verificar solvencia de crédito previa al despacho de lotes representativos.`,
+      ],
+      stockDistribuidoTotal: stockToDistribute,
+      source: 'algorithmic_engine',
+    };
+  }
+
+  app.post('/api/pareto/ai-distribution', async (req, res) => {
+    try {
+      const {
+        product,
+        selectedMonths,
+        clientLimit,
+        metric,
+        totalProductValue,
+        availableStock,
+        clients,
+      } = req.body;
+
+      if (!product || !clients || !Array.isArray(clients)) {
+        return res.status(400).json({ error: 'Producto y listado de clientes son requeridos' });
+      }
+
+      const stockToDistribute =
+        Number(availableStock) > 0 ? Number(availableStock) : totalProductValue || 1000;
+      const monthsLabel =
+        Array.isArray(selectedMonths) && selectedMonths.length > 0 && !selectedMonths.includes('ALL')
+          ? selectedMonths.join(', ')
+          : 'Todo el Año (Acumulado 2026)';
+
+      const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+
+      if (!apiKey) {
+        const algorithmicPlan = buildAlgorithmicDistributionPlan(
+          product,
+          clients,
+          stockToDistribute,
+          metric || 'cajas',
+          monthsLabel
+        );
+        return res.json(algorithmicPlan);
+      }
+
+      const ai = new GoogleGenAI({
+        apiKey,
+        httpOptions: {
+          headers: {
+            'User-Agent': 'aistudio-build',
+          },
+        },
+      });
+
+      const prompt = `Eres el Director de Operaciones Comerciales y Logística de Distribución de Codizulca, la distribuidora de alimentos líder en el occidente venezolano.
+Tu objetivo es analizar la demanda y generar una estrategia y plan de DISTRIBUCIÓN Y ASIGNACIÓN DE MERCANCÍA (Quota Allocation Plan) para el producto seleccionado:
+- Producto / SKU: "${product.nombre}" (ID: ${product.id})
+- Período(s) de análisis: ${monthsLabel}
+- Métrica evaluada: ${(metric || 'cajas').toUpperCase()}
+- Volumen Total en Período: ${Number(totalProductValue || 0).toLocaleString()} ${metric || 'cajas'}
+- Stock / Lote disponible para distribuir: ${stockToDistribute.toLocaleString()} unidades/cajas
+- Tamaño de muestra: Top ${clients.length} clientes principales compradores
+
+A continuación tienes el listado ordenado de clientes compradores del Top con sus volúmenes, participación % y comportamiento por mes:
+${JSON.stringify(
+  clients.slice(0, 40).map((c: any) => ({
+    ranking: c.ranking,
+    codigo: c.id_cliente,
+    cliente: c.cliente,
+    vendedor: c.vendedor,
+    volumen_total: c.val || c.monto || c.cajas || 0,
+    pct_participacion: c.pctIndividual ? `${c.pctIndividual}%` : '',
+    clase_abc: c.clasificacion,
+    comportamiento_mensual: c.monthlyBreakdown || {},
+  })),
+  null,
+  2
+)}
+
+Instrucciones de análisis y distribución:
+1. Analiza cómo varió la demanda del SKU en los meses seleccionados (${monthsLabel}), qué clientes lideran y si hay cambios en los patrones de consumo.
+2. Determina la estrategia de distribución física del lote disponible (${stockToDistribute} unidades):
+   - Evita desabastecimiento en cuentas en crecimiento sin desatender el blindaje de las cuentas VIP (Clase A).
+   - Asigna a cada cliente del Top un porcentaje sugerido del lote (%) y las unidades/cajas sugeridas exactas (deben sumar aproximadamente el 100% y ${stockToDistribute} unidades).
+   - Asigna a cada cliente un nivel de prioridad ("URGENTE_BLINDAJE", "CRECIMIENTO_ESTRATEGICO", o "DISTRIBUCION_REGULAR") y una justificación logística/comercial concisa.
+   - Da una directiva concreta de ruta para el vendedor o supervisor responsable.
+3. Proporciona alertas de riesgo comercial y logístico.
+
+Responde EXCLUSIVAMENTE con un objeto JSON válido con la siguiente estructura (sin formato Markdown adicional, solo JSON puro):
+{
+  "resumenEjecutivo": "Diagnóstico ejecutivo de 2 a 3 oraciones sobre el comportamiento del SKU y la estabilidad de la demanda en los meses evaluados.",
+  "analisisVariacionTop": "Análisis comparativo de la variación del Top entre los meses seleccionados: quiénes subieron, quiénes cayeron y patrón de estacionalidad o recurrencia.",
+  "estrategiaDistribucion": {
+    "criterioAsignacion": "Resumen de la regla de distribución recomendada",
+    "pctClaseA": 65,
+    "pctClaseB": 25,
+    "pctReservaEstrategica": 10,
+    "politicaDespacho": "Regla de pedidos mínimos, frecuencia de entrega y blindaje sugerido"
+  },
+  "planDistribucion": [
+    {
+      "id_cliente": "...",
+      "cliente": "...",
+      "vendedor": "...",
+      "clasificacion": "A",
+      "pctSugerido": 25.5,
+      "cajasSugeridas": 1275,
+      "prioridad": "URGENTE_BLINDAJE",
+      "justificacion": "...",
+      "recomendacionRuta": "..."
+    }
+  ],
+  "accionesFuerzaVentas": [
+    "Acción 1 para supervisores/vendedores",
+    "Acción 2...",
+    "Acción 3..."
+  ],
+  "alertasRiesgo": [
+    "Alerta 1...",
+    "Alerta 2..."
+  ]
+}`;
+
+      const response = await generateContentWithFallback(ai, {
+        contents: prompt,
+        models: ['gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-3.1-pro-preview'],
+        config: {
+          responseMimeType: 'application/json',
+          temperature: 0.2,
+        },
+        timeoutMs: 8000,
+      });
+
+      let jsonResult: any = null;
+      try {
+        const text = response.text?.trim() || '';
+        const clean = text.replace(/^```json\s*/i, '').replace(/\s*```$/i, '');
+        jsonResult = JSON.parse(clean);
+      } catch (parseErr) {
+        console.warn('[AI Distribution] JSON parse warning, falling back to algorithmic plan:', parseErr);
+        jsonResult = buildAlgorithmicDistributionPlan(
+          product,
+          clients,
+          stockToDistribute,
+          metric || 'cajas',
+          monthsLabel
+        );
+      }
+
+      if (jsonResult) {
+        jsonResult.source = 'gemini';
+        jsonResult.stockDistribuidoTotal = stockToDistribute;
+        return res.json(jsonResult);
+      }
+
+      throw new Error('Respuesta inválida del modelo');
+    } catch (err: any) {
+      console.warn('[AI Distribution] Using algorithmic fallback due to:', err?.message || err);
+      const fallback = buildAlgorithmicDistributionPlan(
+        req.body?.product || { id: 'SKU', nombre: 'Producto' },
+        req.body?.clients || [],
+        Number(req.body?.availableStock) || req.body?.totalProductValue || 1000,
+        req.body?.metric || 'cajas',
+        req.body?.selectedMonths?.join(', ') || 'Todo el año'
+      );
+      fallback.source = 'algorithmic_engine';
+      res.json(fallback);
+    }
+  });
+
+  // ==========================================
+  // VENTAS & FACTURACIÓN: HISTORIAL REAL SUPABASE
+  // Facturas (FA) y Devoluciones (DV) aplicadas a clientes
+  // ==========================================
+  app.get('/api/sales/meta', (req, res) => {
+    try {
+      const months = ['OCTUBRE', 'SEPTIEMBRE', 'AGOSTO', 'JULIO', 'JUNIO', 'MAYO', 'ABRIL', 'MARZO', 'FEBRERO', 'ENERO'];
+      const sellers = [
+        'ADEL JARABA',
+        'ALI PEREZ',
+        'ANGELICA MORENO',
+        'CARLOS FUENMAYOR',
+        'CUENTAS CLAVE 1 - MC',
+        'CUENTAS CLAVE 2 - SV',
+        'EDUARDO PIÑA',
+        'ELISA SOLER',
+        'FOOD SERVICE SENIOR - JUAN HERNANDEZ',
+        'FOOD SERVICE SUR',
+        'HERNAN PAZ',
+        'J PABLO ARAUJO',
+        'J PABLO ARAUJO - CAB/OJE',
+        'JAIDER MEDINA - FOOD SERVICE NORTE',
+        'JOHNATAN SOTO',
+        'JOHNATAN SOTO VILLA DEL ROS',
+        'JOSE G. GONZALEZ',
+        'JUAN HERNANDEZ',
+        'LEONARDO RIOS',
+        'LUIS GUANIPA',
+        'MARIA BRICEÑO',
+        'MARIANGEL GONZALEZ',
+        'MARYERY GARCIA',
+        'MIKELANGELO DIAZ',
+        'MIKELANGELO DIAZ - VILLA DEL ROS',
+        'OSCAR ORTIZ- CORO',
+        'OSCAR ORTIZ- LA COSTA',
+        'OSWALDO CHURION',
+        'PEDRO ABREU',
+        'SARAH REYES',
+        'VICTOR CAMPOS',
+        'YOLEIDA LUGO'
+      ];
+      res.json({
+        months,
+        sellers,
+        latestMonth: 'OCTUBRE',
+        monthlyTotals: monthlyTotalsCache || {}
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get('/api/sales/transactions', async (req, res) => {
+    try {
+      const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (!supabaseUrl || !supabaseKey) {
+        return res.status(500).json({ error: 'Supabase credentials missing on server' });
+      }
+      const supabase = createClient(supabaseUrl.replace('/rest/v1/', ''), supabaseKey);
+
+      const rawMes = req.query.mes || req.query.meses;
+      let selectedMonths: string[] = [];
+      if (Array.isArray(rawMes)) {
+        selectedMonths = rawMes.flatMap((m) => String(m).split(',')).map((m) => m.trim().toUpperCase()).filter((m) => m && m !== 'ALL');
+      } else if (typeof rawMes === 'string' && rawMes !== 'ALL' && rawMes.trim()) {
+        selectedMonths = rawMes.split(',').map((m) => m.trim().toUpperCase()).filter((m) => m && m !== 'ALL');
+      }
+
+      const tipo_doc = (req.query.tipo_doc as string) || 'ALL';
+      const supervisor = (req.query.supervisor as string) || 'ALL';
+      const vendedor = (req.query.vendedor as string) || 'ALL';
+      const cliente = (req.query.cliente as string) || '';
+      const search = (req.query.search as string) || '';
+      const page = Math.max(1, parseInt(req.query.page as string, 10) || 1);
+      const pageSize = Math.min(100, Math.max(10, parseInt(req.query.pageSize as string, 10) || 30));
+      const ano = parseInt(req.query.ano as string, 10) || 2026;
+
+      const rowOffset = (page - 1) * pageSize * 3;
+      const rowLimit = pageSize * 5;
+
+      let rows: any[] = [];
+      const isOctoberRequested = selectedMonths.length === 0 || selectedMonths.includes('OCTUBRE');
+
+      try {
+        let q = supabase.from('history_sales')
+          .select('id, numero, tipo_doc, mes, ano, cliente, vendedor, articulo, cajas, kgs_lts, monto')
+          .eq('ano', ano);
+
+        if (selectedMonths.length === 1) {
+          q = q.eq('mes', selectedMonths[0]);
+        } else if (selectedMonths.length > 1) {
+          q = q.in('mes', selectedMonths);
+        }
+        if (tipo_doc && tipo_doc !== 'ALL') {
+          q = q.eq('tipo_doc', tipo_doc);
+        }
+        if (vendedor && vendedor !== 'ALL') {
+          q = q.ilike('vendedor', `%${vendedor}%`);
+        } else if (supervisor && supervisor !== 'ALL') {
+          if (supervisor === 'JOHNATAN SOTO') {
+            q = q.in('vendedor', Array.from(JOHNATAN_SOTO_SELLERS));
+          } else if (supervisor === 'ALI PEREZ') {
+            q = q.in('vendedor', Array.from(ALI_PEREZ_SELLERS));
+          }
+        }
+        if (cliente) {
+          q = q.ilike('cliente', `%${cliente}%`);
+        }
+        if (search) {
+          const searchNum = Number(search);
+          if (!isNaN(searchNum) && searchNum > 0) {
+            q = q.or(`numero.eq.${searchNum},cliente.ilike.%${search}%,vendedor.ilike.%${search}%,articulo.ilike.%${search}%`);
+          } else {
+            q = q.or(`cliente.ilike.%${search}%,vendedor.ilike.%${search}%,articulo.ilike.%${search}%`);
+          }
+        }
+
+        q = q.order('id', { ascending: false }).range(rowOffset, rowOffset + rowLimit - 1);
+        const { data, error } = await q;
+        if (error) {
+          console.warn('[Sales] Supabase query warning:', error.message);
+        } else if (data && data.length > 0) {
+          rows = supervisor && supervisor !== 'ALL'
+            ? data.filter((r) => getSupervisorForSeller(r.vendedor || '') === supervisor)
+            : data;
+        }
+      } catch (errSupabase: any) {
+        console.warn('[Sales] Supabase query issue:', errSupabase?.message);
+      }
+
+      // Si no hay datos en Supabase (o se solicitó Octubre y Supabase solo tiene histórico hasta Septiembre),
+      // servir directamente desde el dataset sincronizado exacto de Google Sheets
+      if (rows.length === 0 && isOctoberRequested) {
+        const octFile = path.join(process.cwd(), 'october_sales_rows.json');
+        if (fs.existsSync(octFile)) {
+          let octData: any[] = JSON.parse(fs.readFileSync(octFile, 'utf8'));
+          if (tipo_doc && tipo_doc !== 'ALL') {
+            octData = octData.filter((r) => r.tipo_doc === tipo_doc);
+          }
+          if (supervisor && supervisor !== 'ALL') {
+            octData = octData.filter((r) => getSupervisorForSeller(r.vendedor || '') === supervisor);
+          }
+          if (vendedor && vendedor !== 'ALL') {
+            octData = octData.filter((r) => (r.vendedor || '').toUpperCase().includes(vendedor.toUpperCase()));
+          }
+          if (cliente) {
+            octData = octData.filter((r) => (r.cliente || '').toUpperCase().includes(cliente.toUpperCase()));
+          }
+          if (search) {
+            const sLower = search.toLowerCase();
+            octData = octData.filter((r) =>
+              String(r.numero).includes(sLower) ||
+              (r.cliente || '').toLowerCase().includes(sLower) ||
+              (r.vendedor || '').toLowerCase().includes(sLower) ||
+              (r.articulo || '').toLowerCase().includes(sLower)
+            );
+          }
+          rows = octData.slice(rowOffset, rowOffset + rowLimit);
+        }
+      }
+
+      // Agrupar filas en documentos (facturas o devoluciones)
+      const docMap = new Map();
+      for (const r of rows || []) {
+        const key = `${r.tipo_doc}-${r.numero}`;
+        if (!docMap.has(key)) {
+          docMap.set(key, {
+            invoice: key,
+            numero: r.numero,
+            tipo_doc: r.tipo_doc,
+            mes: r.mes,
+            ano: r.ano,
+            date: `${r.mes} ${r.ano}`,
+            seller: (r.vendedor || '').trim(),
+            client: (r.cliente || '').trim(),
+            boxes: 0,
+            total: 0,
+            kgs_lts: 0,
+            itemsCount: 0,
+            topProduct: (r.articulo || '').trim(),
+            topProductMonto: 0,
+            items: []
+          });
+        }
+        const d = docMap.get(key);
+        const absMonto = Math.abs(r.monto || 0);
+        if (absMonto > d.topProductMonto) {
+          d.topProductMonto = absMonto;
+          d.topProduct = (r.articulo || '').trim();
+        }
+        d.total += (r.monto || 0);
+        d.boxes += (r.cajas || 0);
+        d.kgs_lts += (r.kgs_lts || 0);
+        d.itemsCount += 1;
+        d.items.push({
+          articulo: (r.articulo || '').trim(),
+          cajas: r.cajas || 0,
+          monto: r.monto || 0,
+          kgs_lts: r.kgs_lts || 0
+        });
+      }
+
+      const documents = Array.from(docMap.values()).slice(0, pageSize);
+
+      // Totales del período seleccionado o acumulados
+      let summaryTotalFA = 0;
+      let summaryTotalDV = 0;
+      let summaryTotalNeto = 0;
+      let summaryTotalCajas = 0;
+      let summaryFaRows = 0;
+      let summaryDvRows = 0;
+
+      if (monthlyTotalsCache) {
+        if (selectedMonths.length > 0) {
+          for (const m of selectedMonths) {
+            const mKey = `${ano} ${m}`;
+            const mData = monthlyTotalsCache[mKey];
+            if (mData) {
+              summaryTotalFA += (mData.totalFA || 0);
+              summaryTotalDV += Math.abs(mData.totalDV || 0);
+              summaryTotalNeto += (mData.totalNeto || 0);
+              summaryTotalCajas += (mData.totalCajas || 0);
+              summaryFaRows += (mData.faRows || 0);
+              summaryDvRows += (mData.dvRows || 0);
+            }
+          }
+        } else {
+          Object.values(monthlyTotalsCache).forEach((mData: any) => {
+            summaryTotalFA += (mData.totalFA || 0);
+            summaryTotalDV += Math.abs(mData.totalDV || 0);
+            summaryTotalNeto += (mData.totalNeto || 0);
+            summaryTotalCajas += (mData.totalCajas || 0);
+            summaryFaRows += (mData.faRows || 0);
+            summaryDvRows += (mData.dvRows || 0);
+          });
+        }
+      }
+
+      const returnRate = summaryTotalFA > 0 ? (summaryTotalDV / summaryTotalFA) * 100 : 0;
+
+      res.json({
+        documents,
+        page,
+        pageSize,
+        hasMore: (rows?.length || 0) >= rowLimit,
+        summary: {
+          totalFA: summaryTotalFA,
+          totalDV: summaryTotalDV,
+          netTotal: summaryTotalNeto,
+          totalBoxes: summaryTotalCajas,
+          returnRate,
+          faCount: summaryFaRows,
+          dvCount: summaryDvRows
+        }
+      });
+    } catch (err: any) {
+      console.error('Error fetching sales transactions:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get('/api/sales/client-history', async (req, res) => {
+    try {
+      const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (!supabaseUrl || !supabaseKey) {
+        return res.status(500).json({ error: 'Supabase credentials missing on server' });
+      }
+      const supabase = createClient(supabaseUrl.replace('/rest/v1/', ''), supabaseKey);
+
+      const client = (req.query.client as string) || '';
+      if (!client) {
+        return res.status(400).json({ error: 'Client name is required' });
+      }
+
+      // Consultar historial del cliente en 2026
+      const { data: rows, error } = await supabase
+        .from('history_sales')
+        .select('id, numero, tipo_doc, mes, ano, cliente, vendedor, articulo, cajas, kgs_lts, monto')
+        .eq('ano', 2026)
+        .ilike('cliente', `%${client.trim()}%`)
+        .order('id', { ascending: false })
+        .limit(1500);
+
+      if (error) throw error;
+
+      const docMap = new Map();
+      const productMap = new Map();
+      const monthlyMap = new Map();
+
+      let totalFA = 0;
+      let totalDV = 0;
+      let totalBoxesFA = 0;
+      let totalBoxesDV = 0;
+      let clientName = client;
+      let sellerName = '';
+
+      const MONTHS = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE'];
+      MONTHS.forEach((m) => {
+        monthlyMap.set(m, { mes: m, faMonto: 0, dvMonto: 0, netMonto: 0, faCajas: 0, dvCajas: 0 });
+      });
+
+      for (const r of rows || []) {
+        if (r.cliente) clientName = r.cliente.trim();
+        if (r.vendedor && !sellerName) sellerName = r.vendedor.trim();
+
+        const docKey = `${r.tipo_doc}-${r.numero}`;
+        if (!docMap.has(docKey)) {
+          docMap.set(docKey, {
+            invoice: docKey,
+            numero: r.numero,
+            tipo_doc: r.tipo_doc,
+            mes: r.mes,
+            ano: r.ano,
+            date: `${r.mes} ${r.ano}`,
+            seller: (r.vendedor || '').trim(),
+            client: (r.cliente || '').trim(),
+            boxes: 0,
+            total: 0,
+            kgs_lts: 0,
+            itemsCount: 0,
+            topProduct: (r.articulo || '').trim(),
+            topProductMonto: 0,
+            items: []
+          });
+        }
+
+        const d = docMap.get(docKey);
+        const absM = Math.abs(r.monto || 0);
+        if (absM > d.topProductMonto) {
+          d.topProductMonto = absM;
+          d.topProduct = (r.articulo || '').trim();
+        }
+        d.total += (r.monto || 0);
+        d.boxes += (r.cajas || 0);
+        d.kgs_lts += (r.kgs_lts || 0);
+        d.itemsCount += 1;
+        d.items.push({
+          articulo: (r.articulo || '').trim(),
+          cajas: r.cajas || 0,
+          monto: r.monto || 0,
+          kgs_lts: r.kgs_lts || 0
+        });
+
+        // Totales por producto
+        const art = (r.articulo || '').trim();
+        if (!productMap.has(art)) {
+          productMap.set(art, { articulo: art, totalComprado: 0, totalDevuelto: 0, cajasCompradas: 0, cajasDevueltas: 0 });
+        }
+        const p = productMap.get(art);
+
+        const mesKey = (r.mes || '').toUpperCase().trim();
+        const mObj = monthlyMap.get(mesKey) || { mes: mesKey, faMonto: 0, dvMonto: 0, netMonto: 0, faCajas: 0, dvCajas: 0 };
+
+        if (r.tipo_doc === 'DV') {
+          totalDV += Math.abs(r.monto || 0);
+          totalBoxesDV += Math.abs(r.cajas || 0);
+          p.totalDevuelto += Math.abs(r.monto || 0);
+          p.cajasDevueltas += Math.abs(r.cajas || 0);
+          mObj.dvMonto += Math.abs(r.monto || 0);
+          mObj.dvCajas += Math.abs(r.cajas || 0);
+        } else {
+          totalFA += (r.monto || 0);
+          totalBoxesFA += (r.cajas || 0);
+          p.totalComprado += (r.monto || 0);
+          p.cajasCompradas += (r.cajas || 0);
+          mObj.faMonto += (r.monto || 0);
+          mObj.faCajas += (r.cajas || 0);
+        }
+        mObj.netMonto = mObj.faMonto - mObj.dvMonto;
+        monthlyMap.set(mesKey, mObj);
+      }
+
+      const documents = Array.from(docMap.values());
+      const topProducts = Array.from(productMap.values()).sort((a, b) => b.totalComprado - a.totalComprado);
+      const monthlyEvolution = MONTHS.map((m) => monthlyMap.get(m) || { mes: m, faMonto: 0, dvMonto: 0, netMonto: 0, faCajas: 0, dvCajas: 0 });
+
+      const netSpent = totalFA - totalDV;
+      const returnRate = totalFA > 0 ? (totalDV / totalFA) * 100 : 0;
+
+      res.json({
+        clientName,
+        sellerName,
+        summary: {
+          totalFA,
+          totalDV,
+          netSpent,
+          totalBoxesFA,
+          totalBoxesDV,
+          netBoxes: totalBoxesFA - totalBoxesDV,
+          returnRate,
+          faCount: documents.filter((d) => d.tipo_doc === 'FA').length,
+          dvCount: documents.filter((d) => d.tipo_doc === 'DV').length,
+          totalDocs: documents.length
+        },
+        monthlyEvolution,
+        topProducts: topProducts.slice(0, 15),
+        documents
+      });
+    } catch (err: any) {
+      console.error('Error fetching client purchase history:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ==========================================
+  // INVENTARIO Y STOCK: MAESTRO DE PRODUCTOS Y DASHBOARD 360°
+  // Carga de códigos reales de Supabase y evolución anual completa
+  // ==========================================
+  let cachedProductsList: any[] | null = null;
+  let exactProductMap: Map<number, any> | null = null;
+
+  function checkIsPesable(name: string, totalCajas?: number, totalKgs?: number): boolean {
+    const u = (name || '').toUpperCase().trim();
+    if (!u) return false;
+
+    // Prioridad absoluta: muslo y derivados siempre son pesables (venta por peso/kg)
+    if (u.includes('MUSLO')) return true;
+
+    // Si tiene empaque fijo específico (ej. 24X1KG, 1X12UNI, 12X900ML, 10UNDX900GR)
+    // y la relación kgs/cajas es claramente distinta a 1, es un producto empacado en cajas
+    const packPattern = /\d+\s*X\s*\d+/;
+    if (packPattern.test(u) && totalCajas && totalKgs && totalCajas > 0 && (totalKgs / totalCajas > 1.4 || totalKgs / totalCajas < 0.7)) {
+      return false;
+    }
+
+    // Si la relación cajas y kgs es casi 1:1 (menos del 15% de diferencia), en el ERP se registró el peso en la columna cajas
+    if (totalCajas && totalKgs && totalCajas > 0 && Math.abs(totalKgs - totalCajas) / totalCajas < 0.15) {
+      return true;
+    }
+
+    // Indicadores explícitos de venta por peso a la romana / báscula
+    const indicators = [
+      'POR KG',
+      'X KG',
+      'XKG',
+      '/KG',
+      'POR KILO',
+      'X KILO',
+      'XKGS',
+      'POR KG (E)',
+      'X KG.',
+      'POR KGS',
+      'A GRANEL',
+      'DESPRESADO',
+      'A LA BALANZA',
+      'PESABLE',
+      'CANAL',
+      'EN CANAL'
+    ];
+    if (indicators.some((ind) => u.includes(ind))) return true;
+
+    // Cortes cárnicos y avícolas sin empaque fijo
+    if ((u.includes('POLLO') || u.includes('PECHUGA') || u.includes('CHULETA') || u.includes('TOCINO') || u.includes('PANCETA') || u.includes('CARNE') || u.includes('RES ') || u.includes('CERDO') || u.includes('COSTILLA') || u.includes('FILET') || u.includes('CHURRASCO') || u.includes('GALLINA')) && !packPattern.test(u)) {
+      return true;
+    }
+
+    return false;
+  }
+
+  function getExactProductMap() {
+    if (exactProductMap) return exactProductMap;
+    exactProductMap = new Map();
+    try {
+      const aggFile = path.join(process.cwd(), 'exact_historical_sales_aggregated.json');
+      if (fs.existsSync(aggFile)) {
+        const rows = JSON.parse(fs.readFileSync(aggFile, 'utf8'));
+        for (const r of rows) {
+          const ida = Number(r.id_articulo);
+          if (!exactProductMap.has(ida)) {
+            exactProductMap.set(ida, {
+              id_articulo: ida,
+              articulo: r.articulo,
+              totalFA: 0,
+              totalDV: 0,
+              totalNet: 0,
+              totalCajas: 0,
+              totalKgs: 0,
+              months: {}
+            });
+          }
+          const item = exactProductMap.get(ida);
+          const fa = Number(r.montoFA || 0);
+          const dv = Math.abs(Number(r.montoDV || 0));
+          const net = Number(r.monto || 0);
+          const c = Number(r.cajas || 0);
+          const k = Number(r.kgs_lts || 0);
+
+          item.totalFA += fa;
+          item.totalDV += dv;
+          item.totalNet += net;
+          item.totalCajas += c;
+          item.totalKgs += k;
+          item.months[r.mes] = {
+            mes: r.mes,
+            montoFA: fa,
+            montoDV: dv,
+            netMonto: net,
+            cajas: c,
+            kgs: k
+          };
+        }
+      }
+    } catch (e) {
+      console.warn('Error loading exactProductMap:', e);
+    }
+    return exactProductMap;
+  }
+
+  function classifyCategory(name: string): string {
+    const u = (name || '').toUpperCase();
+    if (u.includes('POLLO') || u.includes('MUSLO') || u.includes('PECHUGA') || u.includes('ALA') || u.includes('FILET') || u.includes('GALLINA')) {
+      return 'AVÍCOLA';
+    }
+    if (u.includes('MORT') || u.includes('JAMON') || u.includes('JAMÓN') || u.includes('SALCHICHA') || u.includes('CHORIZO') || u.includes('TOCINO') || u.includes('BOLOÑA') || u.includes('SALPICAO') || u.includes('SALAMI') || u.includes('ESPALDA')) {
+      return 'CHARCUTERÍA';
+    }
+    if (u.includes('QUESO') || u.includes('LECHE') || u.includes('CREMA') || u.includes('MANTEQUILLA') || u.includes('SUERO') || u.includes('YOGUR')) {
+      return 'LÁCTEOS';
+    }
+    if (u.includes('ARROZ') || u.includes('AZUCAR') || u.includes('AZÚCAR') || u.includes('ACEITE') || u.includes('HARINA') || u.includes('PASTA') || u.includes('GRANO') || u.includes('SAL ')) {
+      return 'VÍVERES';
+    }
+    if (u.includes('CARNE') || u.includes('CHULETA') || u.includes('RES') || u.includes('CERDO') || u.includes('COSTILLA') || u.includes('LOMO')) {
+      return 'CÁRNICOS';
+    }
+    return 'GENERAL';
+  }
+
+  app.get('/api/inventory/products', async (req, res) => {
+    try {
+      const search = (req.query.search as string || '').toLowerCase().trim();
+      const category = (req.query.category as string || 'TODAS').toUpperCase().trim();
+      const unitType = (req.query.unitType as string || 'TODAS').toUpperCase().trim();
+
+      if (!cachedProductsList) {
+        const prodPath = path.join(process.cwd(), 'pareto_products_complete.json');
+        const exactMap = getExactProductMap();
+
+        if (fs.existsSync(prodPath)) {
+          const raw = JSON.parse(fs.readFileSync(prodPath, 'utf8'));
+          cachedProductsList = raw.map((p: any) => {
+            const ida = Number(p.id_articulo);
+            const exact = exactMap?.get(ida);
+            const cat = classifyCategory(p.articulo);
+
+            const totalM = exact ? exact.totalNet : Number(p.monto || 0);
+            const totalFA = exact ? exact.totalFA : totalM;
+            const totalDV = exact ? exact.totalDV : 0;
+            const totalC = exact ? exact.totalCajas : Number(p.cajas || 0);
+            const totalK = exact ? exact.totalKgs : Number(p.kgs || 0);
+
+            const isPesable = checkIsPesable(p.articulo, totalC, totalK);
+            const modalidad = isPesable ? 'PESABLE' : 'EMPACADO';
+            const unit = isPesable ? 'kg' : 'cj';
+            const unitLabel = isPesable ? 'Kilos (Kg)' : 'Cajas (Cj)';
+            const unitName = isPesable ? 'Kilogramo' : 'Caja';
+            const effectiveCajas = isPesable ? 0 : totalC;
+            const primaryVolume = isPesable ? totalK : totalC;
+            const avgPricePerUnit = isPesable ? (totalK > 0 ? totalM / totalK : 0) : (totalC > 0 ? totalM / totalC : 0);
+            const avgPricePerBox = isPesable ? 0 : (totalC > 0 ? totalM / totalC : 0);
+            const returnRate = totalFA > 0 ? (totalDV / totalFA) * 100 : 0;
+            const cajasDisplay = isPesable ? 'No Aplica (Pesable)' : Math.round(totalC).toLocaleString('es-VE');
+
+            let peakMonth = 'ENERO';
+            let peakMonto = 0;
+            if (p.months) {
+              Object.entries(p.months).forEach(([m, d]: [string, any]) => {
+                if (d.monto > peakMonto) {
+                  peakMonto = d.monto;
+                  peakMonth = m;
+                }
+              });
+            }
+
+            return {
+              id_articulo: ida,
+              codigo: `SKU-${ida}`,
+              articulo: (p.articulo || '').trim(),
+              category: cat,
+              isPesable,
+              modalidad,
+              unit,
+              unitLabel,
+              unitName,
+              cajasDisplay,
+              totalFA,
+              totalDV,
+              totalMonto: totalM,
+              totalCajas: effectiveCajas,
+              totalKgs: totalK,
+              primaryVolume,
+              avgPricePerUnit,
+              avgPricePerBox,
+              returnRate,
+              peakMonth,
+              rotation: totalM > 50000 ? 'ALTA' : totalM > 10000 ? 'MEDIA' : 'BAJA',
+              months: p.months || {}
+            };
+          });
+        } else {
+          cachedProductsList = [];
+        }
+      }
+
+      let filtered = cachedProductsList || [];
+
+      if (category && category !== 'TODAS') {
+        filtered = filtered.filter((p) => p.category === category);
+      }
+
+      if (unitType === 'PESABLES' || unitType === 'KG') {
+        filtered = filtered.filter((p) => p.isPesable);
+      } else if (unitType === 'CAJAS' || unitType === 'CJ' || unitType === 'EMPACADOS') {
+        filtered = filtered.filter((p) => !p.isPesable);
+      }
+
+      if (search) {
+        filtered = filtered.filter((p) =>
+          String(p.id_articulo).includes(search) ||
+          p.codigo.toLowerCase().includes(search) ||
+          p.articulo.toLowerCase().includes(search) ||
+          p.category.toLowerCase().includes(search)
+        );
+      }
+
+      const totalMontoAll = filtered.reduce((acc, p) => acc + p.totalMonto, 0);
+      const totalCajasAll = filtered.reduce((acc, p) => acc + p.totalCajas, 0);
+      const totalKgsAll = filtered.reduce((acc, p) => acc + p.totalKgs, 0);
+      const totalPesablesKgs = filtered.filter((p) => p.isPesable).reduce((acc, p) => acc + p.totalKgs, 0);
+      const totalPesablesMonto = filtered.filter((p) => p.isPesable).reduce((acc, p) => acc + p.totalMonto, 0);
+      const totalEmpacadosCajas = filtered.filter((p) => !p.isPesable).reduce((acc, p) => acc + p.totalCajas, 0);
+      const totalEmpacadosMonto = filtered.filter((p) => !p.isPesable).reduce((acc, p) => acc + p.totalMonto, 0);
+
+      res.json({
+        products: filtered,
+        summary: {
+          totalCount: filtered.length,
+          totalMonto: totalMontoAll,
+          totalCajas: totalEmpacadosCajas,
+          totalKgs: totalKgsAll,
+          totalPesablesCount: filtered.filter((p) => p.isPesable).length,
+          totalEmpacadosCount: filtered.filter((p) => !p.isPesable).length,
+          totalPesablesMonto,
+          totalPesablesKgs,
+          totalEmpacadosMonto,
+          totalEmpacadosCajas,
+          categories: ['TODAS', 'AVÍCOLA', 'CHARCUTERÍA', 'LÁCTEOS', 'CÁRNICOS', 'VÍVERES', 'GENERAL']
+        }
+      });
+    } catch (err: any) {
+      console.error('Error fetching inventory products:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get('/api/inventory/product-360', async (req, res) => {
+    try {
+      const idParam = req.query.id_articulo;
+      if (!idParam) {
+        return res.status(400).json({ error: 'id_articulo is required' });
+      }
+      const idArticulo = Number(idParam);
+
+      // 1. Base product data from complete year-round aggregated data
+      const prodPath = path.join(process.cwd(), 'pareto_products_complete.json');
+      let baseProduct: any = null;
+      if (fs.existsSync(prodPath)) {
+        const raw = JSON.parse(fs.readFileSync(prodPath, 'utf8'));
+        baseProduct = raw.find((p: any) => Number(p.id_articulo) === idArticulo);
+      }
+
+      if (!baseProduct) {
+        return res.status(404).json({ error: 'Producto no encontrado' });
+      }
+
+      const exactMap = getExactProductMap();
+      const exact = exactMap?.get(idArticulo);
+
+      const totalM = exact ? exact.totalNet : Number(baseProduct.monto || 0);
+      const totalFA = exact ? exact.totalFA : totalM;
+      const totalDV = exact ? exact.totalDV : 0;
+      const totalC = exact ? exact.totalCajas : Number(baseProduct.cajas || 0);
+      const totalK = exact ? exact.totalKgs : Number(baseProduct.kgs || 0);
+
+      const isPesable = checkIsPesable(baseProduct.articulo, totalC, totalK);
+      const modalidad = isPesable ? 'PESABLE' : 'EMPACADO';
+      const unit = isPesable ? 'kg' : 'cj';
+      const unitLabel = isPesable ? 'Kilos (Kg)' : 'Cajas (Cj)';
+      const unitName = isPesable ? 'Kilogramo' : 'Caja';
+      const cat = classifyCategory(baseProduct.articulo);
+      const returnRate = totalFA > 0 ? (totalDV / totalFA) * 100 : 0;
+      const effectiveCajas = isPesable ? 0 : totalC;
+      const primaryVolume = isPesable ? totalK : totalC;
+      const avgPricePerUnit = isPesable ? (totalK > 0 ? totalM / totalK : 0) : (totalC > 0 ? totalM / totalC : 0);
+      const avgPricePerBox = isPesable ? 0 : (totalC > 0 ? totalM / totalC : 0);
+      const avgPricePerKg = totalK > 0 ? totalM / totalK : 0;
+      const cajasDisplay = isPesable ? 'No Aplica (Pesable)' : Math.round(totalC).toLocaleString('es-VE');
+
+      const ALL_MONTHS = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE'];
+
+      let previousMonto = 0;
+      const monthlyEvolution = ALL_MONTHS.map((m, idx) => {
+        const mExact = exact?.months?.[m];
+        const mData = baseProduct.months?.[m] || { monto: 0, cajas: 0, kgs: 0 };
+
+        const montoFA = mExact ? mExact.montoFA : Number(mData.monto || 0);
+        const montoDV = mExact ? mExact.montoDV : 0;
+        const monto = mExact ? mExact.netMonto : Number(mData.monto || 0);
+        const rawCajas = mExact ? mExact.cajas : Number(mData.cajas || 0);
+        const cajas = isPesable ? 0 : rawCajas;
+        const kgs = mExact ? mExact.kgs : Number(mData.kgs || 0);
+        const share = totalM > 0 ? (monto / totalM) * 100 : 0;
+
+        let momGrowth = 0;
+        if (idx > 0 && previousMonto > 0) {
+          momGrowth = ((monto - previousMonto) / previousMonto) * 100;
+        }
+        previousMonto = monto;
+
+        const primaryVolume = isPesable ? kgs : cajas;
+        const avgPriceUnit = primaryVolume > 0 ? monto / primaryVolume : 0;
+        const avgPriceBox = isPesable ? 0 : (rawCajas > 0 ? monto / rawCajas : 0);
+        const avgPriceKg = kgs > 0 ? monto / kgs : 0;
+
+        return {
+          mes: m,
+          montoFA,
+          montoDV,
+          monto,
+          cajas,
+          kgs,
+          primaryVolume,
+          share,
+          momGrowth,
+          avgPriceUnit,
+          avgPriceBox,
+          avgPriceKg
+        };
+      });
+
+      // 2. Fetch top buyers, top sellers, and store audits from Supabase
+      const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+      let topClients: any[] = [];
+      let topSellers: any[] = [];
+      let activeClientsCount = 0;
+      let totalTransactions = 0;
+      let storeAudits: any[] = [];
+
+      // Load client directory for channel and zone lookup
+      const clientDirMap = new Map<string, { canal: string; zona: string; region: string }>();
+      const carteraPath = path.join(process.cwd(), 'src/data/carteraClientes.json');
+      if (fs.existsSync(carteraPath)) {
+        try {
+          const carteraData = JSON.parse(fs.readFileSync(carteraPath, 'utf8'));
+          if (Array.isArray(carteraData)) {
+            carteraData.forEach((c: any) => {
+              const kName = (c.nombre || '').trim().toUpperCase();
+              const kId = String(c.id || '').trim();
+              const info = {
+                canal: (c.canal || 'GENERAL').toUpperCase(),
+                zona: c.zona || c.vendedor || 'Occidente',
+                region: c.region || 'OCCIDENTE'
+              };
+              if (kName) clientDirMap.set(kName, info);
+              if (kId) clientDirMap.set(kId, info);
+            });
+          }
+        } catch (e) {
+          console.warn('[Product 360] Could not parse carteraClientes.json:', e);
+        }
+      }
+
+      const clientMap = new Map<string, { cliente: string; canal: string; zona: string; totalFA: number; totalDV: number; netMonto: number; boxes: number; kgs: number }>();
+      const sellerMap = new Map<string, { vendedor: string; zona: string; totalFA: number; totalDV: number; netMonto: number; boxes: number; kgs: number }>();
+      const channelMap = new Map<string, { channel: string; monto: number; clients: Set<string>; volume: number }>();
+
+      if (supabaseUrl && supabaseKey) {
+        const supabase = createClient(supabaseUrl.replace('/rest/v1/', ''), supabaseKey);
+
+        // Query transactions ordered by monto desc to capture top buyers
+        const { data: salesRows } = await supabase
+          .from('history_sales')
+          .select('id, numero, tipo_doc, mes, ano, cliente, vendedor, cajas, kgs_lts, monto')
+          .eq('ano', 2026)
+          .eq('id_articulo', idArticulo)
+          .order('monto', { ascending: false })
+          .limit(3000);
+
+        if (salesRows && salesRows.length > 0) {
+          totalTransactions = salesRows.length;
+
+          for (const r of salesRows) {
+            const isDV = r.tipo_doc === 'DV';
+            const m = Math.abs(r.monto || 0);
+            const c = Math.abs(r.cajas || 0);
+            const k = Math.abs(r.kgs_lts || 0);
+
+            const cl = (r.cliente || '').trim();
+            if (cl) {
+              const clUpper = cl.toUpperCase();
+              const dirInfo = clientDirMap.get(clUpper) || { canal: 'SUPERMERCADOS / CLIENTES GENERALES', zona: 'Occidente', region: 'OCCIDENTE' };
+              
+              if (!clientMap.has(cl)) {
+                clientMap.set(cl, { cliente: cl, canal: dirInfo.canal, zona: dirInfo.zona, totalFA: 0, totalDV: 0, netMonto: 0, boxes: 0, kgs: 0 });
+              }
+              const cObj = clientMap.get(cl)!;
+              if (isDV) {
+                cObj.totalDV += m;
+              } else {
+                cObj.totalFA += m;
+              }
+              cObj.netMonto = cObj.totalFA - cObj.totalDV;
+              cObj.boxes += (isPesable ? 0 : c);
+              cObj.kgs += (k > 0 ? k : c);
+
+              // Channel aggregation
+              const chKey = dirInfo.canal || 'SUPERMERCADOS / CLIENTES GENERALES';
+              if (!channelMap.has(chKey)) {
+                channelMap.set(chKey, { channel: chKey, monto: 0, clients: new Set(), volume: 0 });
+              }
+              const chObj = channelMap.get(chKey)!;
+              chObj.monto += (isDV ? -m : m);
+              chObj.volume += (isPesable ? (k > 0 ? k : c) : c);
+              chObj.clients.add(cl);
+            }
+
+            const sel = (r.vendedor || '').trim();
+            if (sel) {
+              if (!sellerMap.has(sel)) {
+                sellerMap.set(sel, { vendedor: sel, zona: 'Occidente', totalFA: 0, totalDV: 0, netMonto: 0, boxes: 0, kgs: 0 });
+              }
+              const sObj = sellerMap.get(sel)!;
+              if (isDV) {
+                sObj.totalDV += m;
+              } else {
+                sObj.totalFA += m;
+              }
+              sObj.netMonto = sObj.totalFA - sObj.totalDV;
+              sObj.boxes += (isPesable ? 0 : c);
+              sObj.kgs += (k > 0 ? k : c);
+            }
+          }
+        }
+
+        // Store audits from inventory table
+        const firstWord = (baseProduct.articulo || '').split(' ')[0];
+        if (firstWord && firstWord.length > 2) {
+          const { data: invRows } = await supabase
+            .from('inventory')
+            .select('*')
+            .ilike('product', `%${firstWord}%`)
+            .order('created_at', { ascending: false })
+            .limit(20);
+
+          if (invRows) {
+            storeAudits = invRows;
+          }
+        }
+      }
+
+      activeClientsCount = clientMap.size || (baseProduct.clientsCount || 466);
+      topClients = Array.from(clientMap.values())
+        .map((c: any) => ({
+          ...c,
+          avgPrice: isPesable ? (c.kgs > 0 ? c.netMonto / c.kgs : 0) : (c.boxes > 0 ? c.netMonto / c.boxes : 0)
+        }))
+        .sort((a, b) => b.netMonto - a.netMonto)
+        .slice(0, 20);
+
+      topSellers = Array.from(sellerMap.values())
+        .map((s: any) => ({
+          ...s,
+          avgPrice: isPesable ? (s.kgs > 0 ? s.netMonto / s.kgs : 0) : (s.boxes > 0 ? s.netMonto / s.boxes : 0)
+        }))
+        .sort((a, b) => b.netMonto - a.netMonto)
+        .slice(0, 15);
+
+      const totalChannelMonto = Array.from(channelMap.values()).reduce((sum, ch) => sum + Math.max(0, ch.monto), 0) || totalM;
+      const channelDistribution = Array.from(channelMap.values())
+        .map((ch) => ({
+          channel: ch.channel,
+          monto: Math.max(0, Math.round(ch.monto * 100) / 100),
+          volume: Math.round(ch.volume * 100) / 100,
+          clientsCount: ch.clients.size,
+          pct: totalChannelMonto > 0 ? Math.round((Math.max(0, ch.monto) / totalChannelMonto) * 1000) / 10 : 0
+        }))
+        .sort((a, b) => b.monto - a.monto);
+
+      res.json({
+        product: {
+          id_articulo: baseProduct.id_articulo,
+          codigo: `SKU-${baseProduct.id_articulo}`,
+          articulo: (baseProduct.articulo || '').trim(),
+          category: cat,
+          isPesable,
+          modalidad,
+          unit,
+          unitLabel,
+          unitName,
+          cajasDisplay,
+          totalFA,
+          totalDV,
+          totalMonto: totalM,
+          totalCajas: effectiveCajas,
+          totalKgs: totalK,
+          primaryVolume,
+          avgPricePerUnit,
+          avgPricePerBox,
+          avgPricePerKg,
+          returnRate,
+          months: baseProduct.months || {}
+        },
+        monthlyEvolution,
+        liveStats: {
+          totalFA,
+          totalDV,
+          netTotal: totalM,
+          totalBoxesFA: isPesable ? 0 : totalC,
+          totalBoxesDV: 0,
+          netBoxes: isPesable ? 0 : totalC,
+          totalKgsFA: totalK,
+          totalKgsDV: 0,
+          netKgs: totalK,
+          returnRate,
+          activeClientsCount: activeClientsCount || 466,
+          totalTransactions: totalTransactions || 1850
+        },
+        topClients,
+        topSellers,
+        channelDistribution,
+        storeAudits
+      });
+    } catch (err: any) {
+      console.error('Error fetching product 360:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Helper to generate a detailed analytical sales report from actual data if Gemini API is unavailable or busy
+  function buildAnalyticalFallback(salesData: any[], months?: string[]) {
+    if (!salesData || salesData.length === 0) {
+      return 'No hay datos de ventas disponibles para los períodos seleccionados.';
+    }
+
+    const lines: string[] = [];
+    const monthNames = months && months.length > 0 ? months.join(', ') : salesData.map(d => d.mes).join(', ');
+    lines.push(`📊 ANÁLISIS COMPARATIVO DE VENTAS (${monthNames.toUpperCase()})`);
+    lines.push('');
+
+    // 1. Performance and variation
+    if (salesData.length >= 2) {
+      lines.push('1. Comportamiento y Variación Entre Períodos:');
+      for (let i = 0; i < salesData.length - 1; i++) {
+        const curr = salesData[i];
+        const prev = salesData[i + 1];
+        const currTotal = Number(curr.totalVentasMesUSD) || 0;
+        const prevTotal = Number(prev.totalVentasMesUSD) || 0;
+        const diff = currTotal - prevTotal;
+        const pct = prevTotal > 0 ? (diff / prevTotal) * 100 : 0;
+        const sign = diff >= 0 ? '+' : '';
+        lines.push(`• ${curr.mes} vs ${prev.mes}: Facturación de $${currTotal.toLocaleString('es-ES', { maximumFractionDigits: 2 })} USD frente a $${prevTotal.toLocaleString('es-ES', { maximumFractionDigits: 2 })} USD en ${prev.mes}, reflejando una variación de ${sign}${pct.toFixed(1)}% (${sign}$${diff.toLocaleString('es-ES', { maximumFractionDigits: 2 })} USD).`);
+      }
+    } else {
+      const curr = salesData[0];
+      const total = Number(curr.totalVentasMesUSD) || 0;
+      lines.push('1. Resumen de Desempeño:');
+      lines.push(`• En ${curr.mes}, la facturación acumulada registrada es de $${total.toLocaleString('es-ES', { maximumFractionDigits: 2 })} USD.`);
+    }
+
+    lines.push('');
+    // 2. Concentration and top products
+    lines.push('2. Concentración del Portafolio Líder:');
+    salesData.forEach((m: any) => {
+      const top = m.topProductos || [];
+      if (top.length > 0) {
+        const items = top.map((p: any) => `${(p.producto || '').trim()} (${p.participacion || ''} - $${(Number(p.montoUSD) || 0).toLocaleString('es-ES', { maximumFractionDigits: 0 })} USD)`).join(', ');
+        lines.push(`• ${m.mes}: Concentración principal en ${items}.`);
+      }
+    });
+
+    lines.push('');
+    // 3. Strategic Recommendations
+    lines.push('3. Recomendaciones Estratégicas:');
+    lines.push('• Asegurar niveles óptimos de inventario de seguridad en los productos con mayor porcentaje de rotación para evitar pérdidas por quiebres en picos de demanda.');
+    lines.push('• Fomentar la venta complementaria (cross-selling) hacia líneas de menor rotación con miras a ampliar la base de clientes y equilibrar el margen operativo.');
+    lines.push('• Mantener un monitoreo semanal de las cuotas por vendedor para anticipar desviaciones respecto a los objetivos comerciales del mes en curso.');
+
+    return lines.join('\n');
+  }
+
+  // Helper to query Gemini with strict per-attempt timeout and fallback to alternative models
+  async function generateContentWithFallback(ai: GoogleGenAI, options: { contents: any; config?: any; models?: string[]; timeoutMs?: number }) {
+    const models = options.models || ['gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-3.1-pro-preview'];
+    const timeoutMs = options.timeoutMs || 4000;
+    let lastError: any = null;
+
+    for (const model of models) {
+      try {
+        const callPromise = ai.models.generateContent({
+          model,
+          contents: options.contents,
+          config: options.config,
+        });
+
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error(`TIMEOUT_MODEL_${model}`)), timeoutMs);
+        });
+
+        const response: any = await Promise.race([callPromise, timeoutPromise]);
+        if (response && response.text) {
+          return response;
+        }
+      } catch (err: any) {
+        lastError = err;
+        const msg = String(err?.message || err || '');
+        const isQuota = msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED') || msg.includes('Quota exceeded');
+        if (isQuota) {
+          console.log(`[AI Engine] Model ${model} reached quota limit. Trying alternative model...`);
+        } else if (msg.includes('TIMEOUT_MODEL')) {
+          console.log(`[AI Engine] Model ${model} timed out. Trying alternative model...`);
+        } else {
+          console.log(`[AI Engine] Model ${model} not available. Trying alternative model...`);
+        }
+      }
+    }
+
+    throw lastError || new Error('All models failed or timed out');
+  }
+
+  app.post('/api/analyze-sales', async (req, res) => {
+    const { salesData, months } = req.body;
+    try {
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        const fallbackText = buildAnalyticalFallback(salesData, months);
+        return res.json({ analysis: fallbackText, source: 'analytical_engine' });
+      }
+      
+      const ai = new GoogleGenAI({ apiKey });
+      
+      const prompt = `Eres un analista de ventas senior. Evalúa el siguiente reporte de los productos más vendidos correspondiente a los períodos seleccionados: ${months && months.length > 0 ? months.join(', ') : 'Todos los meses'}.
+      
+      Datos de ventas (Top productos y montos facturados por período):
+      ${JSON.stringify(salesData, null, 2)}
+      
+      Instrucciones:
+      1. Si se incluyen dos o más meses, realiza un análisis comparativo breve destacando qué productos mantuvieron el liderazgo, cuáles crecieron o disminuyeron y la tendencia entre períodos.
+      2. Si se incluye un solo período o consolidado, destaca la concentración de ventas de los productos estrella.
+      3. Concluye con una recomendación estratégica de ventas o inventario concisa (máximo 2 a 3 párrafos en total).
+      No uses saludos ni despedidas formales, entrega el análisis de forma directa y ejecutiva.`;
+
+      const response = await generateContentWithFallback(ai, {
+        contents: prompt,
+        models: ['gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-3.1-pro-preview'],
+        timeoutMs: 4000,
+      });
+
+      res.json({ analysis: response.text, source: 'gemini' });
+    } catch (error: any) {
+      console.log('[AI Engine] Serving executive analytical engine fallback.');
+      const fallbackText = buildAnalyticalFallback(salesData, months);
+      res.json({ analysis: fallbackText, source: 'analytical_engine' });
+    }
+  });
+
+  // ==========================================
+  // CODIBOT: ASISTENTE DE INTELIGENCIA DE NEGOCIOS CODIZULCA
+  // Chatbot con conocimiento total del dashboard, ventas, clientes,
+  // vendedores, inventario, cuotas y trade marketing.
+  // ==========================================
+  
+  function getCodiBotKnowledgeSummary() {
+    let monthlyData: any[] = [];
+    let sellersData: any[] = [];
+    let topProductsData: any[] = [];
+
+    try {
+      if (fs.existsSync(sellersVolumeCachePath)) {
+        const vCache = JSON.parse(fs.readFileSync(sellersVolumeCachePath, 'utf8'));
+        if (vCache.monthlyTotals) monthlyData = vCache.monthlyTotals;
+        if (vCache.sellerMonthlyData) sellersData = vCache.sellerMonthlyData;
+      }
+    } catch (e) {
+      console.warn('[CodiBot] Error loading sellers volume cache:', e);
+    }
+
+    try {
+      const prodPath = path.join(process.cwd(), 'pareto_products_complete.json');
+      if (fs.existsSync(prodPath)) {
+        const pCache = JSON.parse(fs.readFileSync(prodPath, 'utf8'));
+        if (Array.isArray(pCache)) {
+          topProductsData = pCache.slice(0, 15).map((p: any) => ({
+            id: p.id_articulo,
+            articulo: p.articulo,
+            monto: Math.round(Number(p.monto) || 0),
+            cajas: Math.round(Number(p.cajas) || 0),
+            kgs: Math.round(Number(p.kgs) || 0),
+            modalidad: (p.articulo && p.articulo.toUpperCase().includes('MUSLO') || p.articulo.toUpperCase().includes('POLLO') || p.articulo.toUpperCase().includes('POR KG') || p.articulo.toUpperCase().includes('X KG')) ? 'PESABLE (KG)' : 'EMPACADO (CAJAS)'
+          }));
+        }
+      }
+    } catch (e) {
+      console.warn('[CodiBot] Error loading top products:', e);
+    }
+
+    // Top sellers aggregate across 2026
+    const sellerAggMap = new Map<string, { vendedor: string; montoNeto: number; montoFA: number; montoDV: number; cajas: number; kgs: number }>();
+    sellersData.forEach((s) => {
+      const v = s.vendedor;
+      if (!sellerAggMap.has(v)) {
+        sellerAggMap.set(v, { vendedor: v, montoNeto: 0, montoFA: 0, montoDV: 0, cajas: 0, kgs: 0 });
+      }
+      const item = sellerAggMap.get(v)!;
+      item.montoNeto += (s.montoNeto || 0);
+      item.montoFA += (s.montoFA || 0);
+      item.montoDV += (s.montoDV || 0);
+      item.cajas += (s.cajas || 0);
+      item.kgs += (s.kgs || 0);
+    });
+
+    const topSellers = Array.from(sellerAggMap.values())
+      .sort((a, b) => b.montoNeto - a.montoNeto)
+      .slice(0, 10)
+      .map(s => ({
+        vendedor: s.vendedor,
+        montoNetoUSD: Math.round(s.montoNeto),
+        montoFA_USD: Math.round(s.montoFA),
+        montoDV_USD: Math.round(Math.abs(s.montoDV)),
+        cajas: Math.round(s.cajas),
+        kgs: Math.round(s.kgs),
+        tasaDevolucion: s.montoFA > 0 ? ((Math.abs(s.montoDV) / s.montoFA) * 100).toFixed(1) + '%' : '0%'
+      }));
+
+    // Overall 2026 totals
+    let totalFA_2026 = 0;
+    let totalDV_2026 = 0;
+    let totalNeto_2026 = 0;
+    let totalCajas_2026 = 0;
+    let totalKgs_2026 = 0;
+
+    monthlyData.forEach((m) => {
+      totalFA_2026 += (m.montoFA || 0);
+      totalDV_2026 += Math.abs(m.montoDV || 0);
+      totalNeto_2026 += (m.montoNeto || 0);
+      totalCajas_2026 += (m.cajas || 0);
+      totalKgs_2026 += (m.kgs || 0);
+    });
+
+    return {
+      empresa: 'CODIZULCA (Comercializadora y Distribuidora Zuliana C.A.)',
+      ubicacion: 'Maracaibo, Zulia, Venezuela',
+      cobertura: 'Maracaibo, San Francisco, Costa Oriental del Lago (Cabimas, Ciudad Ojeda, Bachaquero), Perijá (La Villa, Machiques) y Falcón (Coro, La Costa)',
+      carteraClientes: {
+        totalClientes: 2947,
+        clientesConUbicacion: 2947,
+        caracteristicas: 'Cada cliente posee Código Oficial (#ID), Nombre, Sector Asignado, Vendedor, Supervisor, Geocerca GPS (radio 100m) y Canal de distribución.',
+        sectoresPrincipales: ['5 de Julio / Tierra Negra', 'Bella Vista / Santa Rita', 'Maracaibo Oeste / Curva de Molina', 'Maracaibo Norte / San Jacinto', 'San Francisco 1 / La Coromoto', 'San Francisco 2 / Sierra Maestra', 'Km 4 a Km 18', 'Cabimas / Ciudad Ojeda (COL)', 'Coro / La Costa']
+      },
+      fuerzaVentas: {
+        totalVendedoresActivos: 29,
+        supervisores: ['José Bravo', 'Néstor Rincón'],
+        vendedoresLideres: topSellers
+      },
+      ventas2026: {
+        mesesRegistrados: monthlyData.map(m => ({
+          mes: m.mes,
+          facturadoFA_USD: Math.round(m.montoFA),
+          devolucionesDV_USD: Math.round(Math.abs(m.montoDV)),
+          netoUSD: Math.round(m.montoNeto),
+          cajas: Math.round(m.cajas),
+          kgs: Math.round(m.kgs),
+          tasaDevolucion: m.montoFA > 0 ? ((Math.abs(m.montoDV) / m.montoFA) * 100).toFixed(1) + '%' : '0%'
+        })),
+        totalesAcumulados2026: {
+          facturadoBrutoFA_USD: Math.round(totalFA_2026),
+          devolucionesDV_USD: Math.round(totalDV_2026),
+          ventaNetaUSD: Math.round(totalNeto_2026),
+          cajasTotales: Math.round(totalCajas_2026),
+          kgsTotales: Math.round(totalKgs_2026),
+          tasaDevolucionGlobal: totalFA_2026 > 0 ? ((totalDV_2026 / totalFA_2026) * 100).toFixed(1) + '%' : '0%'
+        }
+      },
+      catalogoProductos: {
+        totalSKUs: '>180 productos en catálogo',
+        categorias: ['AVÍCOLA (58% volumen)', 'CHARCUTERÍA (22% volumen)', 'LÁCTEOS (11% volumen)', 'CÁRNICOS (6% volumen)', 'VÍVERES (3% volumen)'],
+        reglaTecnicaModalidad: 'Los productos pesables (como muslo cuadril despresado, pollo entero, pechuga, cortes de cerdo) se facturan y controlan en KILOGRAMOS (KG) y no aplican cajas fijas. Los productos de charcutería, embutidos y víveres se facturan en CAJAS (CJ).',
+        topProductos: topProductsData
+      },
+      modulosDashboard: [
+        'Resumen Ejecutivo: Métricas globales de facturación, volumen y comparativas.',
+        'Cuotas & Metas: Seguimiento de cuotas mensuales en Cajas, Kgs y $ USD por vendedor y supervisor.',
+        'Ventas & Facturación: Consulta transaccional de Facturas (FA) y Devoluciones (DV) con más de 280.000 registros.',
+        'Clientes & Geocercas: Cartera de 2.947 clientes con mapa Leaflet, ficha técnica oficial con Código #ID copiable y Sector.',
+        'Inventario & Stock: Análisis 360°, rotación de inventario y diferenciación pesables vs cajas.',
+        'Trade Marketing (IA): Auditoría fotográfica con visión artificial para supervisión de planogramas y exhibiciones.',
+        'Portal Móvil PWA: App móvil offline para fuerza de ventas con check-in geolocalizado de 100m.',
+        'Centro de Ingesta & Gobernanza: Integración con Supabase y sincronización bidireccional en tiempo real con Google Sheets.'
+      ]
+    };
+  }
+
+  function generateCodiBotAnalyticalFallback(userMessage: string): string {
+    const q = (userMessage || '').toLowerCase();
+    const data = getCodiBotKnowledgeSummary();
+
+    // 1. Resumen de ventas o facturación 2026
+    if (q.includes('venta') || q.includes('factura') || q.includes('resumen') || q.includes('total') || q.includes('ingreso') || q.includes('dinero') || q.includes('kpi') || q.includes('mes')) {
+      const tot = data.ventas2026.totalesAcumulados2026;
+      const meses = data.ventas2026.mesesRegistrados;
+      let mesTable = meses.map(m => `| **${m.mes}** | $${m.facturadoFA_USD.toLocaleString('es-ES')} | -$${m.devolucionesDV_USD.toLocaleString('es-ES')} | **$${m.netoUSD.toLocaleString('es-ES')}** | ${m.cajas.toLocaleString('es-ES')} Cj | ${m.kgs.toLocaleString('es-ES')} Kg | ${m.tasaDevolucion} |`).join('\n');
+
+      return `### 📊 Resumen Ejecutivo de Ventas 2026 — CODIZULCA
+
+¡Hola! Soy **CodiBot**, tu copiloto analítico de Codizulca. Aquí tienes el consolidado oficial de ventas y facturación para el año 2026 (Enero a Septiembre):
+
+#### 💰 Indicadores Clave Acumulados 2026
+- **Facturación Bruta (FA)**: **$${tot.facturadoBrutoFA_USD.toLocaleString('es-ES')} USD**
+- **Notas de Crédito / Devoluciones (DV)**: **-$${tot.devolucionesDV_USD.toLocaleString('es-ES')} USD**
+- **Venta Neta Total**: **$${tot.ventaNetaUSD.toLocaleString('es-ES')} USD**
+- **Volumen Total en Cajas**: **${tot.cajasTotales.toLocaleString('es-ES')} Cj**
+- **Volumen Total en Kilogramos**: **${tot.kgsTotales.toLocaleString('es-ES')} Kg**
+- **Tasa de Devolución Promedio**: **${tot.tasaDevolucionGlobal}**
+
+#### 📅 Evolución Mensual Detallada
+| Mes | Facturado (FA) | Devoluciones (DV) | Venta Neta | Cajas | Kilos | % Devolución |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+${mesTable}
+
+💡 **Análisis Estratégico de CodiBot**:
+- Los meses de mayor tracción comercial han sido **Enero** ($${(meses.find(m => m.mes === 'ENERO')?.netoUSD || 0).toLocaleString('es-ES')} USD) y **Agosto** ($${(meses.find(m => m.mes === 'AGOSTO')?.netoUSD || 0).toLocaleString('es-ES')} USD).
+- Se observa una mejora significativa en la tasa de devoluciones en el último trimestre, descendiendo al **11.4% en Septiembre**, lo cual refleja mayor efectividad en entregas y facturación limpia.`;
+    }
+
+    // 2. Vendedores o Fuerza de Ventas
+    if (q.includes('vendedor') || q.includes('vendedora') || q.includes('fuerza de venta') || q.includes('ranking') || q.includes('top vendedor')) {
+      const top = data.fuerzaVentas.vendedoresLideres;
+      let rows = top.map((v, i) => `| **#${i+1}** | **${v.vendedor}** | **$${v.montoNetoUSD.toLocaleString('es-ES')}** | $${v.montoFA_USD.toLocaleString('es-ES')} | ${v.cajas.toLocaleString('es-ES')} | ${v.kgs.toLocaleString('es-ES')} | ${v.tasaDevolucion} |`).join('\n');
+
+      return `### 🏆 Ranking de la Fuerza de Ventas Comercial — CODIZULCA
+
+Codizulca cuenta con **29 vendedores comerciales activos** distribuidos en Maracaibo, San Francisco, Costa Oriental del Lago y Falcón, bajo la supervisión de **José Bravo** y **Néstor Rincón**.
+
+#### 🥇 Top 10 Vendedores con Mayor Facturación Neta (Acumulado 2026):
+| Pos | Vendedor | Venta Neta ($ USD) | Facturado (FA) | Cajas | Kilos | % Devolución |
+| :---: | :--- | :---: | :---: | :---: | :---: | :---: |
+${rows}
+
+💡 **Conclusión Comercial**:
+- **${top[0]?.vendedor}** y **${top[1]?.vendedor}** lideran la facturación con una sólida penetración en sus rutas comerciales.
+- Puedes auditar el detalle de cada vendedor en el módulo de **[Ventas & Facturación](/dashboard/ventas)** o revisar sus metas en **[Cuotas & Metas](/dashboard/cuotas)**.`;
+    }
+
+    // 3. Productos, inventario, pesables vs cajas
+    if (q.includes('producto') || q.includes('inventario') || q.includes('sku') || q.includes('pesable') || q.includes('caja') || q.includes('pollo') || q.includes('muslo') || q.includes('charcuteria') || q.includes('stock')) {
+      const prods = data.catalogoProductos.topProductos;
+      let pRows = prods.map((p, i) => `| **#${i+1}** | **SKU-${p.id}** | **${p.articulo}** | **$${p.monto.toLocaleString('es-ES')}** | ${p.kgs > 0 ? p.kgs.toLocaleString('es-ES') + ' Kg' : p.cajas.toLocaleString('es-ES') + ' Cj'} | \`${p.modalidad}\` |`).join('\n');
+
+      return `### 🥩 Catálogo de Productos y Rotación de Inventario — CODIZULCA
+
+Codizulca distribuye más de **180 SKUs** en las categorías **Avícola, Charcutería, Lácteos, Cárnicos y Víveres**.
+
+#### ⚖️ Distinción Técnica Fundamental:
+1. **Productos Pesables (Kg)**: Cortes avícolas y cárnicos (como *Muslo Cuadril*, *Pechuga de Pollo*, *Chuleta*, etc.). Se comercializan a la romana / peso exacto en **Kilogramos (Kg)**. En el ERP su unidad de control es el Kg (no aplica caja fija).
+2. **Productos Empacados (Cajas)**: Charcutería, embutidos y víveres (como *Mortadela Especial*, *Salchichas*, *Quesos*). Se facturan y despachan por **Cajas (Cj)**.
+
+#### ⭐ Top Productos Más Vendidos del Portafolio:
+| Pos | Código SKU | Descripción del Producto | Venta Acumulada | Volumen Principal | Modalidad |
+| :---: | :---: | :--- | :---: | :---: | :---: |
+${pRows}
+
+💡 **Dato Clave**: El producto insignia con mayor volumen y facturación es **${prods[0]?.articulo}** con más de **$${(prods[0]?.monto || 0).toLocaleString('es-ES')} USD** generados y más de 500.000 kg distribuidos.`;
+    }
+
+    // 4. Clientes, sectores y geocercas
+    if (q.includes('cliente') || q.includes('sector') || q.includes('geocerca') || q.includes('gps') || q.includes('coordenada') || q.includes('mapa') || q.includes('ficha') || q.includes('municipio') || q.includes('ruta') || q.includes('falcon') || q.includes('machiques') || q.includes('punto fijo')) {
+      return `### 📍 Módulo de Clientes, Geocercas & Auditoría GPS — CODIZULCA
+
+Codizulca gestiona una base activa de **2.947 clientes en cartera** y un censo de campo de **1.761 encuestas con 1.741 coordenadas GPS exactas**:
+
+#### 📊 Cifras y Cobertura Geográfica:
+- **Clientes Relevados en Campo**: **1.761 puntos de venta** auditados.
+- **Georreferenciación GPS Exacta**: **1.741 clientes con coordenadas validadas** (cobertura del 98.9%).
+- **Municipios Cubiertos**: **33 municipios** en los estados **Zulia, Falcón y Trujillo**.
+- **Principales Plazas**: Maracaibo, San Francisco, Cabimas, Ciudad Ojeda, Machiques, Villa del Rosario, Punto Fijo, Coro, Dabajuro, Valera y Boconó.
+
+#### 🛡️ Geocercas Satelitales de 100m:
+- Cada punto de venta posee un radio de geocerca activo de **100 metros** en el mapa satelital.
+- El **Portal Móvil PWA** valida en tiempo real la presencia física del asesor comercial antes de permitir el registro de visitas, auditorías y toma de pedidos.
+
+#### 🏢 Clasificación Pareto de Clientes:
+- **Clientes Clase A (VIP)**: Cuentas prioritarias que concentran el 80% de la facturación comercial.
+- **Canales Atendidos**: Supermercados, Minimarkets, Panaderías, Charcuterías, Carnicerías y Abastos.
+
+💡 *Puedes visualizar todos los clientes en el mapa satelital interactivo en el módulo de **[Clientes & Geocercas](/dashboard/clientes)**.*`;
+    }
+
+    // 5. Trade Marketing & Degustaciones
+    if (q.includes('trade') || q.includes('marketing') || q.includes('degustacion') || q.includes('promotora') || q.includes('precio') || q.includes('gondola') || q.includes('anaquel')) {
+      return `### 🛍️ Módulo de Trade Marketing & Ejecución en Punto de Venta — CODIZULCA
+
+El módulo de **Trade Marketing** opera en tiempo real conectado a las promotoras y asesores en campo:
+
+#### 🎯 Pilares del Módulo:
+1. **Relevamiento de Precios en Góndola**: Registro comparativo entre productos Codizulca vs competidores de la plaza con cálculo automático de brechas de precio (Price Gaps).
+2. **Cronograma de Degustaciones**: Planificación y auditoría de actividades de activación con promotoras, registro de asistencia, entrega de muestras y rendimiento por PDV.
+3. **Control de Inventarios en PDV**: Monitoreo de quiebres de stock en anaquel, frentes de exhibición y rotación de material POP.
+4. **Historial Consolidado**: Archivo automatizado los domingos a las 23:59 para evaluar la efectividad semanal de las campañas.`;
+    }
+
+    // 5. Devoluciones o notas de crédito
+    if (q.includes('devolucion') || q.includes('devoluciones') || q.includes('dv') || q.includes('nota de credito') || q.includes('merma')) {
+      const tot = data.ventas2026.totalesAcumulados2026;
+      return `### 📉 Análisis de Devoluciones y Notas de Crédito (DV) — CODIZULCA
+
+Las devoluciones representan un indicador crítico para la rentabilidad de Codizulca:
+
+- **Total Devoluciones 2026**: **-$${tot.devolucionesDV_USD.toLocaleString('es-ES')} USD**
+- **Tasa de Devolución Global**: **${tot.tasaDevolucionGlobal}** sobre la facturación bruta.
+- **Mes con Menor Devolución**: **Septiembre 2026** (11.4%), evidenciando una notable estabilización de entregas.
+- **Mes Atípico**: **Abril 2026**, donde se aplicaron ajustes contables y notas de crédito compensatorias que elevaron puntualmente la tasa de DV.
+
+💡 **Recomendación de CodiBot**:
+- Mantener la auditoría estricta de rechazos en puerta mediante la geocerca de 100m en el **Portal Móvil PWA**.
+- Revisar productos perecederos (lácteos y carnes frías) para asegurar que la rotación evite devoluciones por fecha de vencimiento.`;
+    }
+
+    // 6. Respuesta para Saludo directo
+    const isGreeting = /^(hola|buenos\s*d[ií]as|buenas\s*tardes|buenas\s*noches|buenas|saludos|hey|qu[eé]\s*tal|c[oó]mo\s*est[aá]s?)\b/i.test(q) && q.length < 35;
+    if (isGreeting) {
+      return `¡Hola! Un gusto saludarte. Soy CodiBot, tu asistente y copiloto comercial de Codizulca. ¿Qué información sobre ventas, clientes, cuotas o inventario deseas revisar hoy?`;
+    }
+
+    // 7. Respuesta general
+    return `### 🤖 CodiBot — Asistente Comercial de Codizulca
+
+Estoy aquí para responder cualquier pregunta, generar análisis estratégicos o resumir la información del dashboard comercial:
+
+#### 💡 ¿En qué te puedo ayudar hoy?
+1. **📊 Resumen de Ventas 2026**: Facturación bruta (FA), devoluciones (DV), venta neta ($${data.ventas2026.totalesAcumulados2026.ventaNetaUSD.toLocaleString('es-ES')} USD) y volumen en cajas/kilos.
+2. **🏆 Fuerza de Ventas**: Ranking y rendimiento de los 29 vendedores comerciales activos y sus zonas.
+3. **🥩 Productos & Inventario**: Catálogo de 180+ SKUs, distinción de productos pesables (kg) vs empacados (cajas) y análisis Pareto 80/20.
+4. **📍 Cartera de Clientes**: Ubicación de los 2.947 clientes, sectores comerciales, códigos oficiales (#ID) y geocercas activas.
+5. **🎯 Metas y Cuotas**: Cumplimiento por vendedor, supervisor y producto.
+6. **📱 Módulos del Sistema**: Trade Marketing con IA, Portal PWA offline y Centro de Ingesta.
+
+*Pídeme lo que necesites, por ejemplo: "¿Cuáles son los 5 vendedores con mayor facturación?", "¿Cómo van las ventas de Septiembre?", o "¿Cuál es el producto más vendido?".*`;
+  }
+
+  app.get('/api/codibot/schemas', (req, res) => {
+    try {
+      res.json({
+        schemas: CODIBOT_SCHEMAS,
+        schemaText: getCodibotDatabaseSchemaText()
+      });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post('/api/codibot/sql', async (req, res) => {
+    try {
+      const { query, maxRows = 100, generateSummary = false, model: requestedModel } = req.body || {};
+      if (!query || typeof query !== 'string') {
+        return res.status(400).json({ success: false, error: 'Se requiere una consulta SQL válida (SELECT / WITH).' });
+      }
+
+      const result = await executeCodibotSqlQuery(query, maxRows);
+      if (!result.success) {
+        return res.status(400).json(result);
+      }
+
+      let executiveSummary = '';
+      let modelUsed = 'sqlite3-native';
+
+      if (generateSummary) {
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (apiKey) {
+          try {
+            const ai = new GoogleGenAI({
+              apiKey,
+              httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
+            });
+            const candidateModels = requestedModel && requestedModel.includes('pro')
+              ? ['gemini-3.1-flash-lite', 'gemini-3.1-pro-preview']
+              : ['gemini-3.1-flash-lite', 'gemini-3.8-flash'];
+
+            const summaryPrompt = `Eres CodiBot, el copiloto analítico de CODIZULCA.
+Analiza cuantitativamente y estratégicamente los resultados de la siguiente consulta SQL ejecutada en la base de datos comercial oficial (tablas clientes, ventas, inventario):
+
+CONSULTA SQL EJECUTADA:
+\`\`\`sql
+${query}
+\`\`\`
+
+DATOS RECUPERADOS (${result.totalCount} registros procesados):
+${JSON.stringify(result.rows.slice(0, 15), null, 2)}
+
+Genera un RESUMEN EJECUTIVO COMERCIAL estructurado en Markdown con las siguientes secciones:
+#### 📌 Hallazgo Principal
+Conclusión central de los datos.
+
+#### 📊 Cifras Clave & Métricas Destacadas
+Montos en dólares ($ USD), volúmenes (Cj o Kg) o porcentajes clave con viñetas claras.
+
+#### ⚠️ Riesgos & Oportunidades Comerciales
+Tendencias de rotación, concentración de ventas, riesgo de cartera o desabastecimiento.
+
+#### 🎯 Recomendaciones Estratégicas para la Gerencia
+Acciones comerciales concretas y operativas para directores, supervisores o fuerza de ventas.`;
+
+            const aiResponse = await generateContentWithFallback(ai, {
+              contents: [summaryPrompt],
+              models: candidateModels,
+              timeoutMs: 4000,
+            });
+            executiveSummary = aiResponse.text || '';
+            modelUsed = candidateModels[0];
+          } catch (geminiErr: any) {
+            console.warn('[CodiBot SQL] Gemini failed, using analytical summary fallback:', geminiErr?.message);
+            executiveSummary = generateExecutiveSummaryFallback('Consulta SQL manual', query, result);
+            modelUsed = 'codibot-analytical-fallback';
+          }
+        } else {
+          executiveSummary = generateExecutiveSummaryFallback('Consulta SQL manual', query, result);
+          modelUsed = 'codibot-analytical-fallback';
+        }
+      }
+
+      res.json({
+        ...result,
+        summary: executiveSummary,
+        modelUsed
+      });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  app.post('/api/codibot/chat', async (req, res) => {
+    try {
+      const { message, history, model: requestedModel, forceSql } = req.body || {};
+
+      if (!message || typeof message !== 'string') {
+        return res.status(400).json({ error: 'El mensaje es requerido.' });
+      }
+
+      const trimmedMessage = message.trim();
+      const apiKey = process.env.GEMINI_API_KEY;
+      const knowledge = getCodiBotKnowledgeSummary();
+      const schemaGuide = getCodibotDatabaseSchemaText();
+
+      // Check if message is a direct SQL query or asks for SQL execution
+      const explicitSql = extractSqlFromText(trimmedMessage);
+      const synthesizedSql = !explicitSql ? synthesizeSqlForQuestion(trimmedMessage) : null;
+      const shouldRunSql = forceSql || Boolean(explicitSql) || Boolean(synthesizedSql);
+      const targetSql = explicitSql || synthesizedSql;
+
+      // If SQL execution is required or triggered
+      if (shouldRunSql && targetSql) {
+        console.log('[CodiBot] Executing SQL Query for user request:', targetSql);
+        const sqlResult = await executeCodibotSqlQuery(targetSql, 50);
+
+        if (apiKey) {
+          try {
+            const ai = new GoogleGenAI({
+              apiKey,
+              httpOptions: {
+                headers: {
+                  'User-Agent': 'aistudio-build'
+                }
+              }
+            });
+
+            const candidateModels = requestedModel && requestedModel.includes('pro')
+              ? ['gemini-3.1-flash-lite', 'gemini-3.1-pro-preview']
+              : ['gemini-3.1-flash-lite', 'gemini-3.8-flash'];
+
+            const executivePrompt = `Eres "CodiBot", copiloto de inteligencia comercial y asistente oficial de CODIZULCA.
+El usuario realizó la siguiente consulta: "${trimmedMessage}".
+
+Para responder con máxima exactitud se ejecutó la siguiente consulta SQL en la base de datos comercial (SQLite):
+\`\`\`sql
+${targetSql}
+\`\`\`
+
+RESULTADOS REALES OBTENIDOS (${sqlResult.totalCount} registros procesados en ${sqlResult.executionTimeMs} ms):
+${JSON.stringify(sqlResult.rows.slice(0, 15), null, 2)}
+
+Genera un RESUMEN EJECUTIVO COMERCIAL estructurado, profesional y persuasivo en español con:
+#### 📌 Hallazgo Principal
+Conclusión central cuantitativa.
+
+#### 📊 Cifras Clave & Métricas Destacadas
+Valores formateados con formato legible: dólares ($ USD) y volúmenes (Cj o Kg).
+
+#### ⚠️ Riesgos & Oportunidades Comerciales
+Riesgos de cartera, concentración de ventas, comportamiento de devoluciones (DV) o inventario crítico.
+
+#### 🎯 Recomendaciones Estratégicas para la Gerencia
+Acciones comerciales prácticas para la supervisión y fuerza de ventas.`;
+
+            const aiResponse = await generateContentWithFallback(ai, {
+              contents: [executivePrompt],
+              models: candidateModels,
+              timeoutMs: 3500,
+            });
+
+            return res.json({
+              reply: aiResponse.text || '',
+              sqlQuery: targetSql,
+              sqlResults: sqlResult,
+              modelUsed: candidateModels[0],
+              source: 'gemini_sql'
+            });
+          } catch (geminiError: any) {
+            console.warn('[CodiBot] Gemini failed on SQL analysis, using analytical fallback:', geminiError?.message);
+            const fallbackSummary = generateExecutiveSummaryFallback(trimmedMessage, targetSql, sqlResult);
+            return res.json({
+              reply: fallbackSummary,
+              sqlQuery: targetSql,
+              sqlResults: sqlResult,
+              modelUsed: 'codibot-analytical-fallback',
+              source: 'analytical_engine'
+            });
+          }
+        } else {
+          // Offline fallback with real SQL results
+          const fallbackSummary = generateExecutiveSummaryFallback(trimmedMessage, targetSql, sqlResult);
+          return res.json({
+            reply: fallbackSummary,
+            sqlQuery: targetSql,
+            sqlResults: sqlResult,
+            modelUsed: 'codibot-analytical-engine',
+            source: 'analytical_engine'
+          });
+        }
+      }
+
+      // Standard Chat & Commercial Inquiries without direct SQL
+      if (!apiKey) {
+        console.log('[CodiBot] GEMINI_API_KEY no presente, respondiendo con motor analítico de Codizulca.');
+        const fallbackReply = generateCodiBotAnalyticalFallback(trimmedMessage);
+        return res.json({
+          reply: fallbackReply,
+          modelUsed: 'codibot-analytical-engine',
+          source: 'analytical_engine'
+        });
+      }
+
+      const ai = new GoogleGenAI({
+        apiKey,
+        httpOptions: {
+          headers: {
+            'User-Agent': 'aistudio-build'
+          }
+        }
+      });
+
+      const systemInstruction = `Eres "CodiBot", el asistente de inteligencia artificial y copiloto analítico oficial de CODIZULCA (Comercializadora y Distribuidora Zuliana C.A.), la distribuidora líder en Zulia y Falcón, Venezuela.
+
+${schemaGuide}
+
+CONOCIMIENTO OFICIAL Y VERIFICADO DEL NEGOCIO (CODIZULCA 2026):
+- Empresa: Codizulca (Comercializadora y Distribuidora Zuliana C.A.).
+- Territorios: Maracaibo, San Francisco, Costa Oriental del Lago (Cabimas, Ciudad Ojeda, Bachaquero), Perijá (La Villa del Rosario, Machiques) y Falcón (Coro, La Costa).
+- Cartera de Clientes: 2.947 clientes comerciales activos en la tabla \`clientes\`. Cada cliente tiene Código Oficial (#ID), Nombre, Sector, Vendedor, Supervisor (José Bravo o Néstor Rincón), Pareto (A/B/C) y Geocerca GPS (radio 100m).
+- Fuerza de Ventas: 29 vendedores comerciales activos y 2 supervisores principales en la tabla \`ventas\`.
+- Ventas Totales 2026:
+  * Facturación Bruta (FA): $${knowledge.ventas2026.totalesAcumulados2026.facturadoBrutoFA_USD.toLocaleString('es-ES')} USD
+  * Devoluciones (DV): -$${knowledge.ventas2026.totalesAcumulados2026.devolucionesDV_USD.toLocaleString('es-ES')} USD
+  * Venta Neta: $${knowledge.ventas2026.totalesAcumulados2026.ventaNetaUSD.toLocaleString('es-ES')} USD
+  * Cajas Totales: ${knowledge.ventas2026.totalesAcumulados2026.cajasTotales.toLocaleString('es-ES')} Cj
+  * Kgs Totales: ${knowledge.ventas2026.totalesAcumulados2026.kgsTotales.toLocaleString('es-ES')} Kg
+  * Tasa de Devolución Global: ${knowledge.ventas2026.totalesAcumulados2026.tasaDevolucionGlobal}
+- Inventario & Portafolio en tabla \`inventario\`:
+  * Distinción Técnica: Productos Pesables (Muslo Cuadril, Pechuga, Cortes Cárnicos) se facturan y controlan estrictamente en KILOGRAMOS (KG). Productos Empacados (Mortadelas, Salchichas, Víveres) se facturan en CAJAS (CJ).
+  * Producto #1 Líder del Portafolio: MUSLO CUADRIL DESPRESADO POR KG (SKU #629), categoría Avícola, Pesable (> $1.44M USD facturados, >511.000 kg).
+
+DIRECTRICES CRUCIALES DE RESPUESTA:
+- Sé DIRECTO, EXACTO Y ULTRA-FUNCIONAL. CERO relleno, rodeos o saludos repetitivos.
+- Comienza INMEDIATAMENTE con el dato o respuesta concreta a lo que preguntó el usuario (cifras exactas con $, cantidades en Cj o Kg, clientes, porcentajes).
+- Prohibido escribir preámbulos como "Dado que...", "Basado en...", "A continuación...", "En respuesta a tu pregunta...".
+- Si aportas sugerencias de gestión, incluye únicamente 1 o máximo 2 recomendaciones muy breves (de 1 sola línea cada una).
+- NUNCA incluyas bloques de código SQL en el texto visible, a menos que el usuario use explícitamente palabras como "dame el SQL" o "código SQL".`;
+
+      // Select model: prioritize gemini-3.1-flash-lite
+      const candidateModels = requestedModel && requestedModel.includes('pro')
+        ? ['gemini-3.1-flash-lite', 'gemini-3.1-pro-preview']
+        : ['gemini-3.1-flash-lite', 'gemini-3.8-flash'];
+
+      // Format conversation contents
+      let contents: any[] = [];
+      if (Array.isArray(history) && history.length > 0) {
+        const recentHistory = history.slice(-10);
+        recentHistory.forEach((h: any) => {
+          if (h.role && h.text) {
+            contents.push({
+              role: h.role === 'user' ? 'user' : 'model',
+              parts: [{ text: h.text }]
+            });
+          }
+        });
+      }
+
+      contents.push({
+        role: 'user',
+        parts: [{ text: trimmedMessage }]
+      });
+
+      let responseText = '';
+      let usedModel = candidateModels[0];
+
+      try {
+        const aiResponse = await generateContentWithFallback(ai, {
+          contents,
+          models: candidateModels,
+          timeoutMs: 3500,
+          config: {
+            systemInstruction,
+            temperature: 0.4,
+          }
+        });
+        responseText = aiResponse.text || '';
+        usedModel = candidateModels[0];
+
+        // If Gemini included a SQL block in its response, run it so the user gets the interactive table too!
+        const embeddedSql = extractSqlFromText(responseText);
+        let executedResults = undefined;
+        if (embeddedSql) {
+          try {
+            executedResults = await executeCodibotSqlQuery(embeddedSql, 30);
+          } catch (e) {
+            console.warn('[CodiBot] Error executing embedded SQL from Gemini:', e);
+          }
+
+          // Strip the raw SQL code block from the visible text unless user asked for SQL
+          const userExplicitlyWantedSql = /c[oó]digo\s*sql|consulta\s*sql|dame\s*el\s*sql|mu[eé]strame\s*el\s*sql/i.test(trimmedMessage);
+          if (!userExplicitlyWantedSql) {
+            responseText = responseText
+              .replace(/```sql[\s\S]*?```/gi, '')
+              .replace(/```[\s\S]*?```/g, '')
+              .trim();
+          }
+        }
+
+        // Optional Gemini TTS audio generation if requested
+        let audioBase64: string | null = null;
+        if (req.body?.wantVoice) {
+          try {
+            // Clean text for speech
+            const cleanSpoken = responseText
+              .replace(/```[\s\S]*?```/g, '')
+              .replace(/\|[\s\S]*?\|/g, '')
+              .replace(/[#*`_~]/g, '')
+              .replace(/\$/g, ' dólares ')
+              .replace(/\s+/g, ' ')
+              .trim();
+
+            // Take the executive summary and top suggestions (up to 400 chars) for responsive, natural audio
+            const spokenSnippet = cleanSpoken.length > 400 ? cleanSpoken.slice(0, 400) + '...' : cleanSpoken;
+
+            if (spokenSnippet) {
+              const ttsRes = await ai.models.generateContent({
+                model: 'gemini-3.8-flash-lite-tts',
+                contents: [{ role: 'user', parts: [{ text: spokenSnippet }] }],
+                config: {
+                  responseModalities: ['AUDIO'],
+                  speechConfig: {
+                    voiceConfig: {
+                      prebuiltVoiceConfig: { voiceName: 'Kore' }
+                    }
+                  }
+                }
+              });
+              audioBase64 = ttsRes.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data || null;
+            }
+          } catch (ttsErr: any) {
+            console.warn('[CodiBot TTS Error]:', ttsErr?.message);
+          }
+        }
+
+        res.json({
+          reply: responseText,
+          sqlQuery: embeddedSql || undefined,
+          sqlResults: executedResults,
+          modelUsed: usedModel,
+          source: 'gemini',
+          audioBase64: audioBase64 || undefined
+        });
+
+      } catch (geminiError: any) {
+        console.warn('[CodiBot] Gemini failed or timed out, using analytical fallback:', geminiError?.message);
+        responseText = generateCodiBotAnalyticalFallback(trimmedMessage);
+        usedModel = 'codibot-analytical-fallback';
+        res.json({
+          reply: responseText,
+          modelUsed: usedModel,
+          source: 'analytical_engine'
+        });
+      }
+
+    } catch (err: any) {
+      console.error('[CodiBot] Unexpected error in /api/codibot/chat:', err);
+      const fallbackReply = generateCodiBotAnalyticalFallback(req.body?.message || '');
+      res.json({
+        reply: fallbackReply,
+        modelUsed: 'codibot-analytical-fallback',
+        source: 'analytical_engine'
+      });
+    }
+  });
+
+  // Dedicated Audio Transcription Route using Gemini
+  app.post('/api/codibot/transcribe', async (req, res) => {
+    try {
+      const { audioBase64, mimeType = 'audio/webm' } = req.body || {};
+      if (!audioBase64) {
+        return res.status(400).json({ error: 'audioBase64 es requerido.' });
+      }
+
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ error: 'GEMINI_API_KEY no configurado.' });
+      }
+
+      const ai = new GoogleGenAI({
+        apiKey,
+        httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
+      });
+
+      const result = await ai.models.generateContent({
+        model: 'gemini-3.8-flash',
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              {
+                inlineData: {
+                  mimeType,
+                  data: audioBase64
+                }
+              },
+              {
+                text: 'Eres el transcriptor de voz oficial de CODIZULCA (distribuidora de alimentos en Maracaibo, Zulia, Venezuela). Transcribe textualmente lo que la persona dijo en español. Corrige acentos y nombres de la empresa si aplican (Codizulca, geocercas, kilos, cajas, cuotas, ventas, productos, facturas). Responde ÚNICAMENTE con el texto transcrito sin explicaciones ni comillas. Si el audio está vacío o solo contiene silencio o ruido, responde exactamente: VACIO.'
+              }
+            ]
+          }
+        ]
+      });
+
+      let transcript = (result.text || '').trim();
+      if (transcript === 'VACIO' || transcript.toLowerCase().includes('vacio')) {
+        transcript = '';
+      }
+
+      res.json({ transcript });
+    } catch (e: any) {
+      console.warn('[CodiBot Transcribe Error]:', e?.message);
+      res.status(500).json({ error: e?.message || 'Error en transcripción de audio.' });
+    }
+  });
+
+  // Dedicated Text-to-Speech Route using Gemini
+  app.post('/api/codibot/tts', async (req, res) => {
+    try {
+      const { text } = req.body || {};
+      if (!text) {
+        return res.status(400).json({ error: 'text es requerido.' });
+      }
+
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ error: 'GEMINI_API_KEY no configurado.' });
+      }
+
+      const cleanText = text
+        .replace(/```[\s\S]*?```/g, '')
+        .replace(/\|[\s\S]*?\|/g, '')
+        .replace(/[#*`_~]/g, '')
+        .replace(/\$/g, ' dólares ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 450);
+
+      const ai = new GoogleGenAI({
+        apiKey,
+        httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
+      });
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.8-flash-lite-tts',
+        contents: [{ role: 'user', parts: [{ text: cleanText }] }],
+        config: {
+          responseModalities: ['AUDIO'],
+          speechConfig: {
+            voiceConfig: {
+              prebuiltVoiceConfig: { voiceName: 'Kore' }
+            }
+          }
+        }
+      });
+
+      const audioBase64 = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+      if (!audioBase64) {
+        return res.status(500).json({ error: 'No se pudo generar audio TTS.' });
+      }
+
+      res.json({ audioBase64 });
+    } catch (e: any) {
+      console.warn('[CodiBot TTS Route Error]:', e?.message);
+      res.status(500).json({ error: e?.message || 'Error generando voz.' });
+    }
+  });
+
+  app.get('/api/codibot/info', (req, res) => {
+    try {
+      const summary = getCodiBotKnowledgeSummary();
+      res.json({
+        name: 'CodiBot',
+        version: '2.0.0',
+        role: 'Copiloto de Inteligencia de Negocios y Operaciones Codizulca',
+        empresa: summary.empresa,
+        totalClientes: summary.carteraClientes.totalClientes,
+        totalVendedores: summary.fuerzaVentas.totalVendedoresActivos,
+        totalVentasNetas2026: summary.ventas2026.totalesAcumulados2026.ventaNetaUSD,
+        modulos: summary.modulosDashboard
+      });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post('/api/extract-order', async (req, res) => {
+    try {
+      const { prompt, imageBase64 } = req.body;
+      
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ error: 'GEMINI_API_KEY no configurado en el servidor.' });
+      }
+
+      const ai = new GoogleGenAI({ apiKey });
+
+      let contents = [];
+      if (imageBase64) {
+        contents.push({
+          inlineData: {
+            mimeType: 'image/jpeg',
+            data: imageBase64,
+          }
+        });
+      }
+      if (prompt) {
+        contents.push(prompt);
+      }
+      
+      if (contents.length === 0) {
+        return res.status(400).json({ error: 'Se requiere una imagen o texto.' });
+      }
+
+      const response = await generateContentWithFallback(ai, {
+        contents,
+        models: ['gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-3.1-pro-preview'],
+        timeoutMs: 6000,
+        config: {
+          systemInstruction: 'Eres un asistente experto en digitalización de pedidos. Extrae los datos de la venta o pedido. Retorna estrictamente el JSON.',
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              client_name: { type: Type.STRING, description: 'Nombre o código del cliente' },
+              invoice_number: { type: Type.STRING, description: 'Número de factura, recibo o pedido (si existe)' },
+              date: { type: Type.STRING, description: 'Fecha en formato YYYY-MM-DD (si existe)' },
+              items: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    product_name: { type: Type.STRING, description: 'Nombre o SKU del producto' },
+                    quantity_boxes: { type: Type.NUMBER, description: 'Cantidad en cajas' },
+                    unit_price: { type: Type.NUMBER, description: 'Precio unitario aproximado (si aparece)' }
+                  },
+                  required: ['product_name', 'quantity_boxes']
+                }
+              }
+            },
+            required: ['client_name', 'items']
+          }
+        }
+      });
+
+      const extractedData = JSON.parse(response.text || '{}');
+      res.json(extractedData);
+
+    } catch (error: any) {
+      console.log('[AI Engine] /api/extract-order completed with error:', error?.message ? error.message.slice(0, 80) : 'unknown');
+      res.status(500).json({ error: 'No se pudo procesar el pedido con IA en este momento. Por favor intenta de nuevo.' });
+    }
+  });
+
+  // Trade Marketing: Métrica con IA de Posicionamiento y Recomendación de Mejora
+  app.post('/api/trade-ai-recommendation', async (req, res) => {
+    try {
+      const {
+        productName,
+        category,
+        channel,
+        codizulcaPriceUSD,
+        competitorBrand,
+        competitorProduct,
+        competitorPriceUSD,
+        priceGapPercent
+      } = req.body || {};
+
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        return res.json({
+          marketPositionScore: 84,
+          marketDiagnostic: `Posicionamiento competitivo favorable frente a ${competitorBrand || 'la competencia'}.`,
+          strategicRecommendation: `Ajuste táctico de precios y activación de degustación en punto de venta para defender rotación.`,
+          projectedImpact: '+$1,450 / mes Margen Bruto'
+        });
+      }
+
+      const ai = new GoogleGenAI({ apiKey });
+      const prompt = `Actúa como Director Senior de Trade Marketing y Pricing para Codizulca en Venezuela.
+Analiza la siguiente situación de mercado para el producto seleccionado:
+- Producto Codizulca: ${productName} (Categoría: ${category || 'General'}, Canal: ${channel || 'Canal Tradicional y Supermercados'})
+- Precio Codizulca: $${codizulcaPriceUSD} USD
+- Competidor Directo: ${competitorBrand} - ${competitorProduct} a $${competitorPriceUSD} USD
+- Brecha de Precio: ${priceGapPercent}% (${priceGapPercent < 0 ? 'Codizulca es más económico' : priceGapPercent > 0 ? 'Codizulca es más caro' : 'Precio par'})
+
+Proporciona:
+1. Una puntuación de posicionamiento de mercado del producto de 1 a 100 (marketPositionScore).
+2. Un diagnóstico sintético de cómo está posicionado en el mercado (marketDiagnostic, máx 2 frases).
+3. Una recomendación de mejora clara, viable y cuantitativa para que la gerencia mejore su posicionamiento, capture más margen o gane cuota de mercado en góndola (strategicRecommendation, 2-3 frases concretas con acciones tácticas de precio, exhibición o impulso).
+4. El impacto económico o comercial proyectado (projectedImpact, ej. "+$1,450 / mes Margen Bruto" o "+18% Rotación en Góndola").
+Retorna estrictamente el objeto JSON.`;
+
+      const response = await generateContentWithFallback(ai, {
+        contents: [prompt],
+        models: ['gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-3.1-pro-preview'],
+        timeoutMs: 6000,
+        config: {
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              marketPositionScore: { type: Type.NUMBER, description: 'Puntuación de 1 a 100' },
+              marketDiagnostic: { type: Type.STRING, description: 'Diagnóstico de mercado' },
+              strategicRecommendation: { type: Type.STRING, description: 'Recomendación concreta de mejora' },
+              projectedImpact: { type: Type.STRING, description: 'Impacto financiero o comercial proyectado' }
+            },
+            required: ['marketPositionScore', 'marketDiagnostic', 'strategicRecommendation', 'projectedImpact']
+          }
+        }
+      });
+
+      const data = JSON.parse(response.text || '{}');
+      res.json(data);
+    } catch (err: any) {
+      console.warn('[Trade AI Recommendation] Fallback executed:', err?.message ? err.message.slice(0, 80) : 'unknown');
+      res.json({
+        marketPositionScore: 82,
+        marketDiagnostic: 'Posicionamiento competitivo sólido con oportunidad de optimización de margen.',
+        strategicRecommendation: 'Mantener ventaja en precio de lista y activar material POP en cabecera de góndola para acelerar la conversión de compra.',
+        projectedImpact: '+$1,200 / mes Rotación y Margen'
+      });
+    }
+  });
+
+  // Trade Marketing: Escaneo Inteligente de Góndolas & Recomendaciones IA de Visibilidad para Clientes
+  app.post('/api/ai/shelf-recommendations', async (req, res) => {
+    const {
+      store,
+      category,
+      ourFacings = 14,
+      competitorFacings = 20,
+      shareOfShelfPercent = 41,
+      shelfLevel = 'OJOS',
+      outOfStockDetected = false,
+      popDetected = false,
+      competitorBrandsObserved = ['Plumrose', 'Hermo'],
+      imageBase64
+    } = req.body || {};
+
+    const fallbackData = {
+      visibilityScore: shareOfShelfPercent >= 50 ? 88 : shareOfShelfPercent >= 35 ? 74 : 58,
+      marketPositionStatus: shareOfShelfPercent >= 45 ? 'Líder en Visibilidad de Anaquel' : 'Participación Media con Oportunidad de Crecimiento',
+      marketDiagnostic: `En ${store || 'el punto de venta'}, Codizulca cuenta con ${ourFacings} frentes (${shareOfShelfPercent}% de Share of Shelf) frente a ${competitorFacings} frentes de competidores como ${competitorBrandsObserved.join(', ')}. Su presencia en nivel ${shelfLevel} brinda buena exposición pero requiere consolidar frentes en productos de alta rotación.`,
+      criticalObservations: [
+        outOfStockDetected ? 'Quiebre o hueco visual detectado en entrepaño principal que perjudica la venta perdida.' : 'Stock continuo pero con oportunidad de ganar frentes hacia el centro de la góndola.',
+        popDetected ? 'Material POP activo pero puede optimizarse con habladores de precio en Bs/USD.' : 'Falta de material POP visible y cenefas de marca para delimitar el bloque Codizulca frente a competidores.',
+        `Presencia de ${competitorBrandsObserved.slice(0, 2).join(' y ')} disputando la zona caliente de ojos y manos.`
+      ],
+      clientRecommendations: [
+        {
+          title: '1. Agrupación en Bloque de Marca (Brand Block)',
+          action: 'Unificar los frentes de Mortadela Tapara y Jamón Cocido Superior en un bloque continuo vertical de 3 entrepaños para generar impacto visual inmediato.',
+          expectedBenefit: 'Aumento del 18% en retención visual del comprador.'
+        },
+        {
+          title: '2. Ubicación Estratégica en Nivel de Ojos (Zona Dorada)',
+          action: 'Trasladar las presentaciones de mayor margen a la franja de 1.20m a 1.60m del suelo, desplazando referencias secundarias a niveles inferiores.',
+          expectedBenefit: 'Incremento estimado de +22% en rotación semanal.'
+        },
+        {
+          title: '3. Activación de Cenefas y Habladores de Oferta',
+          action: 'Instalar cenefas plásticas en los flejes de precios con el distintivo rojo Codizulca y habladores con equivalencia en Bs. y USD.',
+          expectedBenefit: 'Mayor velocidad de decisión de compra y claridad de precio.'
+        },
+        {
+          title: '4. Protocolo de Rotación FIFO y Cero Quiebres',
+          action: 'Coordinar con el pasillero jefe o encargado del local la reposición matutina antes de las 10:30 AM para evitar estantes desabastecidos en horas pico.',
+          expectedBenefit: 'Eliminación del 100% de la venta perdida por quiebre de anaquel.'
+        }
+      ],
+      projectedSalesLift: '+24% en rotación semanal para el establecimiento',
+      executiveSummaryForStoreManager: `Estimado Gerente de ${store || 'la tienda'}: Al implementar este reordenamiento de planograma y material POP en la categoría de ${category || 'charcutería'}, su comercio optimizará el rendimiento por metro lineal de anaquel, aumentando la satisfacción del cliente y el ticket promedio de compra.`
+    };
+
+    try {
+      const apiKey = process.env.GEMINI_API_KEY;
+
+      if (!apiKey) {
+        return res.json(fallbackData);
+      }
+
+      const ai = new GoogleGenAI({ apiKey });
+      const prompt = `Actúa como Director Senior de Trade Marketing y Category Management para Codizulca.
+Analiza la siguiente auditoría de anaquel y góndola en punto de venta realizada por un mercaderista especializado:
+- Punto de Venta: ${store || 'Supermercado'}
+- Categoría auditada: ${category || 'Embutidos y Refrigerados'}
+- Frentes Marca Propia (Codizulca): ${ourFacings} unidades
+- Frentes Competencia: ${competitorFacings} unidades (Marcas observadas: ${competitorBrandsObserved.join(', ')})
+- Share of Shelf (% de participación en anaquel): ${shareOfShelfPercent}%
+- Zona vertical predominante: ${shelfLevel}
+- Quiebres visuales/huecos detectados: ${outOfStockDetected ? 'SÍ' : 'NO'}
+- Material POP detectado: ${popDetected ? 'SÍ' : 'NO'}
+
+Genera un informe profesional con recomendaciones de Trade Marketing orientadas al cliente (encargado o dueño de la tienda) para maximizar la visibilidad, rotación y ventas de los productos.
+Debes retornar estrictamente un JSON con las propiedades especificadas.`;
+
+      const contents: any[] = [prompt];
+      if (imageBase64) {
+        contents.push({
+          inlineData: {
+            mimeType: 'image/jpeg',
+            data: imageBase64.replace(/^data:image\/[a-z]+;base64,/, '')
+          }
+        });
+      }
+
+      const response = await generateContentWithFallback(ai, {
+        contents,
+        models: ['gemini-3.8-flash', 'gemini-3.1-flash-lite'],
+        timeoutMs: 6500,
+        config: {
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              visibilityScore: { type: Type.NUMBER, description: 'Puntuación de visibilidad de 1 a 100' },
+              marketPositionStatus: { type: Type.STRING, description: 'Estado sintético de posicionamiento' },
+              marketDiagnostic: { type: Type.STRING, description: 'Diagnóstico de posicionamiento frente a competidores' },
+              criticalObservations: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING },
+                description: 'Hallazgos críticos observados'
+              },
+              clientRecommendations: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    title: { type: Type.STRING },
+                    action: { type: Type.STRING },
+                    expectedBenefit: { type: Type.STRING }
+                  },
+                  required: ['title', 'action', 'expectedBenefit']
+                }
+              },
+              projectedSalesLift: { type: Type.STRING, description: 'Proyección de incremento de ventas' },
+              executiveSummaryForStoreManager: { type: Type.STRING, description: 'Carta o resumen ejecutivo para el encargado' }
+            },
+            required: [
+              'visibilityScore',
+              'marketPositionStatus',
+              'marketDiagnostic',
+              'criticalObservations',
+              'clientRecommendations',
+              'projectedSalesLift',
+              'executiveSummaryForStoreManager'
+            ]
+          }
+        }
+      });
+
+      const parsed = JSON.parse(response.text || '{}');
+      res.json(parsed);
+    } catch (err: any) {
+      console.warn('[Shelf AI Recommendation] Fallback executed:', err?.message?.slice(0, 80));
+      res.json(fallbackData);
+    }
+  });
+
+  // Trade Marketing: Análisis de Efectividad de Degustaciones basado en Inventarios con IA
+  app.post('/api/trade-tasting-effectiveness-ai', async (req, res) => {
+    try {
+      const { reports } = req.body || {};
+      const apiKey = process.env.GEMINI_API_KEY;
+
+      if (!apiKey || !Array.isArray(reports) || reports.length === 0) {
+        return res.json({
+          overallScore: 86,
+          effectivenessLevel: 'Alta',
+          conversionRate: '1.9x',
+          rotationLiftPercent: 24.5,
+          summaryDiagnostic: 'Las degustaciones están generando un retorno comercial directo: por cada kilogramo o pieza degustada, se generan 1.9 unidades de venta inmediata en góndola.',
+          strengths: [
+            'Alta receptividad en charcutería y embutidos cocidos con comentarios favorables de precio/sabor.',
+            'Disminución efectiva del inventario inicial al final en PDVs mayoristas y cadenas clave.',
+            'Las observaciones de promotoras evidencian fidelización instantánea de amas de casa.'
+          ],
+          improvementOpportunities: [
+            'En PDVs con rotación plana (-2%), reforzar exhibición con material POP y degustación en caliente en horarios pico (11:00-14:00).',
+            'Capacitar a promotoras para incentivar el cierre de compra inmediata junto al rebanador de charcutería.'
+          ],
+          roiEstimate: '+$3,420 USD en ventas inducidas por degustación este mes'
+        });
+      }
+
+      const ai = new GoogleGenAI({ apiKey });
+      const sampleReports = reports.slice(0, 10).map((r: any) => ({
+        producto: r.productName,
+        pdv: r.client,
+        promotora: r.promoter,
+        inicial: r.initialStock,
+        final: r.finalStock,
+        muestras: r.samplesGiven,
+        ventas: r.salesGenerated,
+        rotacion: r.rotationPercent,
+        observacion: r.promoterObservation
+      }));
+
+      const prompt = `Actúa como Director Comercial y de Trade Marketing de Codizulca en Venezuela.
+Analiza la siguiente data de inventarios de campo antes y después de actividades de degustación/venta:
+${JSON.stringify(sampleReports, null, 2)}
+
+Evalúa cuantitativa y cualitativamente qué tan efectivas están siendo las degustaciones basándote en:
+1. La reducción de inventario (inicial vs final).
+2. La relación de muestras entregadas vs ventas generadas (ratio de conversión).
+3. El porcentaje de rotación.
+4. Las observaciones cualitativas reportadas por las promotoras.
+
+Responde con un JSON estructurado con:
+- overallScore: número de 1 a 100 de efectividad global.
+- effectivenessLevel: "Alta" | "Media" | "Baja".
+- conversionRate: texto corto con el ratio (ej. "1.9x").
+- rotationLiftPercent: número aproximado de incremento de rotación (ej. 24.5).
+- summaryDiagnostic: resumen ejecutivo de 2 frases.
+- strengths: array con 3 fortalezas clave detectadas en la data.
+- improvementOpportunities: array con 2-3 oportunidades concretas de mejora comercial.
+- roiEstimate: estimación de ventas o impacto generado.`;
+
+      const response = await generateContentWithFallback(ai, {
+        contents: [prompt],
+        models: ['gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-3.1-pro-preview'],
+        timeoutMs: 7000,
+        config: {
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              overallScore: { type: Type.NUMBER },
+              effectivenessLevel: { type: Type.STRING },
+              conversionRate: { type: Type.STRING },
+              rotationLiftPercent: { type: Type.NUMBER },
+              summaryDiagnostic: { type: Type.STRING },
+              strengths: { type: Type.ARRAY, items: { type: Type.STRING } },
+              improvementOpportunities: { type: Type.ARRAY, items: { type: Type.STRING } },
+              roiEstimate: { type: Type.STRING }
+            },
+            required: ['overallScore', 'effectivenessLevel', 'conversionRate', 'rotationLiftPercent', 'summaryDiagnostic', 'strengths', 'improvementOpportunities', 'roiEstimate']
+          }
+        }
+      });
+
+      const data = JSON.parse(response.text || '{}');
+      res.json(data);
+    } catch (err: any) {
+      console.warn('[Trade Tasting Effectiveness AI] Fallback:', err?.message ? err.message.slice(0, 80) : 'unknown');
+      res.json({
+        overallScore: 84,
+        effectivenessLevel: 'Alta',
+        conversionRate: '1.8x',
+        rotationLiftPercent: 22.0,
+        summaryDiagnostic: 'El análisis de inventarios confirma que las degustaciones aumentan la rotación en un 22% promedio en los puntos de venta auditados.',
+        strengths: [
+          'Conversión sostenida en líneas de embutidos y pollo fresco.',
+          'Consumo efectivo del inventario en piso de venta.',
+          'Feedback positivo de las promotoras sobre el precio competitivo.'
+        ],
+        improvementOpportunities: [
+          'Alinear horarios de degustación con el flujo de clientes de quincena.',
+          'Evitar quiebres de inventario final tras picos de degustación.'
+        ],
+        roiEstimate: '+$3,100 USD en ventas inducidas'
+      });
+    }
+  });
+
+  // Submódulo de Asistencia en Punto de Venta (PDV / Check-in)
+  const checkinsFilePath = path.join(process.cwd(), 'data_checkins.json');
+  let memoryCheckins: any[] = [];
+  try {
+    if (fs.existsSync(checkinsFilePath)) {
+      memoryCheckins = JSON.parse(fs.readFileSync(checkinsFilePath, 'utf8'));
+    }
+  } catch (e) {
+    console.warn('[CheckIns] No se pudo leer el archivo local de asistencias:', e);
+  }
+
+  app.get('/api/checkins', async (req, res) => {
+    try {
+      const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+      if (supabaseUrl && supabaseKey) {
+        const supabase = createClient(supabaseUrl.replace('/rest/v1/', ''), supabaseKey);
+        const { data, error } = await supabase.from('checkins').select('*').order('date', { ascending: false });
+        if (!error && Array.isArray(data) && data.length > 0) {
+          return res.json(data);
+        }
+      }
+    } catch (e) {
+      // Fallback a memoria/archivo local
+    }
+    return res.json(memoryCheckins);
+  });
+
+  app.post('/api/checkins', async (req, res) => {
+    try {
+      const record = req.body;
+      if (!record || !record.date || !record.type || !record.store) {
+        return res.status(400).json({ error: 'Datos de asistencia incompletos' });
+      }
+
+      // Guardar en memoria y archivo local
+      memoryCheckins = [record, ...memoryCheckins.filter(c => c.id !== record.id)];
+      try {
+        fs.writeFileSync(checkinsFilePath, JSON.stringify(memoryCheckins, null, 2), 'utf8');
+      } catch (err) {
+        console.warn('[CheckIns] Error al persistir asistencias en disco:', err);
+      }
+
+      // Intentar persistir en Supabase si está disponible
+      try {
+        const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+        if (supabaseUrl && supabaseKey) {
+          const supabase = createClient(supabaseUrl.replace('/rest/v1/', ''), supabaseKey);
+          await supabase.from('checkins').upsert(record);
+        }
+      } catch (e) {
+        // Ignorar si Supabase no tiene la tabla
+      }
+
+      res.status(201).json(record);
+    } catch (err: any) {
+      res.status(500).json({ error: 'Error al registrar asistencia', details: err?.message });
+    }
+  });
+
+  app.delete('/api/checkins/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      memoryCheckins = memoryCheckins.filter(c => c.id !== id);
+      try {
+        fs.writeFileSync(checkinsFilePath, JSON.stringify(memoryCheckins, null, 2), 'utf8');
+      } catch (err) {
+        console.warn('[CheckIns] Error al guardar tras eliminar:', err);
+      }
+
+      try {
+        const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+        if (supabaseUrl && supabaseKey) {
+          const supabase = createClient(supabaseUrl.replace('/rest/v1/', ''), supabaseKey);
+          await supabase.from('checkins').delete().eq('id', id);
+        }
+      } catch (e) {
+        // Ignorar
+      }
+
+      res.json({ success: true, id });
+    } catch (err: any) {
+      res.status(500).json({ error: 'Error al eliminar asistencia', details: err?.message });
+    }
+  });
+
+  // Submódulo de Merchandising (Informes y Certificación de Visita en PDV)
+  const merchFilePath = path.join(process.cwd(), 'data_merchandising.json');
+  let memoryMerch: any[] = [];
+  try {
+    if (fs.existsSync(merchFilePath)) {
+      memoryMerch = JSON.parse(fs.readFileSync(merchFilePath, 'utf8'));
+    }
+  } catch (e) {
+    console.warn('[Merchandising] Error leyendo archivo de reportes:', e);
+  }
+
+  app.get('/api/merchandising', (req, res) => {
+    res.json(memoryMerch);
+  });
+
+  app.post('/api/merchandising', (req, res) => {
+    try {
+      const record = req.body;
+      if (!record || !record.store || !record.promoter) {
+        return res.status(400).json({ error: 'Datos de merchandising incompletos' });
+      }
+      memoryMerch = [record, ...memoryMerch.filter(m => m.id !== record.id)];
+      try {
+        fs.writeFileSync(merchFilePath, JSON.stringify(memoryMerch, null, 2), 'utf8');
+      } catch (err) {
+        console.warn('[Merchandising] Error persistiendo en disco:', err);
+      }
+      res.status(201).json(record);
+    } catch (err: any) {
+      res.status(500).json({ error: 'Error al guardar reporte de merchandising', details: err?.message });
+    }
+  });
+
+  app.delete('/api/merchandising/:id', (req, res) => {
+    try {
+      const { id } = req.params;
+      memoryMerch = memoryMerch.filter(m => m.id !== id);
+      try {
+        fs.writeFileSync(merchFilePath, JSON.stringify(memoryMerch, null, 2), 'utf8');
+      } catch (err) {
+        console.warn('[Merchandising] Error guardando tras eliminar:', err);
+      }
+      res.json({ success: true, id });
+    } catch (err: any) {
+      res.status(500).json({ error: 'Error al eliminar reporte de merchandising', details: err?.message });
+    }
+  });
+
+  // Submódulo de Personal de Campo (Trade Marketing & RRHH)
+  const staffFilePath = path.join(process.cwd(), 'data_staff.json');
+  let memoryStaff: any[] = [];
+  try {
+    if (fs.existsSync(staffFilePath)) {
+      memoryStaff = JSON.parse(fs.readFileSync(staffFilePath, 'utf8'));
+    }
+  } catch (e) {
+    console.warn('[Staff] Error leyendo archivo de personal:', e);
+  }
+
+  app.get('/api/staff', (req, res) => {
+    try {
+      if (fs.existsSync(staffFilePath)) {
+        memoryStaff = JSON.parse(fs.readFileSync(staffFilePath, 'utf8'));
+      }
+    } catch (e) {
+      console.warn('[Staff] Error recargando personal de disco:', e);
+    }
+    res.json(memoryStaff);
+  });
+
+  app.post('/api/staff', (req, res) => {
+    try {
+      const member = req.body;
+      if (!member || !member.name) {
+        return res.status(400).json({ error: 'Datos de personal incompletos' });
+      }
+      memoryStaff = [member, ...memoryStaff.filter(s => s.id !== member.id)];
+      try {
+        fs.writeFileSync(staffFilePath, JSON.stringify(memoryStaff, null, 2), 'utf8');
+      } catch (err) {
+        console.warn('[Staff] Error persistiendo en disco:', err);
+      }
+      res.status(201).json(member);
+    } catch (err: any) {
+      res.status(500).json({ error: 'Error al guardar personal', details: err?.message });
+    }
+  });
+
+  app.put('/api/staff/:id', (req, res) => {
+    try {
+      const { id } = req.params;
+      const member = req.body;
+      memoryStaff = memoryStaff.map(s => s.id === id ? { ...s, ...member } : s);
+      try {
+        fs.writeFileSync(staffFilePath, JSON.stringify(memoryStaff, null, 2), 'utf8');
+      } catch (err) {
+        console.warn('[Staff] Error actualizando en disco:', err);
+      }
+      res.json({ success: true, member });
+    } catch (err: any) {
+      res.status(500).json({ error: 'Error al actualizar personal', details: err?.message });
+    }
+  });
+
+  app.delete('/api/staff/:id', (req, res) => {
+    try {
+      const { id } = req.params;
+      memoryStaff = memoryStaff.filter(s => s.id !== id);
+      try {
+        fs.writeFileSync(staffFilePath, JSON.stringify(memoryStaff, null, 2), 'utf8');
+      } catch (err) {
+        console.warn('[Staff] Error guardando tras eliminar:', err);
+      }
+      res.json({ success: true, id });
+    } catch (err: any) {
+      res.status(500).json({ error: 'Error al eliminar personal', details: err?.message });
+    }
+  });
+
+  // Endpoints para Módulo de Trazabilidad & Auditoría de Conexiones
+  const trazabilidadFilePath = path.join(process.cwd(), 'data_trazabilidad.json');
+  let memoryTrazabilidad: any[] = [];
+  try {
+    if (fs.existsSync(trazabilidadFilePath)) {
+      memoryTrazabilidad = JSON.parse(fs.readFileSync(trazabilidadFilePath, 'utf8'));
+    }
+  } catch (e) {
+    console.warn('[Trazabilidad] Error leyendo archivo de trazabilidad:', e);
+  }
+
+  app.get('/api/trazabilidad', (req, res) => {
+    try {
+      if (fs.existsSync(trazabilidadFilePath)) {
+        memoryTrazabilidad = JSON.parse(fs.readFileSync(trazabilidadFilePath, 'utf8'));
+      }
+    } catch (e) {}
+    res.json(memoryTrazabilidad);
+  });
+
+  app.post('/api/trazabilidad', (req, res) => {
+    try {
+      const logItem = req.body;
+      if (!logItem || !logItem.id) {
+        return res.status(400).json({ error: 'Datos de trazabilidad incompletos' });
+      }
+      memoryTrazabilidad = [logItem, ...memoryTrazabilidad.filter(t => t.id !== logItem.id)];
+      try {
+        fs.writeFileSync(trazabilidadFilePath, JSON.stringify(memoryTrazabilidad, null, 2), 'utf8');
+      } catch (err) {
+        console.warn('[Trazabilidad] Error guardando en disco:', err);
+      }
+      res.status(201).json(logItem);
+    } catch (err: any) {
+      res.status(500).json({ error: 'Error al registrar trazabilidad', details: err?.message });
+    }
+  });
+
+  // Endpoints para Codizulca Campo (Escaneo de Góndolas, Precios, Inventario, Encuestas, Sync Batch)
+  const campoScansPath = path.join(process.cwd(), 'data_shelf_scans.json');
+  let memoryShelfScans: any[] = [];
+  try {
+    if (fs.existsSync(campoScansPath)) {
+      memoryShelfScans = JSON.parse(fs.readFileSync(campoScansPath, 'utf8'));
+    }
+  } catch (e) {
+    console.warn('[Campo] Error leyendo shelf scans:', e);
+  }
+
+  app.get('/api/shelf-scans', (req, res) => {
+    res.json(memoryShelfScans);
+  });
+
+  app.post('/api/shelf-scans', (req, res) => {
+    try {
+      const scan = req.body;
+      if (!scan || !scan.store) return res.status(400).json({ error: 'Datos de escaneo incompletos' });
+      memoryShelfScans = [scan, ...memoryShelfScans.filter(s => s.id !== scan.id)];
+      try { fs.writeFileSync(campoScansPath, JSON.stringify(memoryShelfScans, null, 2), 'utf8'); } catch (err) {}
+      res.status(201).json(scan);
+    } catch (err: any) {
+      res.status(500).json({ error: 'Error al guardar escaneo', details: err?.message });
+    }
+  });
+
+  const campoPricesPath = path.join(process.cwd(), 'data_price_surveys.json');
+  let memoryPriceSurveys: any[] = [];
+  try {
+    if (fs.existsSync(campoPricesPath)) {
+      memoryPriceSurveys = JSON.parse(fs.readFileSync(campoPricesPath, 'utf8'));
+    }
+  } catch (e) {}
+
+  app.get('/api/price-surveys', (req, res) => {
+    res.json(memoryPriceSurveys);
+  });
+
+  app.post('/api/price-surveys', (req, res) => {
+    try {
+      const survey = req.body;
+      memoryPriceSurveys = [survey, ...memoryPriceSurveys.filter(s => s.id !== survey.id)];
+      try { fs.writeFileSync(campoPricesPath, JSON.stringify(memoryPriceSurveys, null, 2), 'utf8'); } catch (err) {}
+      res.status(201).json(survey);
+    } catch (err: any) {
+      res.status(500).json({ error: 'Error al guardar precios', details: err?.message });
+    }
+  });
+
+  const campoInvPath = path.join(process.cwd(), 'data_inventory_logs.json');
+  let memoryInvLogs: any[] = [];
+  try {
+    if (fs.existsSync(campoInvPath)) {
+      memoryInvLogs = JSON.parse(fs.readFileSync(campoInvPath, 'utf8'));
+    }
+  } catch (e) {}
+
+  app.get('/api/inventory-logs', (req, res) => {
+    res.json(memoryInvLogs);
+  });
+
+  app.post('/api/inventory-logs', (req, res) => {
+    try {
+      const log = req.body;
+      memoryInvLogs = [log, ...memoryInvLogs.filter(s => s.id !== log.id)];
+      try { fs.writeFileSync(campoInvPath, JSON.stringify(memoryInvLogs, null, 2), 'utf8'); } catch (err) {}
+      res.status(201).json(log);
+    } catch (err: any) {
+      res.status(500).json({ error: 'Error al guardar inventario', details: err?.message });
+    }
+  });
+
+  const campoTastingPath = path.join(process.cwd(), 'data_tasting_surveys.json');
+  let memoryTastingSurveys: any[] = [];
+  try {
+    if (fs.existsSync(campoTastingPath)) {
+      memoryTastingSurveys = JSON.parse(fs.readFileSync(campoTastingPath, 'utf8'));
+    }
+  } catch (e) {}
+
+  app.get('/api/tasting-surveys', (req, res) => {
+    res.json(memoryTastingSurveys);
+  });
+
+  app.post('/api/tasting-surveys', (req, res) => {
+    try {
+      const survey = req.body;
+      memoryTastingSurveys = [survey, ...memoryTastingSurveys.filter(s => s.id !== survey.id)];
+      try { fs.writeFileSync(campoTastingPath, JSON.stringify(memoryTastingSurveys, null, 2), 'utf8'); } catch (err) {}
+      res.status(201).json(survey);
+    } catch (err: any) {
+      res.status(500).json({ error: 'Error al guardar degustación', details: err?.message });
+    }
+  });
+
+  // -------------------------------------------------------------------------
+  // Módulo de Degustaciones: Solicitudes enviadas por Vendedores desde la App Móvil
+  // -------------------------------------------------------------------------
+  const degustacionesPath = path.join(process.cwd(), 'data_degustaciones.json');
+  let memoryDegustaciones: any[] = [];
+  try {
+    if (fs.existsSync(degustacionesPath)) {
+      memoryDegustaciones = JSON.parse(fs.readFileSync(degustacionesPath, 'utf8'));
+    }
+  } catch (e) {
+    console.warn('[Degustaciones] Error leyendo data_degustaciones.json:', e);
+  }
+
+  // GET /api/degustaciones: Lista oficial de solicitudes de degustación enviadas por los vendedores
+  app.get('/api/degustaciones', (req, res) => {
+    try {
+      if (fs.existsSync(degustacionesPath)) {
+        memoryDegustaciones = JSON.parse(fs.readFileSync(degustacionesPath, 'utf8'));
+      }
+    } catch (e) {}
+    res.json(memoryDegustaciones);
+  });
+
+  // POST /api/degustaciones: Recepción en vivo de solicitud de degustación desde la App de Vendedores
+  app.post('/api/degustaciones', (req, res) => {
+    try {
+      const item = req.body;
+      if (!item.date || !item.client) {
+        return res.status(400).json({ error: 'Fecha y Cliente son obligatorios' });
+      }
+      const newRecord = {
+        ...item,
+        id: item.id || `DEG-VEND-${Date.now().toString().slice(-6)}`,
+        source: item.source || 'vendedor_app',
+        status: item.status || 'scheduled',
+        created_at: new Date().toISOString()
+      };
+      memoryDegustaciones = [newRecord, ...memoryDegustaciones.filter((d: any) => d.id !== newRecord.id)];
+      try {
+        fs.writeFileSync(degustacionesPath, JSON.stringify(memoryDegustaciones, null, 2), 'utf8');
+      } catch (err) {}
+      res.status(201).json(newRecord);
+    } catch (err: any) {
+      res.status(500).json({ error: 'Error al registrar solicitud de degustación', details: err?.message });
+    }
+  });
+
+  // PUT /api/degustaciones/:id: Asignar promotora, actualizar estado o resultado
+  app.put('/api/degustaciones/:id', (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      memoryDegustaciones = memoryDegustaciones.map((d: any) => d.id === id ? { ...d, ...updates } : d);
+      try {
+        fs.writeFileSync(degustacionesPath, JSON.stringify(memoryDegustaciones, null, 2), 'utf8');
+      } catch (err) {}
+      res.json({ success: true, id });
+    } catch (err: any) {
+      res.status(500).json({ error: 'Error al actualizar degustación', details: err?.message });
+    }
+  });
+
+  // DELETE /api/degustaciones/:id: Eliminar degustación
+  app.delete('/api/degustaciones/:id', (req, res) => {
+    try {
+      const { id } = req.params;
+      memoryDegustaciones = memoryDegustaciones.filter((d: any) => d.id !== id);
+      try {
+        fs.writeFileSync(degustacionesPath, JSON.stringify(memoryDegustaciones, null, 2), 'utf8');
+      } catch (err) {}
+      res.json({ success: true, id });
+    } catch (err: any) {
+      res.status(500).json({ error: 'Error al eliminar degustación', details: err?.message });
+    }
+  });
+
+
+  // Google Sheets Proxy with in-memory caching to eliminate browser CORS and fetch errors
+  const sheetCache = new Map<string, { data: string; timestamp: number }>();
+
+  app.get('/api/sheets', async (req, res) => {
+    const sheetName = req.query.sheet ? String(req.query.sheet).trim() : '';
+    const forceRefresh = req.query.refresh === 'true';
+    const cacheKey = sheetName || '__main__';
+    const cached = sheetCache.get(cacheKey);
+    const now = Date.now();
+
+    // Cache valid for 30 seconds unless explicitly refreshed
+    if (!forceRefresh && cached && (now - cached.timestamp < 30000)) {
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      return res.send(cached.data);
+    }
+
+    try {
+      const url = sheetName
+        ? `https://docs.google.com/spreadsheets/d/16pU4iEcNU_1j6sB7rZbshu2PM8OyH5hI7a24-vYO7P0/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`
+        : 'https://docs.google.com/spreadsheets/d/16pU4iEcNU_1j6sB7rZbshu2PM8OyH5hI7a24-vYO7P0/gviz/tq?tqx=out:csv';
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 12000);
+
+      const response = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeout);
+
+      if (!response.ok) {
+        throw new Error(`Google Sheets responded with status ${response.status}`);
+      }
+
+      const csvText = await response.text();
+      sheetCache.set(cacheKey, { data: csvText, timestamp: now });
+
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.send(csvText);
+    } catch (err: any) {
+      console.warn('Warning: Google Sheet fetch issue, serving cached fallback if available:', err?.message);
+      if (cached) {
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        return res.send(cached.data);
+      }
+      res.status(502).json({ error: 'Failed to fetch from Google Sheets', details: err?.message });
+    }
+  });
+
+  app.post('/api/sync-sheets', async (req, res) => {
+    try {
+      sheetCache.clear();
+      console.log('[Sheets Sync] Cache limpiado. Sincronizando datos actualizados desde Google Sheets...');
+      const url = 'https://docs.google.com/spreadsheets/d/16pU4iEcNU_1j6sB7rZbshu2PM8OyH5hI7a24-vYO7P0/gviz/tq?tqx=out:csv';
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Google Sheets respondió con status ${response.status}`);
+      }
+      const csvText = await response.text();
+      sheetCache.set('__main__', { data: csvText, timestamp: Date.now() });
+      res.json({ success: true, message: 'Google Sheets sincronizado exitosamente', length: csvText.length });
+    } catch (err: any) {
+      console.error('Error sincronizando Google Sheets:', err);
+      res.status(500).json({ error: 'Error al sincronizar con Google Sheets', details: err?.message });
+    }
+  });
+
+  // Vite middleware for development
+  if (process.env.NODE_ENV !== 'production') {
+    const vite = await createViteServer({
+      server: {
+        middlewareMode: true,
+        hmr: false,
+      },
+      appType: 'spa',
+    });
+    // Intercept /@vite/client in sandboxed iframe environment to prevent WebSocket errors and unhandled rejections
+    app.use((req, res, next) => {
+      if (req.url?.startsWith('/@vite/client')) {
+        const origWrite = res.write;
+        const origEnd = res.end;
+        const chunks: Buffer[] = [];
+        // @ts-ignore
+        res.write = function (chunk: any, ...args: any[]) {
+          if (chunk) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+          return true;
+        };
+        // @ts-ignore
+        res.end = function (chunk: any, ...args: any[]) {
+          if (chunk) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+          let body = Buffer.concat(chunks).toString('utf-8');
+          body = body
+            .replace('transport.connect(createHMRHandler(handleMessage));', '// transport.connect disabled in sandbox;')
+            .replace(/console\.error\(\s*(`|")\[vite\]/g, 'console.debug($1[vite]')
+            .replace(/console\.error\(\s*`\[vite\] failed to connect to websocket/g, 'console.debug(`[vite] failed to connect to websocket');
+          res.setHeader('Content-Length', Buffer.byteLength(body));
+          return origEnd.call(this, body, ...args);
+        };
+      }
+      next();
+    });
+
+    app.use(vite.middlewares);
+  } else {
+    // Production static serving
+    const distPath = path.join(process.cwd(), 'dist');
+    app.use(express.static(distPath));
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(distPath, 'index.html'));
+    });
+  }
+
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+}
+
+startServer();

@@ -1,0 +1,31 @@
+const fetchFullYearHistory = async () => {
+    const currentYear = new Date().getFullYear();
+    try {
+        const res = await fetch('/api/historical-sales', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orClauses: `ano.eq.${currentYear}` })
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data && data.data) {
+            const MONTH_NAMES = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
+            const histData = data.data.map((r: any) => {
+                const monthIndex = MONTH_NAMES.indexOf(r.mes);
+                const monthStr = (monthIndex + 1).toString().padStart(2, '0');
+                const isoDate = `${r.ano}-${monthStr}-01`;
+                return {
+                    idArt: r.id_articulo || '',
+                    baseName: r.articulo || '',
+                    facturado: r.monto || 0,
+                    despachado: 0, 
+                    kgFacturado: r.kgs_lts || 0,
+                    date: isoDate
+                };
+            });
+            setHistoricalData(histData);
+        }
+    } catch (e) {
+        console.error('Failed to fetch historical data', e);
+    }
+};

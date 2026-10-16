@@ -1,0 +1,206 @@
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { campoService, SyncQueueItem, ShelfScanPayload, PriceSurveyPayload } from '../campoService';
+
+describe('campoService - Offline-First & Sync Test Suite', () => {
+  const QUEUE_STORAGE_KEY = 'portal_sync_queue';
+
+  beforeEach(() => {
+    localStorage.clear();
+    vi.restoreAllMocks();
+    Object.defineProperty(navigator, 'onLine', { value: true, writable: true, configurable: true });
+  });
+
+  afterEach(() => {
+    localStorage.clear();
+    vi.restoreAllMocks();
+  });
+
+  // =========================================================================
+  // 1. HAPPY PATH (Casos de Éxito)
+  // =========================================================================
+  describe('Happy Path (Flujos de Éxito)', () => {
+    it('debe encolar un elemento en la cola offline con ID y timestamp únicos (enqueue)', () => {
+      const payload = { store: 'ALKOSTO', promoter: 'CARELIZ REYES', type: 'Ingreso' };
+      const item = campoService.enqueue('checkin', payload);
+
+      expect(item).toBeDefined();
+      expect(item.id.startsWith('QUEUE-')).toBe(true);
+      expect(item.type).toBe('checkin');
+      expect(item.payload).toEqual(payload);
+      expect(item.timestamp).toBeDefined();
+
+      const queue = campoService.getQueue();
+      expect(queue.length).toBe(1);
+      expect(queue[0].id).toBe(item.id);
+    });
+
+    it('debe sincronizar exitosamente todos los elementos de la cola cuando hay conexión (flushQueue)', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ success: true })
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      campoService.enqueue('checkin', { id: 'CHK-1', store: 'ALKOSTO' });
+      campoService.enqueue('shelf_scan', { id: 'SCAN-1', category: 'Embutidos' });
+      campoService.enqueue('price_survey', { id: 'PRICE-1', productName: 'Mortadela' });
+
+      expect(campoService.getQueue().length).toBe(3);
+
+      const result = await campoService.flushQueue();
+
+      expect(result.synced).toBe(3);
+      expect(result.remaining).toBe(0);
+      expect(campoService.getQueue().length).toBe(0);
+      expect(mockFetch).toHaveBeenCalledTimes(3);
+    });
+
+    it('debe guardar un escaneo de góndola en storage y encolar offline si la API no está disponible', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Sin conexión')));
+
+      const mockScan: ShelfScanPayload = {
+        id: 'SCAN-TEST-001',
+        date: new Date().toISOString(),
+        store: 'ALKOSTO BELLA VISTA',
+        category: 'Embutidos Cocidos',
+        photos: ['data:image/jpeg;base64,photo1'],
+        metrics: {
+          ourFacings: 12,
+          competitorFacings: 18,
+          totalFacings: 30,
+          shareOfShelfPercent: 40,
+          shelfLevel: 'OJOS',
+          outOfStockDetected: false,
+          popDetected: true
+        },
+        competitorBrandsObserved: ['Plumrose', 'Hermo'],
+        promoter: 'CARELIZ REYES'
+      };
+
+      const result = await campoService.saveShelfScan(mockScan);
+
+      expect(result.success).toBe(true);
+      expect(result.offline).toBe(true);
+
+      const queue = campoService.getQueue();
+      expect(queue.length).toBe(1);
+      expect(queue[0].type).toBe('shelf_scan');
+    });
+
+    it('debe guardar una encuesta de precios exitosamente (savePriceSurvey)', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ success: true })
+      }));
+
+      const mockSurvey: PriceSurveyPayload = {
+        id: 'PRICE-TEST-001',
+        date: new Date().toISOString(),
+        store: 'ALKOSTO CABIMAS',
+        promoter: 'SCARLETH PIÑA',
+        productName: 'Mortadela Tapara Especial',
+        ownPriceUsd: 4.20,
+        ownPriceBs: 154.77,
+        bcvRate: 36.85,
+        competitors: [
+          { name: 'Plumrose', priceUsd: 4.80, priceBs: 176.88, diffPercent: 14.3 }
+        ]
+      };
+
+      const result = await campoService.savePriceSurvey(mockSurvey);
+      expect(result.success).toBe(true);
+      expect(result.offline).toBe(false);
+    });
+  });
+
+  // =========================================================================
+  // 2. CASOS BORDE Y VALIDACIÓN DE TIPOS/DATOS (Edge Cases & Null Safety)
+  // =========================================================================
+  describe('Casos Borde y Validación de Datos (Edge Cases)', () => {
+    it('flushQueue debe retornar { synced: 0, remaining: 0 } si la cola está vacía', async () => {
+      const result = await campoService.flushQueue();
+      expect(result).toEqual({ synced: 0, remaining: 0 });
+    });
+
+    it('debe recuperarse si la cola en localStorage contiene JSON corrupto', () => {
+      localStorage.setItem(QUEUE_STORAGE_KEY, 'corrupted ::: [ json');
+      const queue = campoService.getQueue();
+      expect(Array.isArray(queue)).toBe(true);
+      expect(queue.length).toBe(0);
+    });
+
+    it('debe manejar elementos de tipo desconocido sin lanzar excepción', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({ ok: true });
+      vi.stubGlobal('fetch', mockFetch);
+
+      // Inyectar manualmente un tipo no reconocido
+      const fakeQueue: SyncQueueItem[] = [
+        {
+          id: 'QUEUE-UNKNOWN',
+          type: 'tipo_inexistente' as any,
+          payload: {},
+          timestamp: new Date().toISOString()
+        }
+      ];
+      localStorage.setItem(QUEUE_STORAGE_KEY, JSON.stringify(fakeQueue));
+
+      const result = await campoService.flushQueue();
+      // Debe conservarse en remaining al no tener endpoint conocido
+      expect(result.synced).toBe(0);
+      expect(result.remaining).toBe(1);
+    });
+  });
+
+  // =========================================================================
+  // 3. MANEJO DE EXCEPCIONES Y ERRORES DE RED (Network Errors & HTTP 4xx/5xx)
+  // =========================================================================
+  describe('Manejo de Excepciones y Errores de Red / API', () => {
+    it('debe abortar la sincronización inmediatamente si navigator.onLine es false', async () => {
+      Object.defineProperty(navigator, 'onLine', { value: false, writable: true });
+      const mockFetch = vi.fn();
+      vi.stubGlobal('fetch', mockFetch);
+
+      campoService.enqueue('checkin', { id: 'CHK-OFFLINE' });
+      const result = await campoService.flushQueue();
+
+      expect(result.synced).toBe(0);
+      expect(result.remaining).toBe(1);
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('debe conservar en cola los elementos que fallen con HTTP 500 y sincronizar los que tengan éxito', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockImplementation(async (url: string) => {
+        if (url.includes('/api/checkins')) {
+          // El primer elemento falla con 500
+          return { ok: false, status: 500 };
+        }
+        // El segundo tiene éxito con 200
+        return { ok: true, status: 200, json: async () => ({ success: true }) };
+      }));
+
+      campoService.enqueue('checkin', { id: 'CHK-FAIL' });
+      campoService.enqueue('shelf_scan', { id: 'SCAN-SUCCESS' });
+
+      const result = await campoService.flushQueue();
+
+      expect(result.synced).toBe(1);
+      expect(result.remaining).toBe(1);
+
+      const remainingQueue = campoService.getQueue();
+      expect(remainingQueue.length).toBe(1);
+      expect(remainingQueue[0].type).toBe('checkin');
+    });
+
+    it('debe conservar en cola los elementos si fetch lanza TypeError (Network Error o Timeout)', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
+
+      campoService.enqueue('price_survey', { id: 'PRICE-ERR' });
+
+      const result = await campoService.flushQueue();
+      expect(result.synced).toBe(0);
+      expect(result.remaining).toBe(1);
+      expect(campoService.getQueue().length).toBe(1);
+    });
+  });
+});

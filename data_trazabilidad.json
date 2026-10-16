@@ -1,0 +1,387 @@
+[
+  {
+    "id": "TRZ-2026-3876",
+    "timestamp": "2026-10-16T19:34:23.876Z",
+    "formattedDate": "16/10/2026",
+    "formattedTime": "3:34:23 PM",
+    "user": {
+      "name": "NICOLE GODOY",
+      "email": "godoyaraujonicole@gmail.com",
+      "role": "Impulsadora",
+      "photoUrl": "/avatars/nicole_godoy.png"
+    },
+    "action": {
+      "type": "portal_login",
+      "label": "Inicio de Sesión en App Móvil",
+      "details": "Acceso verificado a la app de promotoras Codizulca Campo",
+      "status": "active",
+      "module": "Portal Campo (PWA)"
+    },
+    "device": {
+      "ip": "190.202.166.86",
+      "browser": "Chrome",
+      "os": "Windows",
+      "deviceType": "Escritorio",
+      "connection": "Fibra Óptica / Red Local",
+      "locationCity": "Maracaibo, Zulia",
+      "gpsVerified": false
+    }
+  },
+  {
+    "id": "TRZ-2026-001",
+    "timestamp": "2026-09-30T10:42:15Z",
+    "formattedDate": "30/09/2026",
+    "formattedTime": "10:42:15 AM",
+    "user": {
+      "name": "CARELIZ REYES",
+      "email": "REYESCARELIZ3@GMAIL.COM",
+      "role": "Impulsadora",
+      "photoUrl": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80",
+      "avatarBg": "bg-emerald-600"
+    },
+    "action": {
+      "type": "portal_login",
+      "label": "Inicio de Sesión en App Móvil",
+      "details": "Sesión iniciada exitosamente • Acceso a cronograma de Punto Fijo (Av. Jacinto Lara)",
+      "status": "active",
+      "module": "Portal Campo (PWA)"
+    },
+    "device": {
+      "ip": "190.202.45.112",
+      "browser": "Chrome Mobile 128.0",
+      "os": "Android 14",
+      "deviceType": "Móvil",
+      "connection": "4G LTE (Digitel)",
+      "locationCity": "Punto Fijo, Falcón",
+      "gpsVerified": true,
+      "coordinates": "11.6985° N, -70.1852° W"
+    }
+  },
+  {
+    "id": "TRZ-2026-002",
+    "timestamp": "2026-09-30T10:35:40Z",
+    "formattedDate": "30/09/2026",
+    "formattedTime": "10:35:40 AM",
+    "user": {
+      "name": "Admin General",
+      "email": "admin@codi.com",
+      "role": "Administrador",
+      "avatarBg": "bg-red-600"
+    },
+    "action": {
+      "type": "login",
+      "label": "Conexión al Dashboard Gerencial",
+      "details": "Autenticación corporativa completada • Acceso maestro a operaciones",
+      "status": "active",
+      "module": "Dashboard Gerencia"
+    },
+    "device": {
+      "ip": "190.75.122.10",
+      "browser": "Chrome 129.0",
+      "os": "Windows 11 Pro",
+      "deviceType": "Escritorio",
+      "connection": "Fibra Óptica Dedicada",
+      "locationCity": "Maracaibo, Zulia",
+      "gpsVerified": true,
+      "coordinates": "10.6542° N, -71.6241° W"
+    }
+  },
+  {
+    "id": "TRZ-2026-003",
+    "timestamp": "2026-09-30T10:20:05Z",
+    "formattedDate": "30/09/2026",
+    "formattedTime": "10:20:05 AM",
+    "user": {
+      "name": "SCARLETH PIÑA",
+      "email": "scarmichell22@gmail.com",
+      "role": "Impulsadora",
+      "photoUrl": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&auto=format&fit=crop&q=80",
+      "avatarBg": "bg-rose-600"
+    },
+    "action": {
+      "type": "checkin",
+      "label": "Check-in Asistencia PDV",
+      "details": "Ingreso registrado en ALKOSTO CABIMAS • Av. Intercomunal • Foto facial verificada",
+      "status": "success",
+      "module": "Control de Asistencia"
+    },
+    "device": {
+      "ip": "186.93.14.88",
+      "browser": "Safari Mobile 17.5",
+      "os": "iOS 17.5.1 (iPhone 13)",
+      "deviceType": "Móvil",
+      "connection": "4G LTE (Movistar)",
+      "locationCity": "Cabimas, Zulia",
+      "gpsVerified": true,
+      "coordinates": "10.3965° N, -71.4425° W"
+    }
+  },
+  {
+    "id": "TRZ-2026-004",
+    "timestamp": "2026-09-30T09:55:18Z",
+    "formattedDate": "30/09/2026",
+    "formattedTime": "09:55:18 AM",
+    "user": {
+      "name": "JOSE BARROSO",
+      "email": "joseabraham.barroso@gmail.com",
+      "role": "Promotor Merchandising",
+      "photoUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80",
+      "avatarBg": "bg-red-800"
+    },
+    "action": {
+      "type": "shelf_audit",
+      "label": "Auditoría de Góndola y Planograma",
+      "details": "ALKOSTO BELLA VISTA • Share of Shelf 48% • Detección IA completada",
+      "status": "success",
+      "module": "Merchandising & Góndola"
+    },
+    "device": {
+      "ip": "201.248.89.201",
+      "browser": "Chrome Mobile 128.0",
+      "os": "Android 14 (Samsung A54)",
+      "deviceType": "Móvil",
+      "connection": "4G LTE (Digitel)",
+      "locationCity": "Maracaibo Norte, Zulia",
+      "gpsVerified": true,
+      "coordinates": "10.6811° N, -71.6022° W"
+    }
+  },
+  {
+    "id": "TRZ-2026-005",
+    "timestamp": "2026-09-30T09:40:50Z",
+    "formattedDate": "30/09/2026",
+    "formattedTime": "09:40:50 AM",
+    "user": {
+      "name": "OSMAIRY VILLASMIL",
+      "email": "luzz010203@gmail.com",
+      "role": "Promotora",
+      "photoUrl": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&auto=format&fit=crop&q=80",
+      "avatarBg": "bg-emerald-600"
+    },
+    "action": {
+      "type": "portal_login",
+      "label": "Inicio de Sesión en App Móvil",
+      "details": "Sesión iniciada en ALKOSTO TRIBUNALES • Ruta de degustación activa",
+      "status": "active",
+      "module": "Portal Campo (PWA)"
+    },
+    "device": {
+      "ip": "190.207.133.54",
+      "browser": "Chrome Mobile 127.0",
+      "os": "Android 13 (Xiaomi Note 11)",
+      "deviceType": "Móvil",
+      "connection": "WiFi PDV (Alkosto Free)",
+      "locationCity": "El Silencio, Maracaibo",
+      "gpsVerified": true,
+      "coordinates": "10.6385° N, -71.6310° W"
+    }
+  },
+  {
+    "id": "TRZ-2026-006",
+    "timestamp": "2026-09-30T09:15:32Z",
+    "formattedDate": "30/09/2026",
+    "formattedTime": "09:15:32 AM",
+    "user": {
+      "name": "Maria de los Ángeles Almarza",
+      "email": "Mariaalmarza16@gmail.com",
+      "role": "Impulsadora",
+      "photoUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80",
+      "avatarBg": "bg-emerald-600"
+    },
+    "action": {
+      "type": "tasting_survey",
+      "label": "Registro de Encuesta de Degustación",
+      "details": "Jamón Cocido Superior 1 Kg • Calificación 5/5 • Intención Compra: SÍ",
+      "status": "success",
+      "module": "Trade Marketing"
+    },
+    "device": {
+      "ip": "186.93.88.19",
+      "browser": "Chrome Mobile 128.0",
+      "os": "Android 14 (Motorola G54)",
+      "deviceType": "Móvil",
+      "connection": "4G LTE (Movistar)",
+      "locationCity": "Cabimas, Zulia",
+      "gpsVerified": true,
+      "coordinates": "10.4015° N, -71.4410° W"
+    }
+  },
+  {
+    "id": "TRZ-2026-007",
+    "timestamp": "2026-09-30T08:50:22Z",
+    "formattedDate": "30/09/2026",
+    "formattedTime": "08:50:22 AM",
+    "user": {
+      "name": "TANIA CARDENAS",
+      "email": "tataacardenas@gmail.com",
+      "role": "Promotora",
+      "photoUrl": "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&auto=format&fit=crop&q=80",
+      "avatarBg": "bg-red-600"
+    },
+    "action": {
+      "type": "checkin",
+      "label": "Check-in Asistencia PDV",
+      "details": "Apertura de turno en ALKOSTO COROMOTO • Asistencia confirmada a tiempo",
+      "status": "success",
+      "module": "Control de Asistencia"
+    },
+    "device": {
+      "ip": "190.72.61.104",
+      "browser": "Chrome Mobile 128.0",
+      "os": "Android 13",
+      "deviceType": "Móvil",
+      "connection": "4G LTE (Digitel)",
+      "locationCity": "San Francisco, Zulia",
+      "gpsVerified": true,
+      "coordinates": "10.5841° N, -71.6512° W"
+    }
+  },
+  {
+    "id": "TRZ-2026-008",
+    "timestamp": "2026-09-30T08:30:10Z",
+    "formattedDate": "30/09/2026",
+    "formattedTime": "08:30:10 AM",
+    "user": {
+      "name": "ZIORELI GRANGGER",
+      "email": "Ziorelis.grangger@codizulca.com",
+      "role": "Promotor Merchandising",
+      "photoUrl": "https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?w=400&auto=format&fit=crop&q=80",
+      "avatarBg": "bg-rose-900"
+    },
+    "action": {
+      "type": "portal_login",
+      "label": "Inicio de Sesión en App Móvil",
+      "details": "Central Madeirense San Francisco • Modo Merchandising activado",
+      "status": "active",
+      "module": "Portal Campo (PWA)"
+    },
+    "device": {
+      "ip": "200.84.19.77",
+      "browser": "Chrome Mobile 128.0",
+      "os": "Android 14 (Samsung S23 FE)",
+      "deviceType": "Móvil",
+      "connection": "4G LTE (Movistar)",
+      "locationCity": "San Francisco, Zulia",
+      "gpsVerified": true,
+      "coordinates": "10.5790° N, -71.6420° W"
+    }
+  },
+  {
+    "id": "TRZ-2026-009",
+    "timestamp": "2026-09-30T08:12:44Z",
+    "formattedDate": "30/09/2026",
+    "formattedTime": "08:12:44 AM",
+    "user": {
+      "name": "Coordinación Trade",
+      "email": "coordinacion.trade@codizulca.com",
+      "role": "Coordinador Trade",
+      "avatarBg": "bg-amber-600"
+    },
+    "action": {
+      "type": "login",
+      "label": "Conexión al Módulo Trade Marketing",
+      "details": "Revisión de cronograma semanal de degustaciones y nómina de promotoras",
+      "status": "success",
+      "module": "Trade Marketing"
+    },
+    "device": {
+      "ip": "190.75.122.10",
+      "browser": "Chrome 129.0",
+      "os": "macOS Sonoma 14.5",
+      "deviceType": "Escritorio",
+      "connection": "Fibra Óptica Dedicada",
+      "locationCity": "Maracaibo, Zulia",
+      "gpsVerified": true,
+      "coordinates": "10.6542° N, -71.6241° W"
+    }
+  },
+  {
+    "id": "TRZ-2026-010",
+    "timestamp": "2026-09-30T07:45:00Z",
+    "formattedDate": "30/09/2026",
+    "formattedTime": "07:45:00 AM",
+    "user": {
+      "name": "NAIRELIS ANTUNEZ",
+      "email": "antuneznairelis@gmail.com",
+      "role": "Impulsadora",
+      "photoUrl": "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&auto=format&fit=crop&q=80",
+      "avatarBg": "bg-emerald-600"
+    },
+    "action": {
+      "type": "checkin",
+      "label": "Check-in Asistencia PDV",
+      "details": "ALKOSTO BELLA VISTA • Apertura de punto de venta y stand promocional",
+      "status": "success",
+      "module": "Control de Asistencia"
+    },
+    "device": {
+      "ip": "186.94.205.33",
+      "browser": "Chrome Mobile 126.0",
+      "os": "Android 13 (Tecno Spark 10)",
+      "deviceType": "Móvil",
+      "connection": "4G LTE (Digitel)",
+      "locationCity": "Bella Vista, Maracaibo",
+      "gpsVerified": true,
+      "coordinates": "10.6698° N, -71.6115° W"
+    }
+  },
+  {
+    "id": "TRZ-2026-011",
+    "timestamp": "2026-09-29T18:22:15Z",
+    "formattedDate": "29/09/2026",
+    "formattedTime": "06:22:15 PM",
+    "user": {
+      "name": "SCARLETH PIÑA",
+      "email": "scarmichell22@gmail.com",
+      "role": "Impulsadora",
+      "photoUrl": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&auto=format&fit=crop&q=80",
+      "avatarBg": "bg-rose-600"
+    },
+    "action": {
+      "type": "logout",
+      "label": "Cierre de Sesión y Salida de PDV",
+      "details": "Cierre de guardia en ALKOSTO CABIMAS • 120 muestras entregadas",
+      "status": "success",
+      "module": "Portal Campo (PWA)"
+    },
+    "device": {
+      "ip": "186.93.14.88",
+      "browser": "Safari Mobile 17.5",
+      "os": "iOS 17.5.1 (iPhone 13)",
+      "deviceType": "Móvil",
+      "connection": "4G LTE (Movistar)",
+      "locationCity": "Cabimas, Zulia",
+      "gpsVerified": true,
+      "coordinates": "10.3965° N, -71.4425° W"
+    }
+  },
+  {
+    "id": "TRZ-2026-012",
+    "timestamp": "2026-09-29T17:40:02Z",
+    "formattedDate": "29/09/2026",
+    "formattedTime": "05:40:02 PM",
+    "user": {
+      "name": "Usuario Desconocido",
+      "email": "invitado@correo.com",
+      "role": "Sin Asignar",
+      "avatarBg": "bg-zinc-800"
+    },
+    "action": {
+      "type": "failed_login",
+      "label": "Intento de Acceso Rechazado",
+      "details": "Credenciales inválidas bloqueadas por el firewall de seguridad",
+      "status": "warning",
+      "module": "Seguridad & Auth"
+    },
+    "device": {
+      "ip": "190.198.77.210",
+      "browser": "Firefox 128.0",
+      "os": "Linux x86_64",
+      "deviceType": "Escritorio",
+      "connection": "ISP Desconocido",
+      "locationCity": "Valencia, Carabobo",
+      "gpsVerified": false,
+      "coordinates": "10.1620° N, -68.0077° W"
+    }
+  }
+]

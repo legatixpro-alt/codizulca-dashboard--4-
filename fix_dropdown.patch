@@ -1,0 +1,106 @@
+--- src/pages/DashboardOverview.tsx
++++ src/pages/DashboardOverview.tsx
+@@ -181,6 +181,8 @@
+   const skuPickerRef = React.useRef<HTMLDivElement>(null);
+   
+   const [topProductsMonthFilter, setTopProductsMonthFilter] = useState<string>('Todos');
++  const [showTopProductsPicker, setShowTopProductsPicker] = useState(false);
++  const topProductsPickerRef = React.useRef<HTMLDivElement>(null);
+ 
+   React.useEffect(() => {
+     function handleClickOutside(event: MouseEvent) {
+@@ -191,6 +193,9 @@
+       if (skuPickerRef.current && !skuPickerRef.current.contains(event.target as Node)) {
+         setShowSkuPicker(false);
+       }
++      if (topProductsPickerRef.current && !topProductsPickerRef.current.contains(event.target as Node)) {
++        setShowTopProductsPicker(false);
++      }
+     }
+     document.addEventListener("mousedown", handleClickOutside);
+     return () => document.removeEventListener("mousedown", handleClickOutside);
+@@ -700,6 +705,19 @@
+       
+   }, [selectedTimeGroups, rawProductData, historicalData]);
+ 
++  const topProductsAvailableMonths = React.useMemo(() => {
++    const months = new Set<string>();
++    const allData = [...rawProductData, ...historicalData];
++    allData.forEach(p => {
++      const dateParts = p.date.split('-');
++      if (dateParts.length >= 2) {
++        months.add(`${dateParts[0]}-${dateParts[1]}`);
++      }
++    });
++    return Array.from(months).sort((a, b) => b.localeCompare(a));
++  }, [rawProductData, historicalData]);
++
+   const topProductsPieData = React.useMemo(() => {
+     const allData = [...rawProductData, ...historicalData];
+     const productMap = new Map<string, { name: string, value: number }>();
+@@ -1071,26 +1089,45 @@
+           <div className="flex justify-between items-start mb-6">
+             <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+               TOP PRODUCTOS (VENTAS)
+             </h3>
+-            <select 
+-              value={topProductsMonthFilter}
+-              onChange={(e) => setTopProductsMonthFilter(e.target.value)}
+-              className="bg-black/50 border border-white/10 rounded-md px-2 py-1 text-xs text-zinc-400 focus:outline-none focus:border-red-500 appearance-none"
+-            >
+-              <option value="Todos">Todos</option>
+-              {availableGroups.map(g => {
+-                const parts = g.split('-');
+-                let label = g;
+-                if (parts.length >= 2) {
+-                  const MONTH_NAMES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+-                  const mes = MONTH_NAMES[parseInt(parts[1]) - 1];
+-                  label = `${mes} ${parts[0]}`;
+-                }
+-                return (
+-                  <option key={g} value={g}>{label}</option>
+-                );
+-              })}
+-            </select>
++            <div className="relative" ref={topProductsPickerRef}>
++              <button
++                onClick={() => setShowTopProductsPicker(!showTopProductsPicker)}
++                className="flex items-center gap-1 bg-black/50 border border-white/10 rounded-md px-3 py-1 text-xs font-medium text-zinc-300 hover:bg-zinc-900 transition-colors h-[26px]"
++              >
++                <CalendarIcon className="w-3 h-3 text-red-500" />
++                {topProductsMonthFilter === 'Todos' ? 'Todos' : (() => {
++                    const parts = topProductsMonthFilter.split('-');
++                    const MONTH_NAMES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
++                    return `${MONTH_NAMES[parseInt(parts[1]) - 1]} ${parts[0]}`;
++                })()}
++              </button>
++              
++              {showTopProductsPicker && (
++                <div className="absolute right-0 top-full mt-2 w-40 bg-zinc-950 border border-white/10 rounded-lg shadow-2xl z-50 overflow-hidden">
++                  <div className="max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent">
++                    <button
++                      onClick={() => { setTopProductsMonthFilter('Todos'); setShowTopProductsPicker(false); }}
++                      className={`w-full text-left px-4 py-2 text-xs hover:bg-zinc-800 transition-colors ${topProductsMonthFilter === 'Todos' ? 'text-red-400 font-bold bg-zinc-900' : 'text-zinc-400'}`}
++                    >
++                      Todos
++                    </button>
++                    {topProductsAvailableMonths.map(g => {
++                      const parts = g.split('-');
++                      const MONTH_NAMES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
++                      const label = `${MONTH_NAMES[parseInt(parts[1]) - 1]} ${parts[0]}`;
++                      return (
++                        <button
++                          key={g}
++                          onClick={() => { setTopProductsMonthFilter(g); setShowTopProductsPicker(false); }}
++                          className={`w-full text-left px-4 py-2 text-xs hover:bg-zinc-800 transition-colors ${topProductsMonthFilter === g ? 'text-red-400 font-bold bg-zinc-900' : 'text-zinc-400'}`}
++                        >
++                          {label}
++                        </button>
++                      );
++                    })}
++                  </div>
++                </div>
++              )}
++            </div>
+           </div>
+           
