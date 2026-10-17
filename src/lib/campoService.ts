@@ -135,15 +135,14 @@ export interface MerchandisingReportPayload {
   offlineQueued?: boolean;
 }
 
-// Catálogo Oficial de Productos Codizulca
+// Catálogo Oficial de Productos Asturias / Codizulca para Monitoreo de Precios
 export const CODIZULCA_PRODUCTS = [
-  { id: 'PROD-01', name: 'Mortadela Tapara Especial', defaultPriceUsd: 4.20, category: 'Embutidos Cocidos', weight: '1 Kg' },
-  { id: 'PROD-02', name: 'Jamón Cocido Superior', defaultPriceUsd: 8.50, category: 'Jamones', weight: '1 Kg' },
-  { id: 'PROD-03', name: 'Salchichas Viena (Paquete 12)', defaultPriceUsd: 3.10, category: 'Salchichas', weight: '450 g' },
-  { id: 'PROD-04', name: 'Tocineta Ahumada Especial', defaultPriceUsd: 9.80, category: 'Ahumados', weight: '1 Kg' },
-  { id: 'PROD-05', name: 'Chuleta Ahumada de Cerdo', defaultPriceUsd: 11.20, category: 'Ahumados', weight: '1 Kg' },
-  { id: 'PROD-06', name: 'Salchichón Tipo Milano', defaultPriceUsd: 7.90, category: 'Madurados', weight: '500 g' },
-  { id: 'PROD-07', name: 'Queso Amarillo Paisa / Tipo Gouda', defaultPriceUsd: 9.40, category: 'Lácteos', weight: '1 Kg' }
+  { id: 'PROD-AST-01', name: 'Pechuga de Pavo Asturias', defaultPriceUsd: 9.50, category: 'Aves / Pechugas', weight: 'Kg' },
+  { id: 'PROD-AST-02', name: 'Pechuga de Pollo Asturias', defaultPriceUsd: 8.20, category: 'Aves / Pechugas', weight: 'Kg' },
+  { id: 'PROD-AST-03', name: 'Jamón Cocido de Pavo Asturias', defaultPriceUsd: 8.90, category: 'Jamones', weight: 'Kg' },
+  { id: 'PROD-AST-04', name: 'Mortadela Especial de Pollo Asturias', defaultPriceUsd: 3.80, category: 'Embutidos', weight: '900gr' },
+  { id: 'PROD-AST-05', name: 'Mortadela Especial de Pollo Asturias', defaultPriceUsd: 2.20, category: 'Embutidos', weight: '500gr' },
+  { id: 'PROD-AST-06', name: 'Jamón de Pierna Estándar', defaultPriceUsd: 7.50, category: 'Jamones', weight: 'Kg' }
 ];
 
 export const COMPETITOR_BRANDS = [
@@ -200,18 +199,16 @@ export const PROMOTERS_LIST: PromoterProfile[] = [
 ];
 
 export const FREQUENT_STORES = [
-  "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (Bella Vista)",
-  "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (Maracaibo Norte)",
-  "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (Cabimas)",
-  "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (Coromoto)",
-  "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (Tribunales)",
-  "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (Zona Industrial)",
-  "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (Punto Fijo)",
-  "Hipermercado Viviana Bella Vista",
-  "Central Madeirense San Francisco",
-  "Bodegón del Norte Delicias",
-  "Supermercado La Gran Parada (La Limpia)",
-  "Supermercado Olímpica (El Bajo)"
+  "ALKOSTO DONDE COMPRAR ES GANAR, C.A.",
+  "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (AV DELICIAS)",
+  "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (SAN FELIPE)",
+  "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (PLAZA BARALT)",
+  "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (LA COROMOTO)",
+  "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (DR. PORTILLO)",
+  "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (CABIMAS)",
+  "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (LOS CACTUS)",
+  "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (TRUJILLO)",
+  "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (ZONA INDUSTRIAL)"
 ];
 
 // Tasa Oficial BCV de Referencia (Actualizable o por defecto)

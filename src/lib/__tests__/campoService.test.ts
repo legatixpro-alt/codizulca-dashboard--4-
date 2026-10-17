@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { campoService, SyncQueueItem, ShelfScanPayload, PriceSurveyPayload } from '../campoService';
+import {
+  campoService,
+  SyncQueueItem,
+  ShelfScanPayload,
+  PriceSurveyPayload,
+  FREQUENT_STORES,
+  CODIZULCA_PRODUCTS
+} from '../campoService';
 
 describe('campoService - Offline-First & Sync Test Suite', () => {
   const QUEUE_STORAGE_KEY = 'portal_sync_queue';
@@ -201,6 +208,36 @@ describe('campoService - Offline-First & Sync Test Suite', () => {
       expect(result.synced).toBe(0);
       expect(result.remaining).toBe(1);
       expect(campoService.getQueue().length).toBe(1);
+    });
+  });
+
+  describe('Precios Module Catalogue & Store Isolation', () => {
+    it('solo contiene las 10 sucursales oficiales de Alkosto en FREQUENT_STORES', () => {
+      expect(FREQUENT_STORES.length).toBe(10);
+      expect(FREQUENT_STORES.every((s) => s.startsWith('ALKOSTO DONDE COMPRAR ES GANAR, C.A.'))).toBe(true);
+      expect(FREQUENT_STORES.some((s) => s.includes('Viviana') || s.includes('Olímpica') || s.includes('Madeirense'))).toBe(false);
+      expect(FREQUENT_STORES).toContain('ALKOSTO DONDE COMPRAR ES GANAR, C.A. (AV DELICIAS)');
+      expect(FREQUENT_STORES).toContain('ALKOSTO DONDE COMPRAR ES GANAR, C.A. (SAN FELIPE)');
+      expect(FREQUENT_STORES).toContain('ALKOSTO DONDE COMPRAR ES GANAR, C.A. (PLAZA BARALT)');
+      expect(FREQUENT_STORES).toContain('ALKOSTO DONDE COMPRAR ES GANAR, C.A. (LA COROMOTO)');
+      expect(FREQUENT_STORES).toContain('ALKOSTO DONDE COMPRAR ES GANAR, C.A. (DR. PORTILLO)');
+      expect(FREQUENT_STORES).toContain('ALKOSTO DONDE COMPRAR ES GANAR, C.A. (CABIMAS)');
+      expect(FREQUENT_STORES).toContain('ALKOSTO DONDE COMPRAR ES GANAR, C.A. (LOS CACTUS)');
+      expect(FREQUENT_STORES).toContain('ALKOSTO DONDE COMPRAR ES GANAR, C.A. (TRUJILLO)');
+      expect(FREQUENT_STORES).toContain('ALKOSTO DONDE COMPRAR ES GANAR, C.A. (ZONA INDUSTRIAL)');
+    });
+
+    it('solo contiene los 6 productos solicitados de Asturias en CODIZULCA_PRODUCTS', () => {
+      expect(CODIZULCA_PRODUCTS.length).toBe(6);
+      const names = CODIZULCA_PRODUCTS.map((p) => p.name);
+      expect(names).toContain('Pechuga de Pavo Asturias');
+      expect(names).toContain('Pechuga de Pollo Asturias');
+      expect(names).toContain('Jamón Cocido de Pavo Asturias');
+      expect(names).toContain('Jamón de Pierna Estándar');
+      const mortadelas = CODIZULCA_PRODUCTS.filter((p) => p.name === 'Mortadela Especial de Pollo Asturias');
+      expect(mortadelas.length).toBe(2);
+      expect(mortadelas.some((m) => m.weight === '900gr')).toBe(true);
+      expect(mortadelas.some((m) => m.weight === '500gr')).toBe(true);
     });
   });
 });

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import {
   Tag,
   DollarSign,
@@ -17,13 +18,35 @@ import {
   FREQUENT_STORES,
   OFFICIAL_BCV_RATE,
   campoService,
-  PriceSurveyPayload
+  PriceSurveyPayload,
+  PromoterProfile
 } from '../../lib/campoService';
 
 export const CampoPrecios: React.FC<{ activePromoterName?: string }> = ({
   activePromoterName
 }) => {
-  const [storeName, setStoreName] = useState<string>(FREQUENT_STORES[0]);
+  const context = useOutletContext<{
+    activePromoter?: PromoterProfile;
+    isOnline?: boolean;
+    pendingQueueCount?: number;
+  }>();
+
+  const activePromoter = context?.activePromoter || campoService.getActivePromoter();
+
+  // Selecciona el Alkosto asignado a la promotora fija si corresponde
+  const getInitialStore = () => {
+    if (activePromoter?.assignedStore) {
+      const cleanAssigned = activePromoter.assignedStore.toUpperCase();
+      const matched = FREQUENT_STORES.find(s => {
+        const cleanS = s.toUpperCase();
+        return cleanS.includes(cleanAssigned) || (cleanAssigned.includes('ALKOSTO') && cleanAssigned.includes(cleanS.replace('ALKOSTO DONDE COMPRAR ES GANAR, C.A.', '').replace(/[()]/g, '').trim()));
+      });
+      if (matched) return matched;
+    }
+    return FREQUENT_STORES[0];
+  };
+
+  const [storeName, setStoreName] = useState<string>(getInitialStore);
   const [selectedProduct, setSelectedProduct] = useState(CODIZULCA_PRODUCTS[0]);
   const [ownPriceUsd, setOwnPriceUsd] = useState<number>(CODIZULCA_PRODUCTS[0].defaultPriceUsd);
   const [bcvRate, setBcvRate] = useState<number>(OFFICIAL_BCV_RATE);
@@ -111,7 +134,7 @@ export const CampoPrecios: React.FC<{ activePromoterName?: string }> = ({
       id: 'PRICE-' + Date.now().toString().slice(-6),
       date: new Date().toISOString(),
       store: storeName,
-      promoter: activePromoterName || campoService.getActivePromoter().name,
+      promoter: activePromoterName || activePromoter?.name || campoService.getActivePromoter().name,
       productName: selectedProduct.name,
       ownPriceUsd,
       ownPriceBs,
