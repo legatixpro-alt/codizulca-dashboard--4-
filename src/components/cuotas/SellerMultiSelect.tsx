@@ -231,11 +231,6 @@ export const SellerMultiSelect: React.FC<SellerMultiSelectProps> = ({
                         <span className={`truncate font-medium ${isChecked ? 'text-zinc-100 font-semibold' : 'text-zinc-300'}`}>
                           {seller.name}
                         </span>
-                        {seller.zona && (
-                          <span className="text-[10px] text-zinc-500 truncate">
-                            {seller.zona}
-                          </span>
-                        )}
                       </div>
                     </div>
 

@@ -1606,7 +1606,7 @@ export const ParetoSubmodule: React.FC = () => {
                           </span>
                         )}
                       </div>
-                      {row.terciario && dimension !== 'clientes' && (
+                      {row.terciario && dimension !== 'clientes' && dimension !== 'vendedores' && (
                         <div className="text-[10px] text-zinc-500">{row.terciario}</div>
                       )}
                     </td>

@@ -190,7 +190,7 @@ export const QuotaFairnessAuditPanel: React.FC<QuotaFairnessAuditPanelProps> = (
           <table className="w-full text-left border-collapse min-w-[1000px] text-xs">
             <thead>
               <tr className="bg-zinc-900 text-zinc-300 font-bold uppercase tracking-wider border-b border-white/10">
-                <th className="p-3 border-r border-white/10 min-w-[200px]">Vendedor / Zona</th>
+                <th className="p-3 border-r border-white/10 min-w-[200px]">Vendedor</th>
                 <th className="p-3 border-r border-white/10 min-w-[140px]">Supervisor</th>
                 <th className="p-2.5 text-center border-r border-white/10 min-w-[110px]">Promedio Histórico</th>
                 <th className="p-2.5 text-center border-r border-white/10 min-w-[110px]">Cuota Asignada</th>

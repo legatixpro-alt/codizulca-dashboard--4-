@@ -26,6 +26,7 @@ import { getSellerMetadata, isExcludedVolumeSeller, normalizeSellerName, OFFICIA
 import { SellerMultiSelect, SellerOption } from './SellerMultiSelect';
 import { SupervisorVolumeComparativeAnalysis } from './SupervisorVolumeComparativeAnalysis';
 import { SellerVolumeHistoryModal } from './SellerVolumeHistoryModal';
+import { syncVolumeQuotasFromGoogleSheet } from './volumeQuotasData';
 
 export interface MonthlyTotalItem {
   mes: string;
@@ -175,11 +176,12 @@ export const MonthlyVolumeHistoryTable: React.FC<MonthlyVolumeHistoryTableProps>
     }
   }, [sortedMonths, selectedMonths.length]);
 
-  // Trigger Supabase full re-sync
+  // Trigger Supabase and Google Sheet full re-sync
   const handleSyncWithSupabase = async () => {
     setIsSyncing(true);
-    setSyncMessage('Sincronizando con Supabase history_sales...');
+    setSyncMessage('Sincronizando con Google Sheet y Supabase...');
     try {
+      await syncVolumeQuotasFromGoogleSheet();
       const res = await fetch('/api/sync-sellers-monthly-volume', { method: 'POST' });
       if (res.ok) {
         const json = await res.json();

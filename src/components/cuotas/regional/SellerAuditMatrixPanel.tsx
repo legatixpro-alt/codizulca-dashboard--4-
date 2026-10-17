@@ -235,7 +235,7 @@ export const SellerAuditMatrixPanel: React.FC<SellerAuditMatrixPanelProps> = ({
                   className="p-3 border-r border-white/10 cursor-pointer hover:bg-white/5 min-w-[210px]"
                 >
                   <div className="flex items-center justify-between">
-                    <span>Vendedor / Zona</span>
+                    <span>Vendedor</span>
                     <ArrowUpDown className="w-3 h-3 text-zinc-500" />
                   </div>
                 </th>

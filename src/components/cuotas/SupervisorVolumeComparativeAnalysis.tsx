@@ -30,7 +30,8 @@ import {
   SKU_FILTER_OPTIONS,
   getSellerVolumeQuota,
   getSellerOctoberRealFromSheet,
-  hasVolumeQuota
+  hasVolumeQuota,
+  syncVolumeQuotasFromGoogleSheet
 } from './volumeQuotasData';
 import { SellerMultiSelect, SellerOption } from './SellerMultiSelect';
 import { SellerVolumeHistoryModal } from './SellerVolumeHistoryModal';
@@ -124,6 +125,20 @@ export const SupervisorVolumeComparativeAnalysis: React.FC<SupervisorVolumeCompa
   const [metricMode, setMetricMode] = useState<'porcentaje' | 'absoluto'>('porcentaje');
   const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
+  const [quotasVersion, setQuotasVersion] = useState<number>(0);
+
+  // Sincronizar cuotas de volumen en vivo desde el Google Sheet 16pU4iEcNU_1j6sB7rZbshu2PM8OyH5hI7a24-vYO7P0
+  useEffect(() => {
+    let mounted = true;
+    syncVolumeQuotasFromGoogleSheet().then((updated) => {
+      if (mounted && updated) {
+        setQuotasVersion((v) => v + 1);
+      }
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // Actualizar mes si cambia la prop
   useEffect(() => {
@@ -168,7 +183,7 @@ export const SupervisorVolumeComparativeAnalysis: React.FC<SupervisorVolumeCompa
       }
     });
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
-  }, [sellerRows, selectedSupervisor]);
+  }, [sellerRows, selectedSupervisor, quotasVersion]);
 
   // Sincronizar vendedores seleccionados al cambiar de supervisor
   useEffect(() => {
@@ -299,7 +314,7 @@ export const SupervisorVolumeComparativeAnalysis: React.FC<SupervisorVolumeCompa
         sellers: sellersUnderSup,
       };
     });
-  }, [supervisorRows, activeAnalysisMonth, metric, selectedSku, factorProyeccion, diasRestantes]);
+  }, [supervisorRows, activeAnalysisMonth, metric, selectedSku, factorProyeccion, diasRestantes, quotasVersion]);
 
   // Lista plana de todos los vendedores calculados
   const allCalculatedSellers = useMemo(() => {

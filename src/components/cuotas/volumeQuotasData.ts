@@ -1,3 +1,4 @@
+import Papa from 'papaparse';
 import { normalizeSellerName } from './sellerSupervisorMap';
 
 export interface SkuQuotaRealPair {
@@ -19,10 +20,10 @@ export interface SellerVolumeQuota {
   };
 }
 
-// Metas y ejecución oficial de volumen mensual (Octubre 2026) sincronizadas con las 25 rutas/vendedores oficiales y 3 supervisores
+// Metas y ejecución oficial de volumen mensual (Octubre 2026) sincronizadas exactamente con la pestaña "Cuotas Volumen" del Google Sheet 16pU4iEcNU_1j6sB7rZbshu2PM8OyH5hI7a24-vYO7P0
 export const SELLER_VOLUME_QUOTAS: Record<string, SellerVolumeQuota> = {
   // ==========================================
-  // SUPERVISOR: NELSON FINOL (12 Rutas Comerciales)
+  // SUPERVISOR: NELSON FINOL (12 Carteras de Vendedores)
   // ==========================================
   'CARLOS FUENMAYOR': {
     kgs: 135530.30,
@@ -32,9 +33,9 @@ export const SELLER_VOLUME_QUOTAS: Record<string, SellerVolumeQuota> = {
     byCat: {
       aceite: { q: 11330.70, r: 1222.10 },
       azucar: { q: 20564.70, r: 25480.00 },
-      pollo: { q: 15495.10, r: 3637.90 },
-      estandarAsturias: { q: 925.90, r: 394.80 },
-      mortadelaSalpicaoAsturias: { q: 9089.80, r: 3413.60 },
+      pollo: { q: 15619.70, r: 3648.60 },
+      estandarAsturias: { q: 2075.40, r: 594.90 },
+      mortadelaSalpicaoAsturias: { q: 3585.40, r: 771.00 },
     },
   },
   'EDUARDO PIÑA': {
@@ -45,9 +46,9 @@ export const SELLER_VOLUME_QUOTAS: Record<string, SellerVolumeQuota> = {
     byCat: {
       aceite: { q: 1960.00, r: 556.40 },
       azucar: { q: 9462.30, r: 4500.00 },
-      pollo: { q: 13260.10, r: 2688.70 },
-      estandarAsturias: { q: 620.70, r: 264.70 },
-      mortadelaSalpicaoAsturias: { q: 6093.30, r: 2288.20 },
+      pollo: { q: 14526.90, r: 2934.90 },
+      estandarAsturias: { q: 780.20, r: 234.50 },
+      mortadelaSalpicaoAsturias: { q: 4224.70, r: 1403.40 },
     },
   },
   'J PABLO ARAUJO': {
@@ -58,9 +59,9 @@ export const SELLER_VOLUME_QUOTAS: Record<string, SellerVolumeQuota> = {
     byCat: {
       aceite: { q: 6385.50, r: 1281.70 },
       azucar: { q: 11618.90, r: 1099.00 },
-      pollo: { q: 64344.10, r: 24245.20 },
-      estandarAsturias: { q: 1143.70, r: 487.70 },
-      mortadelaSalpicaoAsturias: { q: 11227.80, r: 4216.40 },
+      pollo: { q: 67220.60, r: 25100.10 },
+      estandarAsturias: { q: 731.20, r: 406.50 },
+      mortadelaSalpicaoAsturias: { q: 4277.50, r: 1054.60 },
     },
   },
   'J PABLO ARAUJO - CAB/OJE': {
@@ -69,11 +70,11 @@ export const SELLER_VOLUME_QUOTAS: Record<string, SellerVolumeQuota> = {
     cajas: 21697,
     monto: 201275,
     byCat: {
-      aceite: { q: 2470.70, r: 985.20 },
+      aceite: { q: 2470.70, r: 49.70 },
       azucar: { q: 5555.70, r: 4100.00 },
-      pollo: { q: 15635.90, r: 6180.40 },
-      estandarAsturias: { q: 474.50, r: 202.40 },
-      mortadelaSalpicaoAsturias: { q: 4658.40, r: 1749.50 },
+      pollo: { q: 16066.70, r: 6491.60 },
+      estandarAsturias: { q: 241.70, r: 131.10 },
+      mortadelaSalpicaoAsturias: { q: 9407.60, r: 687.10 },
     },
   },
   'JOSE G. GONZALEZ': {
@@ -82,11 +83,11 @@ export const SELLER_VOLUME_QUOTAS: Record<string, SellerVolumeQuota> = {
     cajas: 69241,
     monto: 306952,
     byCat: {
-      aceite: { q: 9415.20, r: 1680.40 },
-      azucar: { q: 21450.00, r: 11200.00 },
-      pollo: { q: 22140.50, r: 8420.30 },
-      estandarAsturias: { q: 693.20, r: 295.60 },
-      mortadelaSalpicaoAsturias: { q: 6805.40, r: 2555.70 },
+      aceite: { q: 13777.60, r: 814.80 },
+      azucar: { q: 15188.80, r: 3099.00 },
+      pollo: { q: 34451.00, r: 21867.40 },
+      estandarAsturias: { q: 322.80, r: 233.90 },
+      mortadelaSalpicaoAsturias: { q: 5664.70, r: 1389.10 },
     },
   },
   'MARIA BRICEÑO': {
@@ -95,11 +96,11 @@ export const SELLER_VOLUME_QUOTAS: Record<string, SellerVolumeQuota> = {
     cajas: 41314,
     monto: 345138,
     byCat: {
-      aceite: { q: 9540.30, r: 1420.50 },
-      azucar: { q: 22180.40, r: 8950.00 },
-      pollo: { q: 21890.20, r: 6840.10 },
-      estandarAsturias: { q: 697.80, r: 297.60 },
-      mortadelaSalpicaoAsturias: { q: 6850.90, r: 2572.70 },
+      aceite: { q: 2826.60, r: 576.30 },
+      azucar: { q: 11954.10, r: 3540.00 },
+      pollo: { q: 26773.70, r: 8385.40 },
+      estandarAsturias: { q: 2431.70, r: 902.70 },
+      mortadelaSalpicaoAsturias: { q: 6248.50, r: 3874.70 },
     },
   },
   'MARIANA CHACIN': {
@@ -108,11 +109,11 @@ export const SELLER_VOLUME_QUOTAS: Record<string, SellerVolumeQuota> = {
     cajas: 13452,
     monto: 191272,
     byCat: {
-      aceite: { q: 8420.10, r: 2410.80 },
-      azucar: { q: 19840.20, r: 18420.00 },
-      pollo: { q: 18920.40, r: 12450.60 },
-      estandarAsturias: { q: 622.40, r: 265.40 },
-      mortadelaSalpicaoAsturias: { q: 6110.10, r: 2294.50 },
+      aceite: { q: 9448.00, r: 6597.50 },
+      azucar: { q: 25401.80, r: 24520.00 },
+      pollo: { q: 16207.30, r: 3816.30 },
+      estandarAsturias: { q: 817.70, r: 633.80 },
+      mortadelaSalpicaoAsturias: { q: 4863.00, r: 2420.80 },
     },
   },
   'SAIRU VALLES': {
@@ -121,11 +122,11 @@ export const SELLER_VOLUME_QUOTAS: Record<string, SellerVolumeQuota> = {
     cajas: 49506,
     monto: 572246,
     byCat: {
-      aceite: { q: 29840.50, r: 5890.20 },
-      azucar: { q: 68420.30, r: 42150.00 },
-      pollo: { q: 65420.80, r: 28410.50 },
-      estandarAsturias: { q: 2137.30, r: 911.40 },
-      mortadelaSalpicaoAsturias: { q: 20982.80, r: 7879.80 },
+      aceite: { q: 54022.00, r: 9122.10 },
+      azucar: { q: 97438.10, r: 65000.00 },
+      pollo: { q: 16152.60, r: 13136.20 },
+      estandarAsturias: { q: 0, r: 0 },
+      mortadelaSalpicaoAsturias: { q: 22670.50, r: 9576.60 },
     },
   },
   'MARYERY GARCIA': {
@@ -134,11 +135,11 @@ export const SELLER_VOLUME_QUOTAS: Record<string, SellerVolumeQuota> = {
     cajas: 82063,
     monto: 516468,
     byCat: {
-      aceite: { q: 21450.20, r: 3890.40 },
-      azucar: { q: 48920.50, r: 22450.00 },
-      pollo: { q: 41250.30, r: 16890.20 },
-      estandarAsturias: { q: 1355.10, r: 577.80 },
-      mortadelaSalpicaoAsturias: { q: 13302.90, r: 4995.70 },
+      aceite: { q: 5082.10, r: 1987.20 },
+      azucar: { q: 30154.50, r: 11059.00 },
+      pollo: { q: 54664.80, r: 22859.90 },
+      estandarAsturias: { q: 1084.95, r: 423.10 },
+      mortadelaSalpicaoAsturias: { q: 9416.50, r: 3430.90 },
     },
   },
   'PEDRO ABREU': {
@@ -147,11 +148,11 @@ export const SELLER_VOLUME_QUOTAS: Record<string, SellerVolumeQuota> = {
     cajas: 12339,
     monto: 104602,
     byCat: {
-      aceite: { q: 5420.10, r: 1120.30 },
-      azucar: { q: 12450.20, r: 7890.00 },
-      pollo: { q: 12180.40, r: 5420.10 },
-      estandarAsturias: { q: 393.50, r: 167.80 },
-      mortadelaSalpicaoAsturias: { q: 3862.80, r: 1450.60 },
+      aceite: { q: 14046.80, r: 705.50 },
+      azucar: { q: 14090.60, r: 13039.00 },
+      pollo: { q: 7034.10, r: 3760.20 },
+      estandarAsturias: { q: 199.50, r: 148.90 },
+      mortadelaSalpicaoAsturias: { q: 9768.81, r: 2397.50 },
     },
   },
   'SARAH REYES': {
@@ -160,11 +161,11 @@ export const SELLER_VOLUME_QUOTAS: Record<string, SellerVolumeQuota> = {
     cajas: 21526,
     monto: 302845,
     byCat: {
-      aceite: { q: 11850.40, r: 1890.50 },
-      azucar: { q: 23410.20, r: 11850.00 },
-      pollo: { q: 19850.60, r: 7420.30 },
-      estandarAsturias: { q: 681.30, r: 290.50 },
-      mortadelaSalpicaoAsturias: { q: 6688.90, r: 2511.90 },
+      aceite: { q: 5135.30, r: 755.10 },
+      azucar: { q: 25864.90, r: 3779.00 },
+      pollo: { q: 17539.30, r: 5521.70 },
+      estandarAsturias: { q: 1077.30, r: 507.70 },
+      mortadelaSalpicaoAsturias: { q: 4158.90, r: 3460.50 },
     },
   },
   'YOLEIDA LUGO': {
@@ -173,11 +174,11 @@ export const SELLER_VOLUME_QUOTAS: Record<string, SellerVolumeQuota> = {
     cajas: 42432,
     monto: 303464,
     byCat: {
-      aceite: { q: 12743.80, r: 1847.40 },
-      azucar: { q: 28210.40, r: 11163.00 },
-      pollo: { q: 22689.40, r: 7619.30 },
-      estandarAsturias: { q: 857.40, r: 365.60 },
-      mortadelaSalpicaoAsturias: { q: 8415.90, r: 3160.80 },
+      aceite: { q: 5405.90, r: 784.90 },
+      azucar: { q: 26877.20, r: 11337.00 },
+      pollo: { q: 43425.30, r: 12449.50 },
+      estandarAsturias: { q: 905.95, r: 348.10 },
+      mortadelaSalpicaoAsturias: { q: 9859.40, r: 4365.50 },
     },
   },
 
@@ -192,9 +193,9 @@ export const SELLER_VOLUME_QUOTAS: Record<string, SellerVolumeQuota> = {
     byCat: {
       aceite: { q: 2882.80, r: 585.40 },
       azucar: { q: 90853.80, r: 4060.00 },
-      pollo: { q: 78271.45, r: 14473.80 },
+      pollo: { q: 78162.65, r: 14446.60 },
       estandarAsturias: { q: 1549.60, r: 1222.80 },
-      mortadelaSalpicaoAsturias: { q: 11125.50, r: 5767.60 },
+      mortadelaSalpicaoAsturias: { q: 9575.90, r: 4544.80 },
     },
   },
   'ADEL JARABA': {
@@ -203,11 +204,11 @@ export const SELLER_VOLUME_QUOTAS: Record<string, SellerVolumeQuota> = {
     cajas: 20968,
     monto: 204782,
     byCat: {
-      aceite: { q: 4560.51, r: 437.00 },
-      azucar: { q: 33162.40, r: 15200.00 },
-      pollo: { q: 11476.52, r: 2960.00 },
+      aceite: { q: 4560.40, r: 437.20 },
+      azucar: { q: 33162.40, r: 13200.00 },
+      pollo: { q: 11432.80, r: 2960.00 },
       estandarAsturias: { q: 1195.70, r: 148.10 },
-      mortadelaSalpicaoAsturias: { q: 7590.40, r: 677.70 },
+      mortadelaSalpicaoAsturias: { q: 6394.70, r: 529.60 },
     },
   },
   'ANGELICA MORENO': {
@@ -218,9 +219,9 @@ export const SELLER_VOLUME_QUOTAS: Record<string, SellerVolumeQuota> = {
     byCat: {
       aceite: { q: 2332.10, r: 467.00 },
       azucar: { q: 25382.50, r: 3060.00 },
-      pollo: { q: 37377.60, r: 11430.30 },
+      pollo: { q: 37308.50, r: 11430.30 },
       estandarAsturias: { q: 786.60, r: 428.90 },
-      mortadelaSalpicaoAsturias: { q: 4726.90, r: 1145.10 },
+      mortadelaSalpicaoAsturias: { q: 3940.30, r: 716.20 },
     },
   },
   'HERNAN PAZ': {
@@ -231,9 +232,9 @@ export const SELLER_VOLUME_QUOTAS: Record<string, SellerVolumeQuota> = {
     byCat: {
       aceite: { q: 2954.79, r: 327.90 },
       azucar: { q: 5474.40, r: 2799.00 },
-      pollo: { q: 12579.50, r: 953.40 },
+      pollo: { q: 12531.00, r: 953.40 },
       estandarAsturias: { q: 1860.40, r: 245.50 },
-      mortadelaSalpicaoAsturias: { q: 11329.30, r: 5078.90 },
+      mortadelaSalpicaoAsturias: { q: 9468.90, r: 4833.40 },
     },
   },
   'JUAN HERNANDEZ': {
@@ -244,9 +245,9 @@ export const SELLER_VOLUME_QUOTAS: Record<string, SellerVolumeQuota> = {
     byCat: {
       aceite: { q: 4719.10, r: 2970.90 },
       azucar: { q: 21739.50, r: 2339.00 },
-      pollo: { q: 17438.73, r: 2876.70 },
+      pollo: { q: 17348.73, r: 2847.50 },
       estandarAsturias: { q: 2053.50, r: 758.30 },
-      mortadelaSalpicaoAsturias: { q: 6031.30, r: 2464.80 },
+      mortadelaSalpicaoAsturias: { q: 3977.80, r: 1706.50 },
     },
   },
   'OSWALDO CHURION': {
@@ -257,14 +258,14 @@ export const SELLER_VOLUME_QUOTAS: Record<string, SellerVolumeQuota> = {
     byCat: {
       aceite: { q: 3494.60, r: 318.00 },
       azucar: { q: 15872.90, r: 2440.00 },
-      pollo: { q: 20863.70, r: 7345.80 },
+      pollo: { q: 20831.80, r: 7345.80 },
       estandarAsturias: { q: 1072.30, r: 502.40 },
-      mortadelaSalpicaoAsturias: { q: 6841.20, r: 2730.00 },
+      mortadelaSalpicaoAsturias: { q: 5768.90, r: 2227.60 },
     },
   },
 
   // ==========================================
-  // SUPERVISOR: ALI PEREZ (5 Rutas Comerciales)
+  // SUPERVISOR: ALI PEREZ (5 Carteras de Vendedores)
   // ==========================================
   'ALI PEREZ': {
     kgs: 177011.10,
@@ -276,7 +277,7 @@ export const SELLER_VOLUME_QUOTAS: Record<string, SellerVolumeQuota> = {
       azucar: { q: 33437.10, r: 500.00 },
       pollo: { q: 62216.50, r: 2686.80 },
       estandarAsturias: { q: 720.00, r: 45.70 },
-      mortadelaSalpicaoAsturias: { q: 7838.30, r: 813.60 },
+      mortadelaSalpicaoAsturias: { q: 7118.30, r: 767.90 },
     },
   },
   'ELISA SOLER': {
@@ -287,9 +288,9 @@ export const SELLER_VOLUME_QUOTAS: Record<string, SellerVolumeQuota> = {
     byCat: {
       aceite: { q: 24880.50, r: 6647.20 },
       azucar: { q: 47203.60, r: 53416.00 },
-      pollo: { q: 49822.90, r: 23875.60 },
+      pollo: { q: 49727.10, r: 23861.20 },
       estandarAsturias: { q: 1117.50, r: 658.60 },
-      mortadelaSalpicaoAsturias: { q: 9631.00, r: 5028.10 },
+      mortadelaSalpicaoAsturias: { q: 8513.50, r: 4369.50 },
     },
   },
   'LEONARDO RIOS': {
@@ -302,7 +303,7 @@ export const SELLER_VOLUME_QUOTAS: Record<string, SellerVolumeQuota> = {
       azucar: { q: 13288.30, r: 6000.00 },
       pollo: { q: 20480.90, r: 10697.10 },
       estandarAsturias: { q: 427.20, r: 536.40 },
-      mortadelaSalpicaoAsturias: { q: 5750.52, r: 2243.80 },
+      mortadelaSalpicaoAsturias: { q: 5323.32, r: 1707.40 },
     },
   },
   'LUIS GUANIPA': {
@@ -315,7 +316,7 @@ export const SELLER_VOLUME_QUOTAS: Record<string, SellerVolumeQuota> = {
       azucar: { q: 16082.10, r: 1020.00 },
       pollo: { q: 6604.40, r: 708.00 },
       estandarAsturias: { q: 205.30, r: 51.40 },
-      mortadelaSalpicaoAsturias: { q: 3230.10, r: 737.00 },
+      mortadelaSalpicaoAsturias: { q: 3024.80, r: 685.60 },
     },
   },
   'OSCAR ORTIZ': {
@@ -328,7 +329,7 @@ export const SELLER_VOLUME_QUOTAS: Record<string, SellerVolumeQuota> = {
       azucar: { q: 2593.90, r: 1280.00 },
       pollo: { q: 1333.10, r: 1529.50 },
       estandarAsturias: { q: 306.50, r: 85.50 },
-      mortadelaSalpicaoAsturias: { q: 10827.90, r: 778.00 },
+      mortadelaSalpicaoAsturias: { q: 10521.40, r: 692.50 },
     },
   },
 };
@@ -387,4 +388,164 @@ export const getSellerOctoberRealFromSheet = (
   }
 
   return q.realKgsOct;
+};
+
+// Sincroniza en vivo las cuotas de volumen desde la pestaña "Cuotas Volumen" del Google Sheet 16pU4iEcNU_1j6sB7rZbshu2PM8OyH5hI7a24-vYO7P0
+let volumeQuotasSynced = false;
+export const syncVolumeQuotasFromGoogleSheet = async (force = false): Promise<boolean> => {
+  if (volumeQuotasSynced && !force) return true;
+  try {
+    let csvText = '';
+    const sheetParam = encodeURIComponent('Cuotas Volumen');
+    try {
+      const res = await fetch(`/api/sheets?sheet=${sheetParam}${force ? '&refresh=true' : ''}`);
+      if (res.ok) csvText = await res.text();
+    } catch {
+      // fallback to direct Google Sheet URL
+    }
+    if (!csvText) {
+      const res2 = await fetch(
+        `https://docs.google.com/spreadsheets/d/16pU4iEcNU_1j6sB7rZbshu2PM8OyH5hI7a24-vYO7P0/gviz/tq?tqx=out:csv&sheet=${sheetParam}`
+      );
+      if (res2.ok) csvText = await res2.text();
+    }
+    if (!csvText) return false;
+
+    const parsed = Papa.parse(csvText, { header: false, skipEmptyLines: true });
+    const rows = parsed.data as string[][];
+    if (!rows || rows.length < 2) return false;
+
+    const header = rows[0];
+    const parseNum = (v: any) => {
+      if (!v || v === '-') return 0;
+      const n = parseFloat(String(v).replace(/,/g, '').replace('%', '').trim());
+      return isNaN(n) ? 0 : n;
+    };
+
+    const tempAccum = new Map<
+      string,
+      {
+        kgs: number;
+        realKgsOct: number;
+        byCat: {
+          aceite: SkuQuotaRealPair;
+          azucar: SkuQuotaRealPair;
+          pollo: SkuQuotaRealPair;
+          estandarAsturias: SkuQuotaRealPair;
+          mortadelaSalpicaoAsturias: SkuQuotaRealPair;
+        };
+      }
+    >();
+
+    // Las últimas 3 ternas de columnas corresponden a los consolidados de los 3 supervisores; iteramos solo las columnas de vendedores (primeras 28 ternas)
+    const maxCol = Math.min(header.length, 2 + 28 * 3);
+    for (let c = 2; c < maxCol; c += 3) {
+      const rawHeader = (header[c] || '').replace(/\s*CUOTA(\s*KG)?$/i, '').trim();
+      if (!rawHeader) continue;
+      const normSeller = normalizeSellerName(rawHeader);
+      if (!SELLER_VOLUME_QUOTAS[normSeller]) continue;
+
+      if (!tempAccum.has(normSeller)) {
+        tempAccum.set(normSeller, {
+          kgs: 0,
+          realKgsOct: 0,
+          byCat: {
+            aceite: { q: 0, r: 0 },
+            azucar: { q: 0, r: 0 },
+            pollo: { q: 0, r: 0 },
+            estandarAsturias: { q: 0, r: 0 },
+            mortadelaSalpicaoAsturias: { q: 0, r: 0 },
+          },
+        });
+      }
+      const acc = tempAccum.get(normSeller)!;
+
+      for (let r = 1; r < rows.length; r++) {
+        const row = rows[r];
+        const cod = (row[0] || '').trim();
+        const art = (row[1] || '').trim().toUpperCase();
+        if (!art) continue;
+
+        const q = parseNum(row[c]);
+        const real = parseNum(row[c + 1]);
+        acc.kgs += q;
+        acc.realKgsOct += real;
+
+        if (art.includes('ACEITE')) {
+          acc.byCat.aceite.q += q;
+          acc.byCat.aceite.r += real;
+        }
+        if (art.includes('AZUCAR')) {
+          acc.byCat.azucar.q += q;
+          acc.byCat.azucar.r += real;
+        }
+        if (
+          art.includes('POLLO TODAS LAS MARCAS') ||
+          art.includes('FILET TODAS') ||
+          art.includes('MUSLO CUADRIL') ||
+          art.includes('ALAS DESPRESADAS') ||
+          art.includes('MOLLEJA') ||
+          art.includes('HIGADO')
+        ) {
+          acc.byCat.pollo.q += q;
+          acc.byCat.pollo.r += real;
+        }
+        if (cod === '1461' || cod === '1463') {
+          acc.byCat.estandarAsturias.q += q;
+          acc.byCat.estandarAsturias.r += real;
+        }
+        if (
+          art.includes('MORT') &&
+          (art.includes('ASTURIAS') || art.includes('SALPICAO')) &&
+          cod !== '1461' &&
+          cod !== '1463'
+        ) {
+          acc.byCat.mortadelaSalpicaoAsturias.q += q;
+          acc.byCat.mortadelaSalpicaoAsturias.r += real;
+        }
+      }
+    }
+
+    tempAccum.forEach((val, seller) => {
+      if (SELLER_VOLUME_QUOTAS[seller] && val.kgs > 0) {
+        const prev = SELLER_VOLUME_QUOTAS[seller];
+        const ratio = prev.kgs > 0 ? val.kgs / prev.kgs : 1;
+        SELLER_VOLUME_QUOTAS[seller] = {
+          ...prev,
+          kgs: Number(val.kgs.toFixed(2)),
+          realKgsOct: Number(val.realKgsOct.toFixed(2)),
+          cajas: Math.round(prev.cajas * ratio),
+          monto: Math.round(prev.monto * ratio),
+          byCat: {
+            aceite: {
+              q: Number(val.byCat.aceite.q.toFixed(2)),
+              r: Number(val.byCat.aceite.r.toFixed(2)),
+            },
+            azucar: {
+              q: Number(val.byCat.azucar.q.toFixed(2)),
+              r: Number(val.byCat.azucar.r.toFixed(2)),
+            },
+            pollo: {
+              q: Number(val.byCat.pollo.q.toFixed(2)),
+              r: Number(val.byCat.pollo.r.toFixed(2)),
+            },
+            estandarAsturias: {
+              q: Number(val.byCat.estandarAsturias.q.toFixed(2)),
+              r: Number(val.byCat.estandarAsturias.r.toFixed(2)),
+            },
+            mortadelaSalpicaoAsturias: {
+              q: Number(val.byCat.mortadelaSalpicaoAsturias.q.toFixed(2)),
+              r: Number(val.byCat.mortadelaSalpicaoAsturias.r.toFixed(2)),
+            },
+          },
+        };
+      }
+    });
+
+    volumeQuotasSynced = true;
+    return true;
+  } catch (e) {
+    console.warn('Fallback to static volume quotas:', e);
+    return false;
+  }
 };

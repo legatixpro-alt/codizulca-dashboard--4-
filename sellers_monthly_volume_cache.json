@@ -1,117 +1,117 @@
 {
   "ano": 2026,
-  "lastSync": "2026-10-16T12:16:04.633Z",
-  "totalSourceRows": 281509,
+  "lastSync": "2026-10-17T20:08:49.735Z",
+  "totalSourceRows": 279324,
   "monthlyTotals": [
     {
       "mes": "ENERO",
       "ano": 2026,
-      "cajas": 1821236.9,
-      "kgs": 5094565.1,
-      "montoNeto": 16855922.1,
-      "montoFA": 25227401.5,
-      "montoDV": -8371479.4,
-      "vendedoresCount": 26,
-      "facturasCount": 92404
+      "cajas": 1816232.5,
+      "kgs": 5084521.6,
+      "montoNeto": 16799610.1,
+      "montoFA": 25150706.9,
+      "montoDV": -8351096.8,
+      "vendedoresCount": 22,
+      "facturasCount": 91802
     },
     {
       "mes": "FEBRERO",
       "ano": 2026,
-      "cajas": 96740.7,
-      "kgs": 296922.4,
-      "montoNeto": 867349.5,
-      "montoFA": 1154970.5,
-      "montoDV": -287621,
-      "vendedoresCount": 25,
-      "facturasCount": 4950
+      "cajas": 96726.7,
+      "kgs": 296962.5,
+      "montoNeto": 867439.6,
+      "montoFA": 1154784.9,
+      "montoDV": -287345.3,
+      "vendedoresCount": 22,
+      "facturasCount": 4945
     },
     {
       "mes": "MARZO",
       "ano": 2026,
-      "cajas": 370270.9,
-      "kgs": 1443435.3,
-      "montoNeto": 3332620.4,
-      "montoFA": 4001665,
-      "montoDV": -669044.6,
-      "vendedoresCount": 26,
-      "facturasCount": 14064
+      "cajas": 369508.6,
+      "kgs": 1442172.5,
+      "montoNeto": 3326900.7,
+      "montoFA": 3995821.7,
+      "montoDV": -668921,
+      "vendedoresCount": 22,
+      "facturasCount": 14037
     },
     {
       "mes": "ABRIL",
       "ano": 2026,
-      "cajas": 726786.3,
-      "kgs": 2619743.2,
-      "montoNeto": 459694.5,
-      "montoFA": 9117592.9,
+      "cajas": 726015,
+      "kgs": 2616155.9,
+      "montoNeto": 450151.8,
+      "montoFA": 9108050.2,
       "montoDV": -8657898.4,
-      "vendedoresCount": 25,
-      "facturasCount": 30427
+      "vendedoresCount": 22,
+      "facturasCount": 30362
     },
     {
       "mes": "MAYO",
       "ano": 2026,
-      "cajas": 641192.9,
-      "kgs": 2613704.4,
-      "montoNeto": 6512433.7,
-      "montoFA": 8431623.9,
-      "montoDV": -1919190.2,
-      "vendedoresCount": 25,
-      "facturasCount": 28354
+      "cajas": 639720.2,
+      "kgs": 2608106,
+      "montoNeto": 6500183.1,
+      "montoFA": 8417876.7,
+      "montoDV": -1917693.6,
+      "vendedoresCount": 22,
+      "facturasCount": 28243
     },
     {
       "mes": "JUNIO",
       "ano": 2026,
-      "cajas": 353200.8,
-      "kgs": 1315164.3,
-      "montoNeto": 3265719.7,
-      "montoFA": 4791885.8,
-      "montoDV": -1526166.1,
-      "vendedoresCount": 25,
-      "facturasCount": 18263
+      "cajas": 351929.8,
+      "kgs": 1313363.3,
+      "montoNeto": 3257366.5,
+      "montoFA": 4782930.3,
+      "montoDV": -1525563.8,
+      "vendedoresCount": 22,
+      "facturasCount": 18224
     },
     {
       "mes": "JULIO",
       "ano": 2026,
-      "cajas": 184729.1,
-      "kgs": 603060.4,
-      "montoNeto": 1349219.3,
-      "montoFA": 1639242.9,
+      "cajas": 184039.1,
+      "kgs": 601735.8,
+      "montoNeto": 1343818.9,
+      "montoFA": 1633842.5,
       "montoDV": -290023.6,
-      "vendedoresCount": 25,
-      "facturasCount": 7544
+      "vendedoresCount": 22,
+      "facturasCount": 7522
     },
     {
       "mes": "AGOSTO",
       "ano": 2026,
-      "cajas": 1252060.5,
-      "kgs": 4178174.9,
-      "montoNeto": 8832505.7,
-      "montoFA": 12030511,
-      "montoDV": -3198005.3,
-      "vendedoresCount": 26,
-      "facturasCount": 47593
+      "cajas": 1248485.5,
+      "kgs": 4168788.9,
+      "montoNeto": 8798782.3,
+      "montoFA": 11994978.3,
+      "montoDV": -3196196,
+      "vendedoresCount": 22,
+      "facturasCount": 47387
     },
     {
       "mes": "SEPTIEMBRE",
       "ano": 2026,
-      "cajas": 563544.4,
-      "kgs": 1474745.75,
-      "montoNeto": 4098138.4,
-      "montoFA": 4531309.46,
-      "montoDV": -433171.06,
-      "vendedoresCount": 28,
-      "facturasCount": 22076
+      "cajas": 558857.51,
+      "kgs": 1463602.8,
+      "montoNeto": 4053571.38,
+      "montoFA": 4484273.74,
+      "montoDV": -430702.36,
+      "vendedoresCount": 23,
+      "facturasCount": 21786
     },
     {
       "mes": "OCTUBRE",
       "ano": 2026,
-      "cajas": 316881.69,
-      "kgs": 997535.5,
-      "montoNeto": 2572220.59,
-      "montoFA": 2725724.06,
-      "montoDV": -153503.47,
-      "vendedoresCount": 32,
-      "facturasCount": 4269
+      "cajas": 283500.72,
+      "kgs": 924867.49,
+      "montoNeto": 2367238.92,
+      "montoFA": 2509745.14,
+      "montoDV": -142506.22,
+      "vendedoresCount": 23,
+      "facturasCount": 12176
     }
   ],
   "sellerMonthlyData": [
@@ -158,17 +158,17 @@
       "vendedor": "MIKELANGELO DIAZ",
       "mes": "ENERO",
       "ano": 2026,
-      "cajas": 84502,
-      "kgs": 295940,
-      "montoNeto": 752342.6,
-      "montoFA": 1340109.7,
-      "montoDV": -587767.1,
-      "cajasFA": 122149.1,
-      "cajasDV": -37647.1,
-      "facturasCount": 2132
+      "cajas": 107947.4,
+      "kgs": 541312.9,
+      "montoNeto": 1297194.6,
+      "montoFA": 1959677.8,
+      "montoDV": -662483.2,
+      "cajasFA": 156234.5,
+      "cajasDV": -48287.1,
+      "facturasCount": 3969
     },
     {
-      "vendedor": "CUENTAS CLAVE 1 - MC",
+      "vendedor": "MARIANA CHACIN",
       "mes": "ENERO",
       "ano": 2026,
       "cajas": 68543.8,
@@ -181,20 +181,7 @@
       "facturasCount": 3412
     },
     {
-      "vendedor": "JAIDER MEDINA - FOOD SERVICE NORTE",
-      "mes": "ENERO",
-      "ano": 2026,
-      "cajas": 1583.9,
-      "kgs": 5821.8,
-      "montoNeto": 27471.8,
-      "montoFA": 47048.8,
-      "montoDV": -19577,
-      "cajasFA": 4037.9,
-      "cajasDV": -2454,
-      "facturasCount": 233
-    },
-    {
-      "vendedor": "CUENTAS CLAVE 2 - SV",
+      "vendedor": "SAIRU VALLES",
       "mes": "ENERO",
       "ano": 2026,
       "cajas": 83381.5,
@@ -285,7 +272,7 @@
       "facturasCount": 4296
     },
     {
-      "vendedor": "OSCAR ORTIZ- CORO",
+      "vendedor": "OSCAR ORTIZ",
       "mes": "ENERO",
       "ano": 2026,
       "cajas": 36690.8,
@@ -597,7 +584,7 @@
       "facturasCount": 1567
     },
     {
-      "vendedor": "CUENTAS CLAVE 2 - SV",
+      "vendedor": "SAIRU VALLES",
       "mes": "AGOSTO",
       "ano": 2026,
       "cajas": 22345.5,
@@ -610,59 +597,20 @@
       "facturasCount": 1426
     },
     {
-      "vendedor": "FOOD SERVICE SUR",
-      "mes": "AGOSTO",
-      "ano": 2026,
-      "cajas": 2180,
-      "kgs": 7515.8,
-      "montoNeto": 24460.1,
-      "montoFA": 24490.8,
-      "montoDV": -30.7,
-      "cajasFA": 2193,
-      "cajasDV": -13,
-      "facturasCount": 125
-    },
-    {
-      "vendedor": "JAIDER MEDINA - FOOD SERVICE NORTE",
-      "mes": "AGOSTO",
-      "ano": 2026,
-      "cajas": 1395,
-      "kgs": 1870.2,
-      "montoNeto": 9263.3,
-      "montoFA": 11041.9,
-      "montoDV": -1778.6,
-      "cajasFA": 1713,
-      "cajasDV": -318,
-      "facturasCount": 81
-    },
-    {
       "vendedor": "MIKELANGELO DIAZ",
       "mes": "AGOSTO",
       "ano": 2026,
-      "cajas": 55819.3,
-      "kgs": 314962.9,
-      "montoNeto": 446453,
-      "montoFA": 501877.8,
-      "montoDV": -55424.8,
-      "cajasFA": 71440.7,
-      "cajasDV": -15621.4,
-      "facturasCount": 1406
+      "cajas": 185818.2,
+      "kgs": 961543.7,
+      "montoNeto": 1231233.5,
+      "montoFA": 1355321.7,
+      "montoDV": -124088.2,
+      "cajasFA": 214522.3,
+      "cajasDV": -28704.1,
+      "facturasCount": 2102
     },
     {
-      "vendedor": "MIKELANGELO DIAZ - VILLA DEL ROS",
-      "mes": "AGOSTO",
-      "ano": 2026,
-      "cajas": 129998.9,
-      "kgs": 646580.8,
-      "montoNeto": 784780.5,
-      "montoFA": 853443.9,
-      "montoDV": -68663.4,
-      "cajasFA": 143081.6,
-      "cajasDV": -13082.7,
-      "facturasCount": 696
-    },
-    {
-      "vendedor": "CUENTAS CLAVE 1 - MC",
+      "vendedor": "MARIANA CHACIN",
       "mes": "AGOSTO",
       "ano": 2026,
       "cajas": 28260,
@@ -701,30 +649,17 @@
       "facturasCount": 2212
     },
     {
-      "vendedor": "OSCAR ORTIZ- CORO",
+      "vendedor": "OSCAR ORTIZ",
       "mes": "AGOSTO",
       "ano": 2026,
-      "cajas": -2224.5,
-      "kgs": 3176.5,
-      "montoNeto": 18919.6,
-      "montoFA": 127128.2,
-      "montoDV": -108208.6,
-      "cajasFA": 23831.9,
-      "cajasDV": -26056.4,
-      "facturasCount": 808
-    },
-    {
-      "vendedor": "OSCAR ORTIZ- LA COSTA",
-      "mes": "AGOSTO",
-      "ano": 2026,
-      "cajas": 572.1,
-      "kgs": 3601.4,
-      "montoNeto": 15337.3,
-      "montoFA": 19588.3,
-      "montoDV": -4251,
-      "cajasFA": 827.1,
-      "cajasDV": -255,
-      "facturasCount": 168
+      "cajas": -1652.4,
+      "kgs": 6777.9,
+      "montoNeto": 34256.9,
+      "montoFA": 146716.5,
+      "montoDV": -112459.6,
+      "cajasFA": 24659,
+      "cajasDV": -26311.4,
+      "facturasCount": 976
     },
     {
       "vendedor": "LUIS GUANIPA",
@@ -740,19 +675,6 @@
       "facturasCount": 669
     },
     {
-      "vendedor": "FOOD SERVICE SUR",
-      "mes": "ENERO",
-      "ano": 2026,
-      "cajas": 3420.5,
-      "kgs": 4221.7,
-      "montoNeto": 28840.2,
-      "montoFA": 29645.8,
-      "montoDV": -805.6,
-      "cajasFA": 3474,
-      "cajasDV": -53.5,
-      "facturasCount": 369
-    },
-    {
       "vendedor": "PEDRO ABREU",
       "mes": "ENERO",
       "ano": 2026,
@@ -764,19 +686,6 @@
       "cajasFA": 17809.6,
       "cajasDV": -10337.3,
       "facturasCount": 677
-    },
-    {
-      "vendedor": "MIKELANGELO DIAZ - VILLA DEL ROS",
-      "mes": "ENERO",
-      "ano": 2026,
-      "cajas": 23445.4,
-      "kgs": 245372.9,
-      "montoNeto": 544852,
-      "montoFA": 619568.1,
-      "montoDV": -74716.1,
-      "cajasFA": 34085.4,
-      "cajasDV": -10640,
-      "facturasCount": 1837
     },
     {
       "vendedor": "ELISA SOLER",
@@ -857,7 +766,7 @@
       "facturasCount": 178
     },
     {
-      "vendedor": "OSCAR ORTIZ- CORO",
+      "vendedor": "OSCAR ORTIZ",
       "mes": "FEBRERO",
       "ano": 2026,
       "cajas": 5764.4,
@@ -961,20 +870,20 @@
       "facturasCount": 222
     },
     {
-      "vendedor": "MIKELANGELO DIAZ - VILLA DEL ROS",
+      "vendedor": "MIKELANGELO DIAZ",
       "mes": "FEBRERO",
       "ano": 2026,
-      "cajas": 11.3,
-      "kgs": 26.8,
-      "montoNeto": 248.8,
-      "montoFA": 291.1,
-      "montoDV": -42.3,
-      "cajasFA": 13.3,
-      "cajasDV": -2,
-      "facturasCount": 7
+      "cajas": 3940.3,
+      "kgs": 11224.9,
+      "montoNeto": 34555.1,
+      "montoFA": 41260.6,
+      "montoDV": -6705.5,
+      "cajasFA": 5222,
+      "cajasDV": -1281.7,
+      "facturasCount": 102
     },
     {
-      "vendedor": "CUENTAS CLAVE 1 - MC",
+      "vendedor": "MARIANA CHACIN",
       "mes": "FEBRERO",
       "ano": 2026,
       "cajas": 83.1,
@@ -1000,7 +909,7 @@
       "facturasCount": 34
     },
     {
-      "vendedor": "CUENTAS CLAVE 2 - SV",
+      "vendedor": "SAIRU VALLES",
       "mes": "FEBRERO",
       "ano": 2026,
       "cajas": 1292.3,
@@ -1050,19 +959,6 @@
       "cajasFA": 28771.7,
       "cajasDV": -13666.3,
       "facturasCount": 582
-    },
-    {
-      "vendedor": "MIKELANGELO DIAZ",
-      "mes": "FEBRERO",
-      "ano": 2026,
-      "cajas": 3929,
-      "kgs": 11198.1,
-      "montoNeto": 34306.3,
-      "montoFA": 40969.5,
-      "montoDV": -6663.2,
-      "cajasFA": 5208.7,
-      "cajasDV": -1279.7,
-      "facturasCount": 95
     },
     {
       "vendedor": "J PABLO ARAUJO - CAB/OJE",
@@ -1143,7 +1039,7 @@
       "facturasCount": 1679
     },
     {
-      "vendedor": "CUENTAS CLAVE 1 - MC",
+      "vendedor": "MARIANA CHACIN",
       "mes": "ABRIL",
       "ano": 2026,
       "cajas": 24312.2,
@@ -1221,7 +1117,7 @@
       "facturasCount": 611
     },
     {
-      "vendedor": "OSCAR ORTIZ- CORO",
+      "vendedor": "OSCAR ORTIZ",
       "mes": "ABRIL",
       "ano": 2026,
       "cajas": 1813.5,
@@ -1299,7 +1195,7 @@
       "facturasCount": 772
     },
     {
-      "vendedor": "CUENTAS CLAVE 2 - SV",
+      "vendedor": "SAIRU VALLES",
       "mes": "ABRIL",
       "ano": 2026,
       "cajas": 6417,
@@ -1315,14 +1211,14 @@
       "vendedor": "MIKELANGELO DIAZ",
       "mes": "ABRIL",
       "ano": 2026,
-      "cajas": 42892.7,
-      "kgs": 238894.5,
-      "montoNeto": 378953.2,
-      "montoFA": 427984.3,
-      "montoDV": -49031.1,
-      "cajasFA": 54384.2,
-      "cajasDV": -11491.5,
-      "facturasCount": 935
+      "cajas": 44180.5,
+      "kgs": 254783.1,
+      "montoNeto": 398469.1,
+      "montoFA": 473743,
+      "montoDV": -75273.9,
+      "cajasFA": 60759,
+      "cajasDV": -16578.5,
+      "facturasCount": 1070
     },
     {
       "vendedor": "LEONARDO RIOS",
@@ -1351,7 +1247,7 @@
       "facturasCount": 972
     },
     {
-      "vendedor": "OSCAR ORTIZ- CORO",
+      "vendedor": "OSCAR ORTIZ",
       "mes": "MARZO",
       "ano": 2026,
       "cajas": 511.2,
@@ -1458,14 +1354,14 @@
       "vendedor": "MIKELANGELO DIAZ",
       "mes": "MARZO",
       "ano": 2026,
-      "cajas": 31407.8,
-      "kgs": 145283.1,
-      "montoNeto": 258037.7,
-      "montoFA": 273704.5,
-      "montoDV": -15666.8,
-      "cajasFA": 36011.2,
-      "cajasDV": -4603.4,
-      "facturasCount": 524
+      "cajas": 33181.6,
+      "kgs": 210698.6,
+      "montoNeto": 343360.1,
+      "montoFA": 382670.8,
+      "montoDV": -39310.7,
+      "cajasFA": 40558,
+      "cajasDV": -7376.4,
+      "facturasCount": 752
     },
     {
       "vendedor": "EDUARDO PIÑA",
@@ -1507,7 +1403,7 @@
       "facturasCount": 760
     },
     {
-      "vendedor": "CUENTAS CLAVE 1 - MC",
+      "vendedor": "MARIANA CHACIN",
       "mes": "MARZO",
       "ano": 2026,
       "cajas": 3685.4,
@@ -1531,19 +1427,6 @@
       "cajasFA": 33532.1,
       "cajasDV": -6455.4,
       "facturasCount": 1168
-    },
-    {
-      "vendedor": "MIKELANGELO DIAZ - VILLA DEL ROS",
-      "mes": "MARZO",
-      "ano": 2026,
-      "cajas": 1773.8,
-      "kgs": 65415.5,
-      "montoNeto": 85322.4,
-      "montoFA": 108966.3,
-      "montoDV": -23643.9,
-      "cajasFA": 4546.8,
-      "cajasDV": -2773,
-      "facturasCount": 228
     },
     {
       "vendedor": "JOSE G. GONZALEZ",
@@ -1585,7 +1468,7 @@
       "facturasCount": 196
     },
     {
-      "vendedor": "CUENTAS CLAVE 2 - SV",
+      "vendedor": "SAIRU VALLES",
       "mes": "MARZO",
       "ano": 2026,
       "cajas": 3738.3,
@@ -1624,19 +1507,6 @@
       "facturasCount": 155
     },
     {
-      "vendedor": "FOOD SERVICE SUR",
-      "mes": "MARZO",
-      "ano": 2026,
-      "cajas": 152.3,
-      "kgs": 563.2,
-      "montoNeto": 1955.2,
-      "montoFA": 2078.8,
-      "montoDV": -123.6,
-      "cajasFA": 163.3,
-      "cajasDV": -11,
-      "facturasCount": 24
-    },
-    {
       "vendedor": "PEDRO ABREU",
       "mes": "FEBRERO",
       "ano": 2026,
@@ -1663,19 +1533,6 @@
       "facturasCount": 430
     },
     {
-      "vendedor": "FOOD SERVICE SUR",
-      "mes": "ABRIL",
-      "ano": 2026,
-      "cajas": 669.3,
-      "kgs": 2567.3,
-      "montoNeto": 6627.7,
-      "montoFA": 6627.7,
-      "montoDV": 0,
-      "cajasFA": 669.3,
-      "cajasDV": 0,
-      "facturasCount": 56
-    },
-    {
       "vendedor": "JOSE G. GONZALEZ",
       "mes": "ABRIL",
       "ano": 2026,
@@ -1687,19 +1544,6 @@
       "cajasFA": 60980.5,
       "cajasDV": -32787.6,
       "facturasCount": 1403
-    },
-    {
-      "vendedor": "JAIDER MEDINA - FOOD SERVICE NORTE",
-      "mes": "ABRIL",
-      "ano": 2026,
-      "cajas": 102,
-      "kgs": 1020,
-      "montoNeto": 2915,
-      "montoFA": 2915,
-      "montoDV": 0,
-      "cajasFA": 102,
-      "cajasDV": 0,
-      "facturasCount": 9
     },
     {
       "vendedor": "LEONARDO RIOS",
@@ -1897,7 +1741,7 @@
       "facturasCount": 1256
     },
     {
-      "vendedor": "CUENTAS CLAVE 2 - SV",
+      "vendedor": "SAIRU VALLES",
       "mes": "JUNIO",
       "ano": 2026,
       "cajas": 3347.6,
@@ -1923,7 +1767,7 @@
       "facturasCount": 639
     },
     {
-      "vendedor": "CUENTAS CLAVE 1 - MC",
+      "vendedor": "MARIANA CHACIN",
       "mes": "JUNIO",
       "ano": 2026,
       "cajas": 19896.1,
@@ -1962,30 +1806,17 @@
       "facturasCount": 997
     },
     {
-      "vendedor": "MIKELANGELO DIAZ - VILLA DEL ROS",
-      "mes": "JUNIO",
-      "ano": 2026,
-      "cajas": 21883.7,
-      "kgs": 52073.6,
-      "montoNeto": 100819.4,
-      "montoFA": 167285.8,
-      "montoDV": -66466.4,
-      "cajasFA": 27947.7,
-      "cajasDV": -6064,
-      "facturasCount": 125
-    },
-    {
       "vendedor": "MIKELANGELO DIAZ",
       "mes": "JUNIO",
       "ano": 2026,
-      "cajas": 15398.8,
-      "kgs": 54401.8,
-      "montoNeto": 150967.2,
-      "montoFA": 189596.5,
-      "montoDV": -38629.3,
-      "cajasFA": 24491.4,
-      "cajasDV": -9092.6,
-      "facturasCount": 568
+      "cajas": 37282.5,
+      "kgs": 106475.4,
+      "montoNeto": 251786.6,
+      "montoFA": 356882.3,
+      "montoDV": -105095.7,
+      "cajasFA": 52439.1,
+      "cajasDV": -15156.6,
+      "facturasCount": 693
     },
     {
       "vendedor": "ELISA SOLER",
@@ -2027,7 +1858,7 @@
       "facturasCount": 1924
     },
     {
-      "vendedor": "CUENTAS CLAVE 1 - MC",
+      "vendedor": "MARIANA CHACIN",
       "mes": "MAYO",
       "ano": 2026,
       "cajas": 12437.2,
@@ -2082,14 +1913,14 @@
       "vendedor": "MIKELANGELO DIAZ",
       "mes": "MAYO",
       "ano": 2026,
-      "cajas": 36132.1,
-      "kgs": 105995.4,
-      "montoNeto": 234889.6,
-      "montoFA": 322072,
-      "montoDV": -87182.4,
-      "cajasFA": 48414.2,
-      "cajasDV": -12282.1,
-      "facturasCount": 802
+      "cajas": 66980.7,
+      "kgs": 183251.1,
+      "montoNeto": 420202,
+      "montoFA": 534499.2,
+      "montoDV": -114297.2,
+      "cajasFA": 84325.8,
+      "cajasDV": -17345.1,
+      "facturasCount": 1218
     },
     {
       "vendedor": "J PABLO ARAUJO",
@@ -2157,19 +1988,6 @@
       "facturasCount": 1236
     },
     {
-      "vendedor": "FOOD SERVICE SUR",
-      "mes": "MAYO",
-      "ano": 2026,
-      "cajas": 1471.7,
-      "kgs": 5588.4,
-      "montoNeto": 12237.6,
-      "montoFA": 12654.2,
-      "montoDV": -416.6,
-      "cajasFA": 1531,
-      "cajasDV": -59.3,
-      "facturasCount": 106
-    },
-    {
       "vendedor": "MARYERY GARCIA",
       "mes": "MAYO",
       "ano": 2026,
@@ -2209,7 +2027,7 @@
       "facturasCount": 1512
     },
     {
-      "vendedor": "CUENTAS CLAVE 2 - SV",
+      "vendedor": "SAIRU VALLES",
       "mes": "MAYO",
       "ano": 2026,
       "cajas": 6823.4,
@@ -2274,19 +2092,6 @@
       "facturasCount": 1029
     },
     {
-      "vendedor": "MIKELANGELO DIAZ - VILLA DEL ROS",
-      "mes": "MAYO",
-      "ano": 2026,
-      "cajas": 30848.6,
-      "kgs": 77255.7,
-      "montoNeto": 185312.4,
-      "montoFA": 212427.2,
-      "montoDV": -27114.8,
-      "cajasFA": 35911.6,
-      "cajasDV": -5063,
-      "facturasCount": 416
-    },
-    {
       "vendedor": "J PABLO ARAUJO",
       "mes": "JULIO",
       "ano": 2026,
@@ -2326,17 +2131,17 @@
       "facturasCount": 195
     },
     {
-      "vendedor": "MIKELANGELO DIAZ - VILLA DEL ROS",
+      "vendedor": "MIKELANGELO DIAZ",
       "mes": "JULIO",
       "ano": 2026,
-      "cajas": 3425,
-      "kgs": 21211.7,
-      "montoNeto": 39914,
-      "montoFA": 50056.5,
-      "montoDV": -10142.5,
-      "cajasFA": 6218,
-      "cajasDV": -2793,
-      "facturasCount": 351
+      "cajas": 25288.2,
+      "kgs": 75626.8,
+      "montoNeto": 139119.7,
+      "montoFA": 161382.9,
+      "montoDV": -22263.2,
+      "cajasFA": 28600.3,
+      "cajasDV": -3312.1,
+      "facturasCount": 759
     },
     {
       "vendedor": "HERNAN PAZ",
@@ -2430,7 +2235,7 @@
       "facturasCount": 169
     },
     {
-      "vendedor": "CUENTAS CLAVE 1 - MC",
+      "vendedor": "MARIANA CHACIN",
       "mes": "JULIO",
       "ano": 2026,
       "cajas": 4660.4,
@@ -2443,7 +2248,7 @@
       "facturasCount": 257
     },
     {
-      "vendedor": "CUENTAS CLAVE 2 - SV",
+      "vendedor": "SAIRU VALLES",
       "mes": "JULIO",
       "ano": 2026,
       "cajas": 3176,
@@ -2508,19 +2313,6 @@
       "facturasCount": 173
     },
     {
-      "vendedor": "FOOD SERVICE SUR",
-      "mes": "JULIO",
-      "ano": 2026,
-      "cajas": 124,
-      "kgs": 610.6,
-      "montoNeto": 1866.2,
-      "montoFA": 1866.2,
-      "montoDV": 0,
-      "cajasFA": 124,
-      "cajasDV": 0,
-      "facturasCount": 9
-    },
-    {
       "vendedor": "J PABLO ARAUJO - CAB/OJE",
       "mes": "JULIO",
       "ano": 2026,
@@ -2547,20 +2339,7 @@
       "facturasCount": 55
     },
     {
-      "vendedor": "JAIDER MEDINA - FOOD SERVICE NORTE",
-      "mes": "MAYO",
-      "ano": 2026,
-      "cajas": 1,
-      "kgs": 10,
-      "montoNeto": 13,
-      "montoFA": 1093,
-      "montoDV": -1080,
-      "cajasFA": 37,
-      "cajasDV": -36,
-      "facturasCount": 5
-    },
-    {
-      "vendedor": "OSCAR ORTIZ- CORO",
+      "vendedor": "OSCAR ORTIZ",
       "mes": "MAYO",
       "ano": 2026,
       "cajas": 455.2,
@@ -2571,45 +2350,6 @@
       "cajasFA": 4600.3,
       "cajasDV": -4145.1,
       "facturasCount": 52
-    },
-    {
-      "vendedor": "FOOD SERVICE SUR",
-      "mes": "FEBRERO",
-      "ano": 2026,
-      "cajas": 19,
-      "kgs": 19.9,
-      "montoNeto": 185.6,
-      "montoFA": 185.6,
-      "montoDV": 0,
-      "cajasFA": 19,
-      "cajasDV": 0,
-      "facturasCount": 3
-    },
-    {
-      "vendedor": "JAIDER MEDINA - FOOD SERVICE NORTE",
-      "mes": "MARZO",
-      "ano": 2026,
-      "cajas": 610,
-      "kgs": 699.6,
-      "montoNeto": 3764.5,
-      "montoFA": 3764.5,
-      "montoDV": 0,
-      "cajasFA": 610,
-      "cajasDV": 0,
-      "facturasCount": 3
-    },
-    {
-      "vendedor": "MIKELANGELO DIAZ - VILLA DEL ROS",
-      "mes": "ABRIL",
-      "ano": 2026,
-      "cajas": 1287.8,
-      "kgs": 15888.6,
-      "montoNeto": 19515.9,
-      "montoFA": 45758.7,
-      "montoDV": -26242.8,
-      "cajasFA": 6374.8,
-      "cajasDV": -5087,
-      "facturasCount": 135
     },
     {
       "vendedor": "LUIS GUANIPA",
@@ -2625,7 +2365,7 @@
       "facturasCount": 64
     },
     {
-      "vendedor": "OSCAR ORTIZ- CORO",
+      "vendedor": "OSCAR ORTIZ",
       "mes": "JULIO",
       "ano": 2026,
       "cajas": 264.2,
@@ -2638,33 +2378,7 @@
       "facturasCount": 46
     },
     {
-      "vendedor": "MIKELANGELO DIAZ",
-      "mes": "JULIO",
-      "ano": 2026,
-      "cajas": 21863.2,
-      "kgs": 54415.1,
-      "montoNeto": 99205.7,
-      "montoFA": 111326.4,
-      "montoDV": -12120.7,
-      "cajasFA": 22382.3,
-      "cajasDV": -519.1,
-      "facturasCount": 408
-    },
-    {
-      "vendedor": "JAIDER MEDINA - FOOD SERVICE NORTE",
-      "mes": "JULIO",
-      "ano": 2026,
-      "cajas": 566,
-      "kgs": 714,
-      "montoNeto": 3534.2,
-      "montoFA": 3534.2,
-      "montoDV": 0,
-      "cajasFA": 566,
-      "cajasDV": 0,
-      "facturasCount": 13
-    },
-    {
-      "vendedor": "OSCAR ORTIZ- CORO",
+      "vendedor": "OSCAR ORTIZ",
       "mes": "JUNIO",
       "ano": 2026,
       "cajas": 703,
@@ -2675,32 +2389,6 @@
       "cajasFA": 924,
       "cajasDV": -221,
       "facturasCount": 103
-    },
-    {
-      "vendedor": "FOOD SERVICE SUR",
-      "mes": "JUNIO",
-      "ano": 2026,
-      "cajas": 275,
-      "kgs": 679.4,
-      "montoNeto": 2352,
-      "montoFA": 2849.5,
-      "montoDV": -497.5,
-      "cajasFA": 314,
-      "cajasDV": -39,
-      "facturasCount": 34
-    },
-    {
-      "vendedor": "JAIDER MEDINA - FOOD SERVICE NORTE",
-      "mes": "JUNIO",
-      "ano": 2026,
-      "cajas": 996,
-      "kgs": 1121.6,
-      "montoNeto": 6001.2,
-      "montoFA": 6106,
-      "montoDV": -104.8,
-      "cajasFA": 1014,
-      "cajasDV": -18,
-      "facturasCount": 5
     },
     {
       "vendedor": "ELISA SOLER",
@@ -2716,27 +2404,14 @@
       "facturasCount": 513
     },
     {
-      "vendedor": "JAIDER MEDINA - FOOD SERVICE NORTE",
-      "mes": "FEBRERO",
-      "ano": 2026,
-      "cajas": -5,
-      "kgs": -60,
-      "montoNeto": -275.7,
-      "montoFA": 0,
-      "montoDV": -275.7,
-      "cajasFA": 0,
-      "cajasDV": -5,
-      "facturasCount": 2
-    },
-    {
       "vendedor": "ANGELICA MORENO",
       "mes": "SEPTIEMBRE",
       "ano": 2026,
-      "cajas": 34430.34999999999,
-      "kgs": 84713.57000000005,
-      "montoNeto": 157798.45999999996,
-      "montoFA": 173535.9199999998,
-      "montoDV": -15737.459999999997,
+      "cajas": 34430.35,
+      "kgs": 84713.57,
+      "montoNeto": 157798.46,
+      "montoFA": 173535.92,
+      "montoDV": -15737.46,
       "cajasFA": 38067.27,
       "cajasDV": -3636.92,
       "facturasCount": 827
@@ -2745,12 +2420,12 @@
       "vendedor": "HERNAN PAZ",
       "mes": "SEPTIEMBRE",
       "ano": 2026,
-      "cajas": 6367.5199999999995,
-      "kgs": 28950.519999999993,
-      "montoNeto": 98809.71000000004,
-      "montoFA": 143400.44000000003,
-      "montoDV": -44590.729999999996,
-      "cajasFA": 6604.0199999999995,
+      "cajas": 6367.52,
+      "kgs": 28950.52,
+      "montoNeto": 98809.71,
+      "montoFA": 143400.44,
+      "montoDV": -44590.73,
+      "cajasFA": 6604.02,
       "cajasDV": -236.5,
       "facturasCount": 324
     },
@@ -2759,12 +2434,12 @@
       "mes": "SEPTIEMBRE",
       "ano": 2026,
       "cajas": 15439.67,
-      "kgs": 55491.11000000008,
-      "montoNeto": 124761.2500000001,
-      "montoFA": 156862.89999999997,
+      "kgs": 55491.11,
+      "montoNeto": 124761.25,
+      "montoFA": 156862.9,
       "montoDV": -32101.65,
-      "cajasFA": 17673.900000000005,
-      "cajasDV": -2234.2299999999996,
+      "cajasFA": 17673.9,
+      "cajasDV": -2234.23,
       "facturasCount": 716
     },
     {
@@ -2772,38 +2447,38 @@
       "mes": "SEPTIEMBRE",
       "ano": 2026,
       "cajas": 22514.51,
-      "kgs": 58222.4699999999,
-      "montoNeto": 180795.27000000005,
-      "montoFA": 190664.35000000018,
+      "kgs": 58222.47,
+      "montoNeto": 180795.27,
+      "montoFA": 190664.35,
       "montoDV": -9869.08,
-      "cajasFA": 23515.949999999993,
-      "cajasDV": -1001.4400000000003,
+      "cajasFA": 23515.95,
+      "cajasDV": -1001.44,
       "facturasCount": 1654
     },
     {
       "vendedor": "OSWALDO CHURION",
       "mes": "SEPTIEMBRE",
       "ano": 2026,
-      "cajas": 13072.499999999998,
-      "kgs": 42218.370000000024,
-      "montoNeto": 120786.75999999997,
-      "montoFA": 143720.80999999994,
+      "cajas": 13072.5,
+      "kgs": 42218.37,
+      "montoNeto": 120786.76,
+      "montoFA": 143720.81,
       "montoDV": -22934.05,
-      "cajasFA": 15471.599999999999,
-      "cajasDV": -2399.0999999999995,
+      "cajasFA": 15471.6,
+      "cajasDV": -2399.1,
       "facturasCount": 379
     },
     {
       "vendedor": "YOLEIDA LUGO",
       "mes": "SEPTIEMBRE",
       "ano": 2026,
-      "cajas": 26414.249999999996,
-      "kgs": 71893.52999999993,
-      "montoNeto": 183558.7700000001,
-      "montoFA": 190987.6500000002,
-      "montoDV": -7428.879999999999,
-      "cajasFA": 27222.280000000002,
-      "cajasDV": -808.0300000000002,
+      "cajas": 26414.25,
+      "kgs": 71893.53,
+      "montoNeto": 183558.77,
+      "montoFA": 190987.65,
+      "montoDV": -7428.88,
+      "cajasFA": 27222.28,
+      "cajasDV": -808.03,
       "facturasCount": 1392
     },
     {
@@ -2811,12 +2486,12 @@
       "mes": "SEPTIEMBRE",
       "ano": 2026,
       "cajas": 10870.77,
-      "kgs": 38908.22999999999,
-      "montoNeto": 116063.22999999998,
-      "montoFA": 122158.99999999994,
+      "kgs": 38908.23,
+      "montoNeto": 116063.23,
+      "montoFA": 122159,
       "montoDV": -6095.77,
-      "cajasFA": 11637.710000000001,
-      "cajasDV": -766.9399999999999,
+      "cajasFA": 11637.71,
+      "cajasDV": -766.94,
       "facturasCount": 640
     },
     {
@@ -2824,36 +2499,23 @@
       "mes": "SEPTIEMBRE",
       "ano": 2026,
       "cajas": 51699.32,
-      "kgs": 120624.55000000031,
-      "montoNeto": 318766.55999999965,
-      "montoFA": 331224.33999999956,
-      "montoDV": -12457.779999999988,
-      "cajasFA": 52816.16000000001,
+      "kgs": 120624.55,
+      "montoNeto": 318766.56,
+      "montoFA": 331224.34,
+      "montoDV": -12457.78,
+      "cajasFA": 52816.16,
       "cajasDV": -1116.84,
       "facturasCount": 2061
-    },
-    {
-      "vendedor": "FOOD SERVICE SENIOR - JUAN HERNANDEZ",
-      "mes": "SEPTIEMBRE",
-      "ano": 2026,
-      "cajas": 3105.23,
-      "kgs": 7051.47,
-      "montoNeto": 30223.550000000003,
-      "montoFA": 32210.000000000007,
-      "montoDV": -1986.4499999999996,
-      "cajasFA": 3334.23,
-      "cajasDV": -229,
-      "facturasCount": 181
     },
     {
       "vendedor": "SARAH REYES",
       "mes": "SEPTIEMBRE",
       "ano": 2026,
-      "cajas": 15010.449999999997,
-      "kgs": 59582.789999999964,
-      "montoNeto": 161864.04999999996,
-      "montoFA": 164670.43000000002,
-      "montoDV": -2806.3800000000006,
+      "cajas": 15010.45,
+      "kgs": 59582.79,
+      "montoNeto": 161864.05,
+      "montoFA": 164670.43,
+      "montoDV": -2806.38,
       "cajasFA": 15552.73,
       "cajasDV": -542.28,
       "facturasCount": 909
@@ -2862,24 +2524,24 @@
       "vendedor": "LEONARDO RIOS",
       "mes": "SEPTIEMBRE",
       "ano": 2026,
-      "cajas": 24925.140000000003,
-      "kgs": 49052.25999999997,
-      "montoNeto": 145501.00000000003,
-      "montoFA": 150044.46000000005,
-      "montoDV": -4543.459999999998,
-      "cajasFA": 25347.420000000006,
-      "cajasDV": -422.28000000000003,
+      "cajas": 24925.14,
+      "kgs": 49052.26,
+      "montoNeto": 145501,
+      "montoFA": 150044.46,
+      "montoDV": -4543.46,
+      "cajasFA": 25347.42,
+      "cajasDV": -422.28,
       "facturasCount": 694
     },
     {
       "vendedor": "J PABLO ARAUJO",
       "mes": "SEPTIEMBRE",
       "ano": 2026,
-      "cajas": 53654.909999999996,
-      "kgs": 123223.27000000032,
-      "montoNeto": 360506.389999999,
-      "montoFA": 391430.49999999884,
-      "montoDV": -30924.109999999993,
+      "cajas": 53654.91,
+      "kgs": 123223.27,
+      "montoNeto": 360506.39,
+      "montoFA": 391430.5,
+      "montoDV": -30924.11,
       "cajasFA": 58621.22,
       "cajasDV": -4966.31,
       "facturasCount": 2176
@@ -2888,51 +2550,38 @@
       "vendedor": "MARYERY GARCIA",
       "mes": "SEPTIEMBRE",
       "ano": 2026,
-      "cajas": 46724.32999999998,
-      "kgs": 99685.90000000029,
-      "montoNeto": 279452.42999999964,
-      "montoFA": 298258.0599999997,
-      "montoDV": -18805.629999999986,
-      "cajasFA": 50516.92999999998,
-      "cajasDV": -3792.5999999999995,
+      "cajas": 46724.33,
+      "kgs": 99685.9,
+      "montoNeto": 279452.43,
+      "montoFA": 298258.06,
+      "montoDV": -18805.63,
+      "cajasFA": 50516.93,
+      "cajasDV": -3792.6,
       "facturasCount": 1833
-    },
-    {
-      "vendedor": "JAIDER MEDINA - FOOD SERVICE NORTE",
-      "mes": "SEPTIEMBRE",
-      "ano": 2026,
-      "cajas": 392.66,
-      "kgs": 827.02,
-      "montoNeto": 3673.8300000000004,
-      "montoFA": 3861.9400000000005,
-      "montoDV": -188.11,
-      "cajasFA": 424.66,
-      "cajasDV": -32,
-      "facturasCount": 35
     },
     {
       "vendedor": "MIKELANGELO DIAZ",
       "mes": "SEPTIEMBRE",
       "ano": 2026,
-      "cajas": 21667.649999999994,
-      "kgs": 15738.48,
-      "montoNeto": 84957.47999999998,
-      "montoFA": 117635.70000000001,
-      "montoDV": -32678.220000000005,
-      "cajasFA": 25706.559999999994,
-      "cajasDV": -4038.91,
-      "facturasCount": 579
+      "cajas": 52609.99,
+      "kgs": 61790.51,
+      "montoNeto": 193594.73,
+      "montoFA": 230379.99,
+      "montoDV": -36785.26,
+      "cajasFA": 58156.98,
+      "cajasDV": -5546.99,
+      "facturasCount": 934
     },
     {
       "vendedor": "JOSE G. GONZALEZ",
       "mes": "SEPTIEMBRE",
       "ano": 2026,
-      "cajas": 33770.240000000005,
-      "kgs": 53140.18999999997,
-      "montoNeto": 159156.84999999998,
-      "montoFA": 171490.08000000013,
-      "montoDV": -12333.229999999998,
-      "cajasFA": 36396.05000000002,
+      "cajas": 33770.24,
+      "kgs": 53140.19,
+      "montoNeto": 159156.85,
+      "montoFA": 171490.08,
+      "montoDV": -12333.23,
+      "cajasFA": 36396.05,
       "cajasDV": -2625.81,
       "facturasCount": 1035
     },
@@ -2940,25 +2589,25 @@
       "vendedor": "CARLOS FUENMAYOR",
       "mes": "SEPTIEMBRE",
       "ano": 2026,
-      "cajas": 17209.239999999998,
-      "kgs": 73873.46000000002,
+      "cajas": 17209.24,
+      "kgs": 73873.46,
       "montoNeto": 220232.27,
-      "montoFA": 237951.73999999996,
-      "montoDV": -17719.470000000005,
+      "montoFA": 237951.74,
+      "montoDV": -17719.47,
       "cajasFA": 18047.35,
-      "cajasDV": -838.1100000000001,
+      "cajasDV": -838.11,
       "facturasCount": 571
     },
     {
-      "vendedor": "CUENTAS CLAVE 1 - MC",
+      "vendedor": "MARIANA CHACIN",
       "mes": "SEPTIEMBRE",
       "ano": 2026,
       "cajas": 5500.96,
-      "kgs": 26005.839999999993,
-      "montoNeto": 76810.62999999996,
-      "montoFA": 99731.67999999995,
-      "montoDV": -22921.049999999996,
-      "cajasFA": 8709.050000000001,
+      "kgs": 26005.84,
+      "montoNeto": 76810.63,
+      "montoFA": 99731.68,
+      "montoDV": -22921.05,
+      "cajasFA": 8709.05,
       "cajasDV": -3208.09,
       "facturasCount": 335
     },
@@ -2968,22 +2617,22 @@
       "ano": 2026,
       "cajas": 12457.41,
       "kgs": 35595.67,
-      "montoNeto": 122084.24000000005,
-      "montoFA": 132913.42000000004,
+      "montoNeto": 122084.24,
+      "montoFA": 132913.42,
       "montoDV": -10829.18,
       "cajasFA": 13446.32,
-      "cajasDV": -988.9100000000001,
+      "cajasDV": -988.91,
       "facturasCount": 533
     },
     {
       "vendedor": "ALI PEREZ",
       "mes": "SEPTIEMBRE",
       "ano": 2026,
-      "cajas": 37237.98999999999,
-      "kgs": 71596.42999999998,
-      "montoNeto": 195826.7100000001,
-      "montoFA": 202478.47000000015,
-      "montoDV": -6651.759999999999,
+      "cajas": 37237.99,
+      "kgs": 71596.43,
+      "montoNeto": 195826.71,
+      "montoFA": 202478.47,
+      "montoDV": -6651.76,
       "cajasFA": 38377.24,
       "cajasDV": -1139.25,
       "facturasCount": 1429
@@ -2992,12 +2641,12 @@
       "vendedor": "PEDRO ABREU",
       "mes": "SEPTIEMBRE",
       "ano": 2026,
-      "cajas": 10002.969999999998,
-      "kgs": 29002.530000000017,
+      "cajas": 10002.97,
+      "kgs": 29002.53,
       "montoNeto": 68390.16,
-      "montoFA": 73322.50999999997,
-      "montoDV": -4932.349999999999,
-      "cajasFA": 10377.479999999998,
+      "montoFA": 73322.51,
+      "montoDV": -4932.35,
+      "cajasFA": 10377.48,
       "cajasDV": -374.51,
       "facturasCount": 453
     },
@@ -3006,91 +2655,52 @@
       "mes": "SEPTIEMBRE",
       "ano": 2026,
       "cajas": 2640.39,
-      "kgs": 9100.989999999998,
-      "montoNeto": 28117.650000000012,
-      "montoFA": 30832.63000000001,
+      "kgs": 9100.99,
+      "montoNeto": 28117.65,
+      "montoFA": 30832.63,
       "montoDV": -2714.98,
-      "cajasFA": 2860.7199999999993,
-      "cajasDV": -220.32999999999998,
+      "cajasFA": 2860.72,
+      "cajasDV": -220.33,
       "facturasCount": 338
     },
     {
-      "vendedor": "MIKELANGELO DIAZ - VILLA DEL ROS",
+      "vendedor": "SAIRU VALLES",
       "mes": "SEPTIEMBRE",
       "ano": 2026,
-      "cajas": 30942.339999999997,
-      "kgs": 46052.030000000006,
-      "montoNeto": 108637.25000000003,
-      "montoFA": 112744.29000000001,
-      "montoDV": -4107.04,
-      "cajasFA": 32450.42,
-      "cajasDV": -1508.08,
-      "facturasCount": 355
-    },
-    {
-      "vendedor": "FOOD SERVICE SUR",
-      "mes": "SEPTIEMBRE",
-      "ano": 2026,
-      "cajas": 1189,
-      "kgs": 3264.46,
-      "montoNeto": 10669.640000000001,
-      "montoFA": 10963.78,
-      "montoDV": -294.14,
-      "cajasFA": 1244,
-      "cajasDV": -55,
-      "facturasCount": 65
-    },
-    {
-      "vendedor": "CUENTAS CLAVE 2 - SV",
-      "mes": "SEPTIEMBRE",
-      "ano": 2026,
-      "cajas": 49565.76999999999,
-      "kgs": 204001.8000000001,
-      "montoNeto": 525726.2499999999,
-      "montoFA": 620610.1499999998,
-      "montoDV": -94883.89999999998,
+      "cajas": 49565.77,
+      "kgs": 204001.8,
+      "montoNeto": 525726.25,
+      "montoFA": 620610.15,
+      "montoDV": -94883.9,
       "cajasFA": 55526.99,
-      "cajasDV": -5961.219999999999,
+      "cajasDV": -5961.22,
       "facturasCount": 644
     },
     {
       "vendedor": "EDUARDO PIÑA",
       "mes": "SEPTIEMBRE",
       "ano": 2026,
-      "cajas": 11963.140000000001,
-      "kgs": 55320.88999999999,
-      "montoNeto": 175749.52000000014,
-      "montoFA": 184861.80000000016,
-      "montoDV": -9112.279999999997,
+      "cajas": 11963.14,
+      "kgs": 55320.89,
+      "montoNeto": 175749.52,
+      "montoFA": 184861.8,
+      "montoDV": -9112.28,
       "cajasFA": 13353.03,
-      "cajasDV": -1389.8899999999999,
+      "cajasDV": -1389.89,
       "facturasCount": 1427
     },
     {
-      "vendedor": "OSCAR ORTIZ- LA COSTA",
+      "vendedor": "OSCAR ORTIZ",
       "mes": "SEPTIEMBRE",
       "ano": 2026,
-      "cajas": 354.75,
-      "kgs": 2086.61,
-      "montoNeto": 6834.459999999999,
-      "montoFA": 8108.469999999998,
-      "montoDV": -1274.01,
-      "cajasFA": 396.83,
-      "cajasDV": -42.08,
-      "facturasCount": 102
-    },
-    {
-      "vendedor": "OSCAR ORTIZ- CORO",
-      "mes": "SEPTIEMBRE",
-      "ano": 2026,
-      "cajas": 4420.939999999999,
-      "kgs": 9521.310000000001,
-      "montoNeto": 32384.029999999988,
-      "montoFA": 34633.94,
-      "montoDV": -2249.91,
-      "cajasFA": 4717.799999999999,
-      "cajasDV": -296.86,
-      "facturasCount": 380
+      "cajas": 4775.69,
+      "kgs": 11607.92,
+      "montoNeto": 39218.49,
+      "montoFA": 42742.41,
+      "montoDV": -3523.92,
+      "cajasFA": 5114.63,
+      "cajasDV": -338.94,
+      "facturasCount": 482
     },
     {
       "vendedor": "OSWALDO CHURION",
@@ -3103,7 +2713,7 @@
       "montoDV": -3827.91,
       "cajasFA": 12883.54,
       "cajasDV": -301.67,
-      "facturasCount": 82
+      "facturasCount": 234
     },
     {
       "vendedor": "ELISA SOLER",
@@ -3116,7 +2726,7 @@
       "montoDV": -3776.55,
       "cajasFA": 29342.39,
       "cajasDV": -792.77,
-      "facturasCount": 368
+      "facturasCount": 1230
     },
     {
       "vendedor": "MARIA BRICEÑO",
@@ -3129,7 +2739,7 @@
       "montoDV": -4903.2,
       "cajasFA": 11474.23,
       "cajasDV": -783.24,
-      "facturasCount": 269
+      "facturasCount": 954
     },
     {
       "vendedor": "HERNAN PAZ",
@@ -3142,7 +2752,7 @@
       "montoDV": -727.35,
       "cajasFA": 4740.57,
       "cajasDV": -59.38,
-      "facturasCount": 74
+      "facturasCount": 208
     },
     {
       "vendedor": "JUAN HERNANDEZ",
@@ -3155,7 +2765,7 @@
       "montoDV": -2238.25,
       "cajasFA": 7637.45,
       "cajasDV": -333.38,
-      "facturasCount": 132
+      "facturasCount": 383
     },
     {
       "vendedor": "ANGELICA MORENO",
@@ -3168,7 +2778,7 @@
       "montoDV": -948.76,
       "cajasFA": 13921.83,
       "cajasDV": -140.33,
-      "facturasCount": 132
+      "facturasCount": 451
     },
     {
       "vendedor": "MARYERY GARCIA",
@@ -3181,7 +2791,7 @@
       "montoDV": -11060.81,
       "cajasFA": 29859.61,
       "cajasDV": -890.93,
-      "facturasCount": 328
+      "facturasCount": 931
     },
     {
       "vendedor": "YOLEIDA LUGO",
@@ -3194,20 +2804,7 @@
       "montoDV": -2237.04,
       "cajasFA": 16199.59,
       "cajasDV": -332.98,
-      "facturasCount": 229
-    },
-    {
-      "vendedor": "FOOD SERVICE SENIOR - JUAN HERNANDEZ",
-      "mes": "OCTUBRE",
-      "ano": 2026,
-      "cajas": 1403.77,
-      "kgs": 4229.11,
-      "montoNeto": 17567.21,
-      "montoFA": 20882.04,
-      "montoDV": -3314.83,
-      "cajasFA": 1634.19,
-      "cajasDV": -230.42,
-      "facturasCount": 77
+      "facturasCount": 914
     },
     {
       "vendedor": "LEONARDO RIOS",
@@ -3220,7 +2817,7 @@
       "montoDV": -911.92,
       "cajasFA": 14143.17,
       "cajasDV": -129.08,
-      "facturasCount": 131
+      "facturasCount": 472
     },
     {
       "vendedor": "J PABLO ARAUJO",
@@ -3233,20 +2830,20 @@
       "montoDV": -4467.66,
       "cajasFA": 30654.65,
       "cajasDV": -661.46,
-      "facturasCount": 342
+      "facturasCount": 1287
     },
     {
       "vendedor": "MIKELANGELO DIAZ",
       "mes": "OCTUBRE",
       "ano": 2026,
-      "cajas": 14585.69,
-      "kgs": 30542.18,
-      "montoNeto": 82246.1,
-      "montoFA": 86551.87,
-      "montoDV": -4305.77,
-      "cajasFA": 15875.58,
-      "cajasDV": -1289.89,
-      "facturasCount": 116
+      "cajas": 16441.99,
+      "kgs": 32493.73,
+      "montoNeto": 103320.38,
+      "montoFA": 114976.75,
+      "montoDV": -11656.37,
+      "cajasFA": 18285.16,
+      "cajasDV": -1843.17,
+      "facturasCount": 640
     },
     {
       "vendedor": "JOSE G. GONZALEZ",
@@ -3259,10 +2856,10 @@
       "montoDV": -4025.44,
       "cajasFA": 25003.81,
       "cajasDV": -842.2,
-      "facturasCount": 235
+      "facturasCount": 588
     },
     {
-      "vendedor": "CUENTAS CLAVE 1 - MC",
+      "vendedor": "MARIANA CHACIN",
       "mes": "OCTUBRE",
       "ano": 2026,
       "cajas": 8351.53,
@@ -3272,7 +2869,7 @@
       "montoDV": -23339.29,
       "cajasFA": 12166.88,
       "cajasDV": -3815.35,
-      "facturasCount": 88
+      "facturasCount": 366
     },
     {
       "vendedor": "SARAH REYES",
@@ -3285,7 +2882,7 @@
       "montoDV": -4634.19,
       "cajasFA": 9856.24,
       "cajasDV": -438,
-      "facturasCount": 218
+      "facturasCount": 637
     },
     {
       "vendedor": "CARLOS FUENMAYOR",
@@ -3298,20 +2895,20 @@
       "montoDV": -27452.77,
       "cajasFA": 8157.51,
       "cajasDV": -912.83,
-      "facturasCount": 107
+      "facturasCount": 276
     },
     {
-      "vendedor": "OSCAR ORTIZ- CORO",
+      "vendedor": "OSCAR ORTIZ",
       "mes": "OCTUBRE",
       "ano": 2026,
-      "cajas": 1938.82,
-      "kgs": 5726.26,
-      "montoNeto": 16478.38,
-      "montoFA": 17734.11,
+      "cajas": 2629.65,
+      "kgs": 8494.81,
+      "montoNeto": 25347.22,
+      "montoFA": 26602.95,
       "montoDV": -1255.73,
-      "cajasFA": 2103.73,
+      "cajasFA": 2794.56,
       "cajasDV": -164.91,
-      "facturasCount": 93
+      "facturasCount": 313
     },
     {
       "vendedor": "ALI PEREZ",
@@ -3324,20 +2921,7 @@
       "montoDV": -475.04,
       "cajasFA": 3362.26,
       "cajasDV": -73.51,
-      "facturasCount": 57
-    },
-    {
-      "vendedor": "VICTOR CAMPOS",
-      "mes": "OCTUBRE",
-      "ano": 2026,
-      "cajas": 19964.47,
-      "kgs": 42896.45,
-      "montoNeto": 120012.09,
-      "montoFA": 125106.56,
-      "montoDV": -5094.47,
-      "cajasFA": 20933.06,
-      "cajasDV": -968.59,
-      "facturasCount": 139
+      "facturasCount": 160
     },
     {
       "vendedor": "LUIS GUANIPA",
@@ -3350,20 +2934,7 @@
       "montoDV": -446.83,
       "cajasFA": 1553.09,
       "cajasDV": -62.71,
-      "facturasCount": 70
-    },
-    {
-      "vendedor": "MARIANGEL GONZALEZ",
-      "mes": "OCTUBRE",
-      "ano": 2026,
-      "cajas": 9123.74,
-      "kgs": 18578.31,
-      "montoNeto": 46624.32,
-      "montoFA": 49163.64,
-      "montoDV": -2539.32,
-      "cajasFA": 9766.9,
-      "cajasDV": -643.16,
-      "facturasCount": 146
+      "facturasCount": 215
     },
     {
       "vendedor": "PEDRO ABREU",
@@ -3376,7 +2947,7 @@
       "montoDV": -3048.66,
       "cajasFA": 6558.01,
       "cajasDV": -985.93,
-      "facturasCount": 60
+      "facturasCount": 183
     },
     {
       "vendedor": "EDUARDO PIÑA",
@@ -3389,36 +2960,10 @@
       "montoDV": -2606.21,
       "cajasFA": 6034.64,
       "cajasDV": -162.24,
-      "facturasCount": 324
+      "facturasCount": 837
     },
     {
-      "vendedor": "JAIDER MEDINA - FOOD SERVICE NORTE",
-      "mes": "OCTUBRE",
-      "ano": 2026,
-      "cajas": 476.49,
-      "kgs": 898.75,
-      "montoNeto": 3937.09,
-      "montoFA": 3942.76,
-      "montoDV": -5.67,
-      "cajasFA": 477.49,
-      "cajasDV": -1,
-      "facturasCount": 22
-    },
-    {
-      "vendedor": "FOOD SERVICE SUR",
-      "mes": "OCTUBRE",
-      "ano": 2026,
-      "cajas": 570.5,
-      "kgs": 1452.39,
-      "montoNeto": 4719.65,
-      "montoFA": 4724.87,
-      "montoDV": -5.22,
-      "cajasFA": 571.5,
-      "cajasDV": -1,
-      "facturasCount": 25
-    },
-    {
-      "vendedor": "CUENTAS CLAVE 2 - SV",
+      "vendedor": "SAIRU VALLES",
       "mes": "OCTUBRE",
       "ano": 2026,
       "cajas": 19697.51,
@@ -3428,20 +2973,7 @@
       "montoDV": -22993.77,
       "cajasFA": 22032.59,
       "cajasDV": -2335.08,
-      "facturasCount": 127
-    },
-    {
-      "vendedor": "MIKELANGELO DIAZ - VILLA DEL ROS",
-      "mes": "OCTUBRE",
-      "ano": 2026,
-      "cajas": 1856.3,
-      "kgs": 1951.55,
-      "montoNeto": 21074.28,
-      "montoFA": 28424.88,
-      "montoDV": -7350.6,
-      "cajasFA": 2409.58,
-      "cajasDV": -553.28,
-      "facturasCount": 61
+      "facturasCount": 302
     },
     {
       "vendedor": "ADEL JARABA",
@@ -3454,7 +2986,7 @@
       "montoDV": -3647.68,
       "cajasFA": 5247.41,
       "cajasDV": -625.58,
-      "facturasCount": 103
+      "facturasCount": 350
     },
     {
       "vendedor": "J PABLO ARAUJO - CAB/OJE",
@@ -3467,20 +2999,7 @@
       "montoDV": -1824.79,
       "cajasFA": 8562.57,
       "cajasDV": -284.31,
-      "facturasCount": 106
-    },
-    {
-      "vendedor": "OSCAR ORTIZ- LA COSTA",
-      "mes": "OCTUBRE",
-      "ano": 2026,
-      "cajas": 690.83,
-      "kgs": 2768.55,
-      "montoNeto": 8868.84,
-      "montoFA": 8868.84,
-      "montoDV": 0,
-      "cajasFA": 690.83,
-      "cajasDV": 0,
-      "facturasCount": 15
+      "facturasCount": 245
     }
   ]
 }

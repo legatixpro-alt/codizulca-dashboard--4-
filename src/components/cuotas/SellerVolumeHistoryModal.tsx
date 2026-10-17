@@ -235,14 +235,6 @@ export const SellerVolumeHistoryModal: React.FC<SellerVolumeHistoryModalProps> =
                 <span>
                   Supervisor: <strong className="text-zinc-200">{metadata.supervisor}</strong>
                 </span>
-                <span>•</span>
-                <span>
-                  Zona: <strong className="text-zinc-200">{metadata.zona}</strong>
-                </span>
-                <span className="hidden sm:inline">•</span>
-                <span className="hidden sm:inline">
-                  Región: <strong className="text-zinc-300">{metadata.region}</strong>
-                </span>
               </div>
             </div>
           </div>
