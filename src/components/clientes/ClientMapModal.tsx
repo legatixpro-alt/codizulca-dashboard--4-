@@ -230,7 +230,7 @@ export const ClientMapModal: React.FC<ClientMapModalProps> = ({ client, isOpen, 
       `🏪 *CANAL:* ${client.canal}\n` +
       `👤 *VENDEDOR:* ${client.vendedor}\n` +
       `👔 *SUPERVISOR:* ${client.supervisor}\n` +
-      (client.survey?.rifCedula ? `📄 *RIF/CÉDULA:* ${client.survey.rifCedula}\n` : '') +
+      ((client.rif || client.survey?.rifCedula) ? `📄 *RIF/CÉDULA:* ${client.rif || client.survey?.rifCedula}\n` : '') +
       (client.survey?.telefono ? `📞 *TELÉFONO:* ${client.survey.telefono}\n` : '') +
       (hasGps 
         ? `🎯 *GEOCERCA:* Activa (Perímetro: 50m - Estatus: ${client.survey?.estadoEncuesta || 'COMPLETA'})\n` +
@@ -500,10 +500,10 @@ export const ClientMapModal: React.FC<ClientMapModalProps> = ({ client, isOpen, 
                 <span className="text-zinc-300 text-right">{client.supervisor} ({client.zona})</span>
               </div>
 
-              {client.survey?.rifCedula && (
+              {(client.rif || client.survey?.rifCedula) && (
                 <div className="flex items-center justify-between pb-2 border-b border-white/5">
                   <span className="text-zinc-500">RIF / Cédula:</span>
-                  <span className="text-zinc-200 font-mono font-bold">{client.survey.rifCedula}</span>
+                  <span className="text-zinc-200 font-mono font-bold">{client.rif || client.survey?.rifCedula}</span>
                 </div>
               )}
 

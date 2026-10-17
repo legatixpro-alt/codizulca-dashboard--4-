@@ -28,31 +28,33 @@ import {
 import { EnrichedClient } from '../../data/clientsWithLocation';
 import { VendedorMultiSelect, SellerOption } from './VendedorMultiSelect';
 
-// Curated Vibrant Seller Palette
+// Curated Vibrant Seller Palette (25 Official Sellers)
 const SELLER_COLORS: { [seller: string]: string } = {
-  'JUAN HERNANDEZ': '#e11d48', // Crimson Rose
-  'JOHNATAN SOTO VILLA DEL ROS': '#2563eb', // Royal Blue
-  'J PABLO ARAUJO': '#16a34a', // Emerald
-  'SARAH REYES': '#d97706', // Amber Gold
-  'LEONARDO RIOS': '#9333ea', // Purple
   'MARIA BRICEÑO': '#db2777', // Magenta Pink
-  'ANGELICA MORENO': '#0891b2', // Ocean Cyan
-  'OSWALDO CHURION': '#ea580c', // Bright Orange
+  'MARIANA CHACIN': '#3b82f6', // Blue
+  'JOHNATAN SOTO': '#1d4ed8', // Deep Royal Blue
   'HERNAN PAZ': '#059669', // Mint Forest
-  'OSCAR ORTIZ - CORO': '#4f46e5', // Indigo
-  'OSCAR ORTIZ- CORO': '#4f46e5',
-  'OSCAR ORTIZ- LA COSTA': '#0284c7', // Sky Blue
-  'EDUARDO PIÑA': '#7c3aed', // Violet
+  'OSWALDO CHURION': '#ea580c', // Bright Orange
   'CARLOS FUENMAYOR': '#eab308', // Warm Gold
-  'MARYERY GARCIA': '#f43f5e', // Hot Pink
+  'SARAH REYES': '#d97706', // Amber Gold
+  'J PABLO ARAUJO - CAB/OJE': '#15803d', // Deep Emerald
+  'JOSE G. GONZALEZ': '#475569', // Slate
+  'ANGELICA MORENO': '#0891b2', // Ocean Cyan
   'ADEL JARABA': '#0d9488', // Deep Teal
+  'JUAN HERNANDEZ': '#e11d48', // Crimson Rose
+  'YOLEIDA LUGO': '#c026d3', // Electric Fuchsia
+  'SAIRU VALLES': '#10b981', // Emerald Green
+  'ELISA SOLER': '#f97316', // Tangerine
+  'ALI PEREZ': '#dc2626', // Red
+  'J PABLO ARAUJO': '#16a34a', // Emerald
+  'EDUARDO PIÑA': '#7c3aed', // Violet
+  'JOHNATAN SOTO VILLA DEL ROS': '#2563eb', // Royal Blue
+  'LEONARDO RIOS': '#9333ea', // Purple
+  'MARYERY GARCIA': '#f43f5e', // Hot Pink
   'LUIS GUANIPA': '#65a30d', // Olive Lime
   'PEDRO ABREU': '#b45309', // Bronze
-  'YOLEIDA LUGO': '#c026d3', // Electric Fuchsia
-  'JOSE G. GONZALEZ': '#475569', // Slate
-  'ELISA SOLER': '#f97316', // Tangerine
-  'CUENTAS CLAVE 1 - MC (MARIANA CHACIN)': '#3b82f6',
-  'CUENTAS CLAVE 2 - SV (SAIRU VALLES)': '#10b981',
+  'OSCAR ORTIZ': '#4f46e5', // Indigo
+  'MIKELANGELO DIAZ': '#0284c7', // Sky Blue
 };
 
 const DEFAULT_COLOR = '#ef4444';

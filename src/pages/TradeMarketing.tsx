@@ -401,13 +401,39 @@ export const TradeMarketing: React.FC = () => {
   const [promoterFilter, setPromoterFilter] = useState<string>('todos');
   const [vendedorFilter, setVendedorFilter] = useState<string>('todos');
 
-  // Vendedores únicos que han enviado solicitudes de degustación desde su app
+  // Vendedores oficiales de la Fuerza de Ventas + los que han enviado solicitudes de degustación desde su app
   const uniqueVendedores = useMemo(() => {
-    const s = new Set<string>();
+    const s = new Set<string>([
+      'MARIA BRICEÑO',
+      'MARIANA CHACIN',
+      'JOHNATAN SOTO',
+      'HERNAN PAZ',
+      'OSWALDO CHURION',
+      'CARLOS FUENMAYOR',
+      'SARAH REYES',
+      'J PABLO ARAUJO - CAB/OJE',
+      'JOSE G. GONZALEZ',
+      'ANGELICA MORENO',
+      'ADEL JARABA',
+      'JUAN HERNANDEZ',
+      'YOLEIDA LUGO',
+      'SAIRU VALLES',
+      'ELISA SOLER',
+      'ALI PEREZ',
+      'J PABLO ARAUJO',
+      'EDUARDO PIÑA',
+      'JOHNATAN SOTO VILLA DEL ROS',
+      'LEONARDO RIOS',
+      'MARYERY GARCIA',
+      'LUIS GUANIPA',
+      'PEDRO ABREU',
+      'OSCAR ORTIZ',
+      'MIKELANGELO DIAZ',
+    ]);
     degustaciones.forEach((d) => {
       if (d.vendedor) s.add(d.vendedor);
     });
-    return Array.from(s).sort();
+    return Array.from(s);
   }, [degustaciones]);
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
   const [isCredentialsModalOpen, setIsCredentialsModalOpen] = useState<boolean>(false);
@@ -5088,10 +5114,10 @@ export const TradeMarketing: React.FC = () => {
 
                                   {/* Nombre y Chips */}
                                   <div className="min-w-0 flex-1">
-                                    <h4 className="font-bold text-white text-sm truncate uppercase tracking-tight" title={p.name}>
+                                    <h4 className="font-bold text-white text-sm truncate tracking-tight" title={p.name}>
                                       {p.name}
                                     </h4>
-                                    <div className="flex items-center gap-1.5 mt-1">
+                                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                                       <span className="px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-500/40 text-emerald-400 font-bold text-[10px]">
                                         {p.status === 'Activo' ? 'Activo' : p.status}
                                       </span>
@@ -5103,9 +5129,9 @@ export const TradeMarketing: React.FC = () => {
                                           : 'bg-zinc-800 border-white/10 text-zinc-300'
                                       }`}>
                                         {p.category === 'fija'
-                                          ? 'Fija'
+                                          ? 'Plantilla Fija'
                                           : p.category === 'eventual'
-                                          ? 'Eventual'
+                                          ? 'Plantilla Eventual'
                                           : 'Merchandising'}
                                       </span>
                                     </div>
@@ -5138,27 +5164,37 @@ export const TradeMarketing: React.FC = () => {
                                 {/* Filas de Información de Contacto, Credenciales y Asignación */}
                                 <div className="mt-3.5 space-y-1.5 text-xs text-zinc-400">
                                   <div className="flex items-center justify-between gap-2">
-                                    <span className="text-zinc-500 flex items-center gap-1.5">
-                                      <span>📞 Teléfono:</span>
-                                    </span>
+                                    <span className="text-zinc-500">Teléfono:</span>
                                     <span className="font-mono text-zinc-200 font-medium truncate">
                                       {p.phone}
                                     </span>
                                   </div>
 
                                   <div className="flex items-center justify-between gap-2">
-                                    <span className="text-zinc-500 flex items-center gap-1.5">
-                                      <span>✉️ Correo App:</span>
-                                    </span>
-                                    <span className="text-zinc-200 font-mono text-[11px] font-medium truncate max-w-[200px]" title={p.email}>
+                                    <span className="text-zinc-500">Correo:</span>
+                                    <span className="text-zinc-200 font-mono text-[11px] font-medium truncate max-w-[210px]" title={p.email}>
                                       {p.email}
                                     </span>
                                   </div>
 
                                   <div className="flex items-center justify-between gap-2">
-                                    <span className="text-zinc-500 flex items-center gap-1.5">
-                                      <span>🔑 Contraseña:</span>
+                                    <span className="text-zinc-500">Asignación PDV:</span>
+                                    <span className={`font-bold uppercase truncate max-w-[200px] ${
+                                      isMerch ? 'text-red-400' : p.category === 'eventual' ? 'text-blue-400' : 'text-emerald-400'
+                                    }`} title={p.assignedStore}>
+                                      {p.assignedStore || 'VARIAS'}
                                     </span>
+                                  </div>
+
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span className="text-zinc-500">Dirección:</span>
+                                    <span className="text-zinc-200 font-medium truncate max-w-[200px]" title={p.address}>
+                                      {p.address || '-'}
+                                    </span>
+                                  </div>
+
+                                  <div className="flex items-center justify-between gap-2 pt-0.5">
+                                    <span className="text-zinc-500">Contraseña App:</span>
                                     <div className="flex items-center gap-1.5">
                                       <span className="font-mono text-zinc-300 font-bold">
                                         {isPassRevealed ? (p.password || 'codi123') : '••••••••'}
@@ -5172,26 +5208,6 @@ export const TradeMarketing: React.FC = () => {
                                         {isPassRevealed ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
                                       </button>
                                     </div>
-                                  </div>
-
-                                  {p.address && (
-                                    <div className="flex items-center justify-between gap-2">
-                                      <span className="text-zinc-500 flex items-center gap-1.5">
-                                        <span>📍 Dirección:</span>
-                                      </span>
-                                      <span className="text-zinc-200 font-medium uppercase truncate max-w-[190px]" title={p.address}>
-                                        {p.address}
-                                      </span>
-                                    </div>
-                                  )}
-
-                                  <div className="flex items-center justify-between gap-2 pt-0.5">
-                                    <span className="text-zinc-500 flex items-center gap-1.5">
-                                      <span>🏪 Asignación:</span>
-                                    </span>
-                                    <span className="text-emerald-400 font-bold uppercase truncate max-w-[200px]" title={p.assignedStore}>
-                                      {p.assignedStore || 'VARIAS'}
-                                    </span>
                                   </div>
                                 </div>
                               </div>
@@ -5268,11 +5284,11 @@ export const TradeMarketing: React.FC = () => {
                               </div>
 
                               {/* Botón de Acceso Personalizado a la App Móvil */}
-                              <div className="pt-2 border-t border-white/5">
+                              <div className="pt-2 border-t border-white/5 flex items-center gap-2">
                                 <button
                                   type="button"
                                   onClick={() => handleCopyCustomLink(portalUrl, p.id)}
-                                  className={`w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer shadow-md ${
+                                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer shadow-md ${
                                     isMerch
                                       ? 'bg-red-950/60 hover:bg-red-900/60 border-red-500/40 text-red-200 hover:text-white'
                                       : staffCopiedId === p.id
@@ -5287,12 +5303,20 @@ export const TradeMarketing: React.FC = () => {
                                     </>
                                   ) : (
                                     <>
-                                      <Copy className="w-3.5 h-3.5 text-red-400" />
-                                      <span>Copiar Acceso de {p.name.split(' ')[0]}</span>
-                                      <ExternalLink className="w-3 h-3 text-zinc-500 ml-auto" />
+                                      <Copy className="w-3.5 h-3.5 text-zinc-400" />
+                                      <span>Copiar Enlace App</span>
                                     </>
                                   )}
                                 </button>
+                                <a
+                                  href={portalUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-zinc-300 hover:text-white transition-colors cursor-pointer"
+                                  title={`Abrir App de ${p.name}`}
+                                >
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                </a>
                               </div>
                             </div>
                           );

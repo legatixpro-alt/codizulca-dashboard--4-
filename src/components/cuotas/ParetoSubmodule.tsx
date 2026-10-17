@@ -41,7 +41,7 @@ import {
   Cell,
   CartesianGrid
 } from 'recharts';
-import { getSellerMetadata } from './sellerSupervisorMap';
+import { getSellerMetadata, normalizeSellerName, isExcludedVolumeSeller } from './sellerSupervisorMap';
 import {
   ParetoDimension,
   ParetoMetric,
@@ -298,7 +298,8 @@ export const ParetoSubmodule: React.FC = () => {
     // ==========================================
     if (dimension === 'clientes') {
       data.clients.forEach((c) => {
-        const meta = getSellerMetadata(c.vendedor);
+        const cleanVendedor = normalizeSellerName(c.vendedor || '') || c.vendedor;
+        const meta = getSellerMetadata(cleanVendedor);
         const supervisor = meta.supervisor || 'SIN SUPERVISOR';
         const zona = meta.zona || 'Sin Zona';
         const canal = c.canal || 'GENERAL';
@@ -338,8 +339,8 @@ export const ParetoSubmodule: React.FC = () => {
           id: c.id_cliente,
           idsList: c.idsList,
           nombre: c.cliente || `Cliente #${c.id_cliente}`,
-          secundario: c.vendedor,
-          vendedoresList: c.vendedoresList,
+          secundario: cleanVendedor,
+          vendedoresList: c.vendedoresList ? c.vendedoresList.map((v) => normalizeSellerName(v) || v) : undefined,
           terciario: c.idsList && c.idsList.length > 1 ? `${c.idsList.length} Sucursales / Códigos ERP` : `ID: ${c.id_cliente}`,
           supervisor,
           zona,
@@ -402,15 +403,17 @@ export const ParetoSubmodule: React.FC = () => {
           return;
         }
 
-        const meta = getSellerMetadata(s.vendedor);
+        if (isExcludedVolumeSeller(s.vendedor)) return;
+        const normVendedor = normalizeSellerName(s.vendedor);
+        const meta = getSellerMetadata(normVendedor);
         let val = 0;
         if (metric === 'cajas') val = s.cajas;
         else if (metric === 'kgs') val = s.kgs;
         else val = s.montoNeto;
 
-        if (!sellersMap.has(s.vendedor)) {
-          sellersMap.set(s.vendedor, {
-            vendedor: s.vendedor,
+        if (!sellersMap.has(normVendedor)) {
+          sellersMap.set(normVendedor, {
+            vendedor: normVendedor,
             supervisor: meta.supervisor,
             zona: meta.zona,
             region: meta.region,
@@ -419,7 +422,7 @@ export const ParetoSubmodule: React.FC = () => {
           });
         }
 
-        const obj = sellersMap.get(s.vendedor)!;
+        const obj = sellersMap.get(normVendedor)!;
         obj.valor += val;
         obj.facturasCount += s.facturasCount || 0;
       });
@@ -460,7 +463,9 @@ export const ParetoSubmodule: React.FC = () => {
         ) {
           return;
         }
-        const meta = getSellerMetadata(s.vendedor);
+        if (isExcludedVolumeSeller(s.vendedor)) return;
+        const normVendedor = normalizeSellerName(s.vendedor);
+        const meta = getSellerMetadata(normVendedor);
         const zonaKey = meta.zona || 'Sin Zona';
 
         let val = 0;
@@ -479,7 +484,7 @@ export const ParetoSubmodule: React.FC = () => {
         }
         const obj = zonesMap.get(zonaKey)!;
         obj.valor += val;
-        obj.vendedores.add(s.vendedor);
+        obj.vendedores.add(normVendedor);
       });
 
       zonesMap.forEach((z) => {

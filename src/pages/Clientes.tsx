@@ -30,7 +30,7 @@ import {
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { ENRICHED_CLIENTS, EnrichedClient, SURVEY_STATS } from '../data/clientsWithLocation';
-import { getSellerMetadata } from '../components/cuotas/sellerSupervisorMap';
+import { getSellerMetadata, isValidVolumeSeller, OFFICIAL_SUPERVISORS } from '../components/cuotas/sellerSupervisorMap';
 import { ClientCard } from '../components/clientes/ClientCard';
 import { ClientMapModal } from '../components/clientes/ClientMapModal';
 import { AllClientsMap, getSellerColor } from '../components/clientes/AllClientsMap';
@@ -53,21 +53,17 @@ export const Clientes: React.FC = () => {
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Extract unique supervisors
+  // Extract unique official supervisors (Johnatan Soto, Ali Perez, Nelson Finol)
   const supervisorsList = useMemo(() => {
-    const set = new Set<string>();
-    ENRICHED_CLIENTS.forEach(c => {
-      if (c.supervisor) set.add(c.supervisor);
-    });
-    return Array.from(set).sort();
+    return [...OFFICIAL_SUPERVISORS];
   }, []);
 
-  // Extract unique sellers with both total clients and geocercas count
+  // Extract unique sellers with both total clients and geocercas count (strictly official 25 sellers)
   const sellersList = useMemo(() => {
     const map = new Map<string, { total: number; withGps: number }>();
     ENRICHED_CLIENTS.forEach(c => {
       if (selectedSupervisor === 'ALL' || c.supervisor === selectedSupervisor) {
-        if (c.vendedor) {
+        if (c.vendedor && isValidVolumeSeller(c.vendedor)) {
           const current = map.get(c.vendedor) || { total: 0, withGps: 0 };
           current.total += 1;
           if (c.hasLocation) current.withGps += 1;
@@ -110,7 +106,7 @@ export const Clientes: React.FC = () => {
         const inSupervisor = client.supervisor.toLowerCase().includes(term);
         const inZona = client.zona.toLowerCase().includes(term);
         const inSector = client.sector.toLowerCase().includes(term);
-        const inRif = client.survey?.rifCedula?.toLowerCase().includes(term) || false;
+        const inRif = (client.rif || client.survey?.rifCedula || '').toLowerCase().includes(term);
         const inMunicipio = client.survey?.municipio?.toLowerCase().includes(term) || false;
         const inEstado = client.survey?.estado?.toLowerCase().includes(term) || false;
         const inTelefono = client.survey?.telefono?.toLowerCase().includes(term) || false;
@@ -175,6 +171,7 @@ export const Clientes: React.FC = () => {
       return {
         'Código Cliente': c.id,
         'Nombre Cliente': c.nombre,
+        'RIF / Cédula': c.rif || c.survey?.rifCedula || '',
         'Sector': c.sector,
         'Vendedor Asignado': c.vendedor,
         'Supervisor': c.supervisor,
@@ -188,7 +185,6 @@ export const Clientes: React.FC = () => {
         'Perímetro de Visita': hasGps ? '50 Metros' : '',
         'Estado Geográfico': c.survey?.estado ?? '',
         'Municipio': c.survey?.municipio ?? '',
-        'RIF / Cédula': c.survey?.rifCedula ?? '',
         'Teléfono': c.survey?.telefono ?? '',
         'Fecha Encuesta': c.survey?.fecha ?? '',
         'Link Google Maps': hasGps ? `https://www.google.com/maps?q=${lat},${lng}` : '',
@@ -661,8 +657,8 @@ export const Clientes: React.FC = () => {
                           )}
                         </div>
                         <p className="font-bold text-white text-sm">{client.nombre}</p>
-                        {client.survey?.rifCedula && (
-                          <p className="text-[11px] text-zinc-500 font-mono">RIF: {client.survey.rifCedula}</p>
+                        {(client.rif || client.survey?.rifCedula) && (
+                          <p className="text-[11px] text-zinc-500 font-mono">RIF: {client.rif || client.survey?.rifCedula}</p>
                         )}
                       </td>
 

@@ -105,9 +105,9 @@ export const ClientCard: React.FC<ClientCardProps> = ({ client, onOpenMap, canal
             <span className="text-red-400 font-mono font-black mr-1.5">#{client.id}</span>
             {client.nombre}
           </h3>
-          {client.survey?.rifCedula ? (
+          {(client.rif || client.survey?.rifCedula) ? (
             <p className="text-xs text-zinc-400 font-mono mt-0.5">
-              RIF: <span className="text-zinc-200 font-bold">{client.survey.rifCedula}</span>
+              RIF: <span className="text-zinc-200 font-bold">{client.rif || client.survey?.rifCedula}</span>
             </p>
           ) : (
             <p className="text-[11px] text-zinc-500 mt-0.5">Cliente de Cartera Codizulca</p>

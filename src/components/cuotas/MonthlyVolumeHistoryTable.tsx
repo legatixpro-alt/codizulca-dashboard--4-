@@ -22,7 +22,7 @@ import {
   ChevronsUpDown
 } from 'lucide-react';
 import { ViewLevel } from './MonthProgressBar';
-import { getSellerMetadata, isExcludedVolumeSeller, normalizeSellerName } from './sellerSupervisorMap';
+import { getSellerMetadata, isExcludedVolumeSeller, normalizeSellerName, OFFICIAL_SELLERS_LIST, OFFICIAL_SUPERVISORS } from './sellerSupervisorMap';
 import { SellerMultiSelect, SellerOption } from './SellerMultiSelect';
 import { SupervisorVolumeComparativeAnalysis } from './SupervisorVolumeComparativeAnalysis';
 import { SellerVolumeHistoryModal } from './SellerVolumeHistoryModal';
@@ -275,35 +275,46 @@ export const MonthlyVolumeHistoryTable: React.FC<MonthlyVolumeHistoryTableProps>
 
   // Unique list of supervisors
   const supervisorsList = useMemo(() => {
-    if (!data?.sellerMonthlyData) return [];
-    const set = new Set<string>();
-    data.sellerMonthlyData.forEach((s) => {
-      if (isExcludedVolumeSeller(s.vendedor)) return;
-      const meta = getSellerMetadata(s.vendedor);
-      set.add(meta.supervisor);
-    });
+    const set = new Set<string>(OFFICIAL_SUPERVISORS);
+    if (data?.sellerMonthlyData) {
+      data.sellerMonthlyData.forEach((s) => {
+        if (isExcludedVolumeSeller(s.vendedor)) return;
+        const meta = getSellerMetadata(s.vendedor);
+        set.add(meta.supervisor);
+      });
+    }
     return Array.from(set).sort();
   }, [data]);
 
   // Vendedores disponibles filtrados automáticamente según el supervisor seleccionado
   const availableSellers = useMemo<SellerOption[]>(() => {
-    if (!data?.sellerMonthlyData) return [];
     const map = new Map<string, SellerOption>();
-    data.sellerMonthlyData.forEach((s) => {
-      if (isExcludedVolumeSeller(s.vendedor)) return;
-      const meta = getSellerMetadata(s.vendedor);
-      const normName = normalizeSellerName(s.vendedor);
-      if (supervisorFilter !== 'ALL' && meta.supervisor !== supervisorFilter) {
-        return;
-      }
-      if (!map.has(normName)) {
-        map.set(normName, {
-          name: normName,
-          supervisor: meta.supervisor,
-          zona: meta.zona,
-        });
-      }
+    OFFICIAL_SELLERS_LIST.forEach((vendedor) => {
+      const meta = getSellerMetadata(vendedor);
+      if (supervisorFilter !== 'ALL' && meta.supervisor !== supervisorFilter) return;
+      map.set(vendedor, {
+        name: vendedor,
+        supervisor: meta.supervisor,
+        zona: meta.zona,
+      });
     });
+    if (data?.sellerMonthlyData) {
+      data.sellerMonthlyData.forEach((s) => {
+        if (isExcludedVolumeSeller(s.vendedor)) return;
+        const meta = getSellerMetadata(s.vendedor);
+        const normName = normalizeSellerName(s.vendedor);
+        if (supervisorFilter !== 'ALL' && meta.supervisor !== supervisorFilter) {
+          return;
+        }
+        if (!map.has(normName)) {
+          map.set(normName, {
+            name: normName,
+            supervisor: meta.supervisor,
+            zona: meta.zona,
+          });
+        }
+      });
+    }
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [data, supervisorFilter]);
 
@@ -400,6 +411,20 @@ export const MonthlyVolumeHistoryTable: React.FC<MonthlyVolumeHistoryTableProps>
         totalKgs: number;
       }
     > = {};
+
+    OFFICIAL_SELLERS_LIST.forEach((vendedor) => {
+      const meta = getSellerMetadata(vendedor);
+      grouped[vendedor] = {
+        vendedor,
+        supervisor: meta.supervisor,
+        zona: meta.zona,
+        region: meta.region,
+        months: {},
+        totalCajas: 0,
+        totalMonto: 0,
+        totalKgs: 0,
+      };
+    });
 
     data.sellerMonthlyData.forEach((row) => {
       if (isExcludedVolumeSeller(row.vendedor)) return;

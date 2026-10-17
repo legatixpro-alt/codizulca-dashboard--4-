@@ -180,52 +180,64 @@ async function startServer() {
   // Sellers monthly volume endpoints (with Supabase and Google Sheets sync)
   const sellersVolumeCachePath = path.join(process.cwd(), 'sellers_monthly_volume_cache.json');
 
-  // Vendedores comerciales activos sincronizados con el Google Sheet oficial
-  const VALID_VOLUME_SELLERS = new Set<string>([
-    'ADEL JARABA',
-    'ALI PEREZ',
-    'ANGELICA MORENO',
-    'CARLOS FUENMAYOR',
-    'CUENTAS CLAVE 1 - MC',
-    'CUENTAS CLAVE 2 - SV',
-    'EDUARDO PIÑA',
-    'ELISA SOLER',
-    'FOOD SERVICE SENIOR - JUAN HERNANDEZ',
-    'FOOD SERVICE SUR',
-    'HERNAN PAZ',
-    'J PABLO ARAUJO',
-    'J PABLO ARAUJO - CAB/OJE',
-    'JAIDER MEDINA - FOOD SERVICE NORTE',
-    'JOSE G. GONZALEZ',
-    'JUAN HERNANDEZ',
-    'LEONARDO RIOS',
-    'LUIS GUANIPA',
+  // Lista oficial exacta de las 23 carteras activas de la Fuerza de Ventas (Octubre 2026)
+  const OFFICIAL_SELLERS_LIST = [
     'MARIA BRICEÑO',
-    'MARIANGEL GONZALEZ',
-    'MARYERY GARCIA',
+    'MARIANA CHACIN',
     'MIKELANGELO DIAZ',
-    'MIKELANGELO DIAZ - VILLA DEL ROS',
-    'OSCAR ORTIZ- CORO',
-    'OSCAR ORTIZ- LA COSTA',
+    'HERNAN PAZ',
     'OSWALDO CHURION',
-    'PEDRO ABREU',
+    'CARLOS FUENMAYOR',
     'SARAH REYES',
-    'VICTOR CAMPOS',
+    'J PABLO ARAUJO - CAB/OJE',
+    'JOSE G. GONZALEZ',
+    'ANGELICA MORENO',
+    'ADEL JARABA',
+    'JUAN HERNANDEZ',
     'YOLEIDA LUGO',
-  ]);
+    'SAIRU VALLES',
+    'ELISA SOLER',
+    'ALI PEREZ',
+    'J PABLO ARAUJO',
+    'EDUARDO PIÑA',
+    'LEONARDO RIOS',
+    'MARYERY GARCIA',
+    'LUIS GUANIPA',
+    'PEDRO ABREU',
+    'OSCAR ORTIZ',
+  ];
+
+  const VALID_VOLUME_SELLERS = new Set<string>(OFFICIAL_SELLERS_LIST);
 
   const normalizeSellerName = (name: string): string => {
     if (!name) return '';
-    let n = name.trim().toUpperCase().replace(/\s+/g, ' ');
-    if (n.includes('PIA')) n = n.replace(/PIA\b/, 'PIÑA');
-    if (n.includes('BRICEO')) n = n.replace(/BRICEO\b/, 'BRICEÑO');
+    let n = name
+      .trim()
+      .toUpperCase()
+      .replace(/\s+/g, ' ')
+      .replace(/MARÍA\b/, 'MARIA')
+      .replace(/BRICENO\b/, 'BRICEÑO')
+      .replace(/BRICEO\b/, 'BRICEÑO')
+      .replace(/PINA\b/, 'PIÑA')
+      .replace(/PIA\b/, 'PIÑA')
+      .replace(/CHACÍN\b/, 'CHACIN')
+      .replace(/PÉREZ\b/, 'PEREZ')
+      .replace(/ALÍ\b/, 'ALI')
+      .replace(/HERNÁNDEZ\b/, 'HERNANDEZ')
+      .replace(/HERNÁN\b/, 'HERNAN')
+      .replace(/GONZÁLEZ\b/, 'GONZALEZ')
+      .replace(/GARCÍA\b/, 'GARCIA')
+      .replace(/RÍOS\b/, 'RIOS')
+      .replace(/ANGÉLICA\b/, 'ANGELICA')
+      .replace(/JOSÉ\b/, 'JOSE');
+
     if (
       n === 'CUENTAS CLAVE 1' ||
       n === 'CUENTAS CLAVE 1 - MC' ||
       n === 'MARIANA CHACIN' ||
       n === 'CUENTAS CLAVE 1 - MC (MARIANA CHACIN)'
     ) {
-      n = 'CUENTAS CLAVE 1 - MC';
+      return 'MARIANA CHACIN';
     }
     if (
       n === 'CUENTAS CLAVE 2' ||
@@ -233,33 +245,35 @@ async function startServer() {
       n === 'SAIRU VALLES' ||
       n === 'CUENTAS CLAVE 2 - SV (SAIRU VALLES)'
     ) {
-      n = 'CUENTAS CLAVE 2 - SV';
-    }
-    if (n === 'FOOD SERVICE NORTE') {
-      n = 'JAIDER MEDINA - FOOD SERVICE NORTE';
-    }
-    if (n === 'FOOD SERVICE SENIOR' || n === 'FOOD SERVICE SENIOR - JUAN HERNANDEZ') {
-      n = 'FOOD SERVICE SENIOR - JUAN HERNANDEZ';
-    }
-    if (n === 'MIKELANGELO DIAZ1' || n === 'JOHNATAN SOTO') {
-      n = 'MIKELANGELO DIAZ';
+      return 'SAIRU VALLES';
     }
     if (
+      n === 'MIKELANGELO DIAZ' ||
+      n === 'MIKELANGELO DIAZ1' ||
+      n === 'MIKELANGELO DIAZ - VILLA DEL ROS' ||
+      n === 'MIKELANGELO DIAZ VILLA DEL ROS' ||
+      n === 'JOHNATAN SOTO' ||
       n === 'JOHNATAN SOTO VILLA DEL ROS' ||
-      n === 'JOHNATAN SOTO - VILLA DEL ROS' ||
-      n === 'MIKELANGELO DIAZ VILLA DEL ROS'
+      n === 'JOHNATAN SOTO - VILLA DEL ROS'
     ) {
-      n = 'MIKELANGELO DIAZ - VILLA DEL ROS';
+      return 'MIKELANGELO DIAZ';
     }
-    if (n === 'OSCAR ORTIZ - CORO') n = 'OSCAR ORTIZ- CORO';
-    if (n === 'OSCAR ORTIZ - LA COSTA') n = 'OSCAR ORTIZ- LA COSTA';
+    if (
+      n === 'OSCAR ORTIZ' ||
+      n === 'OSCAR ORTIZ - CORO' ||
+      n === 'OSCAR ORTIZ- CORO' ||
+      n === 'OSCAR ORTIZ - LA COSTA' ||
+      n === 'OSCAR ORTIZ- LA COSTA' ||
+      n === 'OSCAR ORTIZ-  LA COSTA'
+    ) {
+      return 'OSCAR ORTIZ';
+    }
     return n;
   };
 
   const isValidVolumeSeller = (name: string): boolean => {
     if (!name) return false;
     const n = normalizeSellerName(name);
-    // Excluir estrictamente cualquier oficina, gerencia o personal no comercial
     if (
       n.includes('OFICINA') ||
       n.includes('GERENCIA') ||
@@ -276,7 +290,6 @@ async function startServer() {
     'ADEL JARABA',
     'ANGELICA MORENO',
     'HERNAN PAZ',
-    'JAIDER MEDINA - FOOD SERVICE NORTE',
     'JOHNATAN SOTO',
     'JOHNATAN SOTO VILLA DEL ROS',
     'JUAN HERNANDEZ',
@@ -291,8 +304,11 @@ async function startServer() {
     'ELISA SOLER',
     'LEONARDO RIOS',
     'LUIS GUANIPA',
+    'OSCAR ORTIZ',
     'OSCAR ORTIZ- CORO',
+    'OSCAR ORTIZ - CORO',
     'OSCAR ORTIZ- LA COSTA',
+    'OSCAR ORTIZ - LA COSTA',
   ]);
 
   const getSupervisorForSeller = (vendedorName: string): string => {
@@ -1101,40 +1117,7 @@ Responde EXCLUSIVAMENTE con un objeto JSON válido con la siguiente estructura (
   app.get('/api/sales/meta', (req, res) => {
     try {
       const months = ['OCTUBRE', 'SEPTIEMBRE', 'AGOSTO', 'JULIO', 'JUNIO', 'MAYO', 'ABRIL', 'MARZO', 'FEBRERO', 'ENERO'];
-      const sellers = [
-        'ADEL JARABA',
-        'ALI PEREZ',
-        'ANGELICA MORENO',
-        'CARLOS FUENMAYOR',
-        'CUENTAS CLAVE 1 - MC',
-        'CUENTAS CLAVE 2 - SV',
-        'EDUARDO PIÑA',
-        'ELISA SOLER',
-        'FOOD SERVICE SENIOR - JUAN HERNANDEZ',
-        'FOOD SERVICE SUR',
-        'HERNAN PAZ',
-        'J PABLO ARAUJO',
-        'J PABLO ARAUJO - CAB/OJE',
-        'JAIDER MEDINA - FOOD SERVICE NORTE',
-        'JOHNATAN SOTO',
-        'JOHNATAN SOTO VILLA DEL ROS',
-        'JOSE G. GONZALEZ',
-        'JUAN HERNANDEZ',
-        'LEONARDO RIOS',
-        'LUIS GUANIPA',
-        'MARIA BRICEÑO',
-        'MARIANGEL GONZALEZ',
-        'MARYERY GARCIA',
-        'MIKELANGELO DIAZ',
-        'MIKELANGELO DIAZ - VILLA DEL ROS',
-        'OSCAR ORTIZ- CORO',
-        'OSCAR ORTIZ- LA COSTA',
-        'OSWALDO CHURION',
-        'PEDRO ABREU',
-        'SARAH REYES',
-        'VICTOR CAMPOS',
-        'YOLEIDA LUGO'
-      ];
+      const sellers = [...OFFICIAL_SELLERS_LIST];
       res.json({
         months,
         sellers,
@@ -1178,6 +1161,15 @@ Responde EXCLUSIVAMENTE con un objeto JSON válido con la siguiente estructura (
       let rows: any[] = [];
       const isOctoberRequested = selectedMonths.length === 0 || selectedMonths.includes('OCTUBRE');
 
+      const getRawAliasesForSeller = (v: string): string[] => {
+        const norm = normalizeSellerName(v);
+        if (norm === 'MARIANA CHACIN') return ['MARIANA CHACIN', 'CUENTAS CLAVE 1 - MC', 'CUENTAS CLAVE 1'];
+        if (norm === 'SAIRU VALLES') return ['SAIRU VALLES', 'CUENTAS CLAVE 2 - SV', 'CUENTAS CLAVE 2'];
+        if (norm === 'JOHNATAN SOTO VILLA DEL ROS') return ['JOHNATAN SOTO VILLA DEL ROS', 'MIKELANGELO DIAZ - VILLA DEL ROS'];
+        if (norm === 'OSCAR ORTIZ') return ['OSCAR ORTIZ', 'OSCAR ORTIZ- CORO', 'OSCAR ORTIZ - CORO', 'OSCAR ORTIZ- LA COSTA', 'OSCAR ORTIZ - LA COSTA'];
+        return [norm];
+      };
+
       try {
         let q = supabase.from('history_sales')
           .select('id, numero, tipo_doc, mes, ano, cliente, vendedor, articulo, cajas, kgs_lts, monto')
@@ -1192,7 +1184,12 @@ Responde EXCLUSIVAMENTE con un objeto JSON válido con la siguiente estructura (
           q = q.eq('tipo_doc', tipo_doc);
         }
         if (vendedor && vendedor !== 'ALL') {
-          q = q.ilike('vendedor', `%${vendedor}%`);
+          const aliases = getRawAliasesForSeller(vendedor);
+          if (aliases.length > 1) {
+            q = q.in('vendedor', aliases);
+          } else {
+            q = q.ilike('vendedor', `%${vendedor}%`);
+          }
         } else if (supervisor && supervisor !== 'ALL') {
           if (supervisor === 'JOHNATAN SOTO') {
             q = q.in('vendedor', Array.from(JOHNATAN_SOTO_SELLERS));
@@ -1238,7 +1235,11 @@ Responde EXCLUSIVAMENTE con un objeto JSON válido con la siguiente estructura (
             octData = octData.filter((r) => getSupervisorForSeller(r.vendedor || '') === supervisor);
           }
           if (vendedor && vendedor !== 'ALL') {
-            octData = octData.filter((r) => (r.vendedor || '').toUpperCase().includes(vendedor.toUpperCase()));
+            const normTarget = normalizeSellerName(vendedor);
+            octData = octData.filter((r) => {
+              const rawV = (r.vendedor || '').toUpperCase();
+              return normalizeSellerName(rawV) === normTarget || rawV.includes(vendedor.toUpperCase());
+            });
           }
           if (cliente) {
             octData = octData.filter((r) => (r.cliente || '').toUpperCase().includes(cliente.toUpperCase()));
@@ -1249,6 +1250,7 @@ Responde EXCLUSIVAMENTE con un objeto JSON válido con la siguiente estructura (
               String(r.numero).includes(sLower) ||
               (r.cliente || '').toLowerCase().includes(sLower) ||
               (r.vendedor || '').toLowerCase().includes(sLower) ||
+              normalizeSellerName(r.vendedor || '').toLowerCase().includes(sLower) ||
               (r.articulo || '').toLowerCase().includes(sLower)
             );
           }
@@ -1268,7 +1270,7 @@ Responde EXCLUSIVAMENTE con un objeto JSON válido con la siguiente estructura (
             mes: r.mes,
             ano: r.ano,
             date: `${r.mes} ${r.ano}`,
-            seller: (r.vendedor || '').trim(),
+            seller: normalizeSellerName(r.vendedor || '') || (r.vendedor || '').trim(),
             client: (r.cliente || '').trim(),
             boxes: 0,
             total: 0,
@@ -2251,14 +2253,14 @@ Responde EXCLUSIVAMENTE con un objeto JSON válido con la siguiente estructura (
       ubicacion: 'Maracaibo, Zulia, Venezuela',
       cobertura: 'Maracaibo, San Francisco, Costa Oriental del Lago (Cabimas, Ciudad Ojeda, Bachaquero), Perijá (La Villa, Machiques) y Falcón (Coro, La Costa)',
       carteraClientes: {
-        totalClientes: 2947,
-        clientesConUbicacion: 2947,
-        caracteristicas: 'Cada cliente posee Código Oficial (#ID), Nombre, Sector Asignado, Vendedor, Supervisor, Geocerca GPS (radio 100m) y Canal de distribución.',
+        totalClientes: 2514,
+        clientesConUbicacion: 2514,
+        caracteristicas: 'Cada cliente posee Código Oficial (#ID), Razón Social, RIF, Sector Asignado, Vendedor, Supervisor, Geocerca GPS (radio 50m) y Canal de distribución.',
         sectoresPrincipales: ['5 de Julio / Tierra Negra', 'Bella Vista / Santa Rita', 'Maracaibo Oeste / Curva de Molina', 'Maracaibo Norte / San Jacinto', 'San Francisco 1 / La Coromoto', 'San Francisco 2 / Sierra Maestra', 'Km 4 a Km 18', 'Cabimas / Ciudad Ojeda (COL)', 'Coro / La Costa']
       },
       fuerzaVentas: {
-        totalVendedoresActivos: 29,
-        supervisores: ['José Bravo', 'Néstor Rincón'],
+        totalVendedoresActivos: 23,
+        supervisores: ['Johnatan Soto', 'Alí Pérez', 'Nelson Finol'],
         vendedoresLideres: topSellers
       },
       ventas2026: {
@@ -2290,10 +2292,10 @@ Responde EXCLUSIVAMENTE con un objeto JSON válido con la siguiente estructura (
         'Resumen Ejecutivo: Métricas globales de facturación, volumen y comparativas.',
         'Cuotas & Metas: Seguimiento de cuotas mensuales en Cajas, Kgs y $ USD por vendedor y supervisor.',
         'Ventas & Facturación: Consulta transaccional de Facturas (FA) y Devoluciones (DV) con más de 280.000 registros.',
-        'Clientes & Geocercas: Cartera de 2.947 clientes con mapa Leaflet, ficha técnica oficial con Código #ID copiable y Sector.',
+        'Clientes & Geocercas: Cartera de 2.514 clientes activos (Octubre 2026) con mapa Leaflet, ficha técnica oficial con Código #ID, RIF copiable y Sector.',
         'Inventario & Stock: Análisis 360°, rotación de inventario y diferenciación pesables vs cajas.',
         'Trade Marketing (IA): Auditoría fotográfica con visión artificial para supervisión de planogramas y exhibiciones.',
-        'Portal Móvil PWA: App móvil offline para fuerza de ventas con check-in geolocalizado de 100m.',
+        'Portal Móvil PWA: App móvil offline para fuerza de ventas con check-in geolocalizado de 50m.',
         'Centro de Ingesta & Gobernanza: Integración con Supabase y sincronización bidireccional en tiempo real con Google Sheets.'
       ]
     };
@@ -2338,7 +2340,7 @@ ${mesTable}
 
       return `### 🏆 Ranking de la Fuerza de Ventas Comercial — CODIZULCA
 
-Codizulca cuenta con **29 vendedores comerciales activos** distribuidos en Maracaibo, San Francisco, Costa Oriental del Lago y Falcón, bajo la supervisión de **José Bravo** y **Néstor Rincón**.
+Codizulca cuenta con **23 carteras comerciales activas** distribuidas en Maracaibo, San Francisco, Costa Oriental del Lago, Perijá, Sur del Lago y Falcón, bajo la supervisión de **Johnatan Soto**, **Alí Pérez** y **Nelson Finol**.
 
 #### 🥇 Top 10 Vendedores con Mayor Facturación Neta (Acumulado 2026):
 | Pos | Vendedor | Venta Neta ($ USD) | Facturado (FA) | Cajas | Kilos | % Devolución |

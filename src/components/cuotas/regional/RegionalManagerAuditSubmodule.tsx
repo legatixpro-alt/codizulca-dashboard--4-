@@ -39,7 +39,7 @@ import { SellerAuditMatrixPanel } from './SellerAuditMatrixPanel';
 import { QuotaFairnessAuditPanel } from './QuotaFairnessAuditPanel';
 import { AuditCommitmentsPanel } from './AuditCommitmentsPanel';
 import { AuditSellerActionModal } from './AuditSellerActionModal';
-import { isExcludedVolumeSeller, normalizeSellerName, getSellerMetadata } from '../sellerSupervisorMap';
+import { isExcludedVolumeSeller, normalizeSellerName, getSellerMetadata, OFFICIAL_SELLERS_LIST } from '../sellerSupervisorMap';
 import { SellerActivationRow } from '../cuotasData';
 
 interface RegionalManagerAuditSubmoduleProps {
@@ -182,6 +182,20 @@ export const RegionalManagerAuditSubmodule: React.FC<RegionalManagerAuditSubmodu
         totalKgs: number;
       }
     > = {};
+
+    OFFICIAL_SELLERS_LIST.forEach((vendedor) => {
+      const meta = getSellerMetadata(vendedor);
+      grouped[vendedor] = {
+        vendedor,
+        supervisor: meta.supervisor,
+        zona: meta.zona,
+        region: meta.region,
+        months: {},
+        totalCajas: 0,
+        totalMonto: 0,
+        totalKgs: 0,
+      };
+    });
 
     salesData.sellerMonthlyData.forEach((row: any) => {
       if (isExcludedVolumeSeller(row.vendedor)) return;

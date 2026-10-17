@@ -25,6 +25,7 @@ export interface ClientSurveyData {
 export interface EnrichedClient {
   id: string;
   nombre: string;
+  rif: string;
   vendedor: string;
   supervisor: string;
   zona: string;
@@ -47,6 +48,11 @@ function normalizeForMatch(text: string): string {
     .trim();
 }
 
+function normalizeRif(rif?: string): string {
+  if (!rif) return '';
+  return rif.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+}
+
 /**
  * Calcula con precisión el sector comercial / urbanización a partir de coordenadas exactas,
  * municipio, estado y zona de ruta comercial del vendedor asignado.
@@ -59,7 +65,7 @@ export function calculateClientSector(params: {
   vendedorZona?: string;
   vendedor?: string;
 }): string {
-  const { latitud, longitud, municipio, estado, vendedorZona } = params;
+  const { latitud, longitud, municipio, vendedorZona } = params;
 
   if (typeof latitud === 'number' && typeof longitud === 'number' && !isNaN(latitud) && !isNaN(longitud)) {
     // 1. Falcón (Punto Fijo, Coro, Dabajuro)
@@ -187,66 +193,65 @@ SURVEY_DATA.forEach((item) => {
     registerSurveyItem(normalizeForMatch(item.clienteNombre), item, surveyByName);
   }
   if (item.clienteId) {
-    registerSurveyItem(String(item.clienteId).toUpperCase(), item, surveyById);
+    registerSurveyItem(String(item.clienteId).trim().toUpperCase(), item, surveyById);
   }
   if (item.rifCedula) {
-    registerSurveyItem(normalizeForMatch(item.rifCedula), item, surveyByRif);
+    registerSurveyItem(normalizeRif(item.rifCedula), item, surveyByRif);
   }
 });
 
-// Create fully consolidated client list
+// Create fully consolidated client list strictly from MAESTRA CLIENTES ACTIVOS OCTUBRE 2026 (CARTERA_CLIENTES)
 export const ENRICHED_CLIENTS: EnrichedClient[] = (() => {
   const result: EnrichedClient[] = [];
-  const processedSurveyIds = new Set<string>();
 
-  // 1. Process all existing cartera clients
   CARTERA_CLIENTES.forEach((c) => {
     const norm = normalizeForMatch(c.nombre);
+    const cleanRif = normalizeRif(c.rif);
 
-    // Look for survey match by ID, RIF, or Name
-    let surveyMatch = 
-      surveyById.get(String(c.id).toUpperCase()) || 
-      (c.rif ? surveyByRif.get(normalizeForMatch(c.rif)) : undefined) ||
+    // Look for survey match strictly by ID, RIF, or normalized Name
+    const rawSurveyMatch =
+      surveyById.get(String(c.id).trim().toUpperCase()) ||
+      (cleanRif ? surveyByRif.get(cleanRif) : undefined) ||
       surveyByName.get(norm);
 
-    if (!surveyMatch) {
-      // Substring fuzzy matching for slightly varied legal names
-      for (const [sName, sData] of surveyByName.entries()) {
-        if ((norm.length > 6 && sName.includes(norm)) || (sName.length > 6 && norm.includes(sName))) {
-          surveyMatch = sData;
-          break;
-        }
-      }
-    }
-
-    if (surveyMatch) {
-      processedSurveyIds.add(surveyMatch.surveyId);
-    }
-
-    // Determine canonical vendedor (prioritize the surveyor who visited in the field)
-    const rawVendedor = (surveyMatch && surveyMatch.vendedor && surveyMatch.vendedor !== 'SIN ASIGNAR') 
-      ? surveyMatch.vendedor 
-      : (c.vendedor || 'SIN ASIGNAR');
-    const effectiveVendedor = normalizeSellerName(rawVendedor) || 'SIN ASIGNAR';
-
+    // Strictly respect the assigned seller from MAESTRA CLIENTES ACTIVOS OCTUBRE 2026
+    const effectiveVendedor = normalizeSellerName(c.vendedor || 'SIN ASIGNAR') || 'SIN ASIGNAR';
     const meta = getSellerMetadata(effectiveVendedor);
-    const hasGps = Boolean(surveyMatch && typeof surveyMatch.latitud === 'number' && typeof surveyMatch.longitud === 'number');
+
+    const surveyMatch: ClientSurveyData | undefined = rawSurveyMatch
+      ? {
+          ...rawSurveyMatch,
+          vendedor: effectiveVendedor,
+          rifCedula: c.rif || rawSurveyMatch.rifCedula || '',
+        }
+      : undefined;
+
+    const hasGps = Boolean(
+      surveyMatch &&
+      typeof surveyMatch.latitud === 'number' &&
+      typeof surveyMatch.longitud === 'number' &&
+      !isNaN(surveyMatch.latitud) &&
+      !isNaN(surveyMatch.longitud)
+    );
+
+    const clientZona = c.zona || meta.zona || 'ZULIA';
 
     const calculatedSector = calculateClientSector({
       latitud: surveyMatch?.latitud,
       longitud: surveyMatch?.longitud,
       municipio: surveyMatch?.municipio,
       estado: surveyMatch?.estado,
-      vendedorZona: meta.zona,
+      vendedorZona: clientZona,
       vendedor: effectiveVendedor,
     });
 
     result.push({
       id: String(c.id),
       nombre: c.nombre,
+      rif: c.rif || surveyMatch?.rifCedula || '',
       vendedor: effectiveVendedor,
       supervisor: meta.supervisor || 'NELSON FINOL',
-      zona: surveyMatch && surveyMatch.municipio ? `${surveyMatch.municipio}, ${surveyMatch.estado || 'ZULIA'}` : (meta.zona || 'ZULIA'),
+      zona: surveyMatch && surveyMatch.municipio ? `${surveyMatch.municipio}, ${surveyMatch.estado || 'ZULIA'}` : clientZona,
       region: c.region || 'OCCIDENTE',
       canal: c.canal || (surveyMatch ? surveyMatch.tipoCliente : 'GENERAL'),
       sector: calculatedSector,
@@ -254,38 +259,6 @@ export const ENRICHED_CLIENTS: EnrichedClient[] = (() => {
       hasLocation: hasGps,
       survey: surveyMatch,
     });
-  });
-
-  // 2. Add survey entries that were surveyed in the field as new prospect/clients
-  SURVEY_DATA.forEach((s) => {
-    if (!processedSurveyIds.has(s.surveyId)) {
-      const cleanVendedor = normalizeSellerName(s.vendedor) || 'SIN ASIGNAR';
-      const meta = getSellerMetadata(cleanVendedor);
-      const hasGps = Boolean(typeof s.latitud === 'number' && typeof s.longitud === 'number');
-
-      const calculatedSector = calculateClientSector({
-        latitud: s.latitud,
-        longitud: s.longitud,
-        municipio: s.municipio,
-        estado: s.estado,
-        vendedorZona: meta.zona,
-        vendedor: cleanVendedor,
-      });
-
-      result.push({
-        id: s.clienteId || s.surveyId,
-        nombre: s.clienteNombre,
-        vendedor: cleanVendedor,
-        supervisor: meta.supervisor || 'NELSON FINOL',
-        zona: s.municipio ? `${s.municipio}, ${s.estado || 'ZULIA'}` : (meta.zona || 'ZULIA'),
-        region: 'OCCIDENTE',
-        canal: s.tipoCliente || 'GENERAL',
-        sector: calculatedSector,
-        activo: true,
-        hasLocation: hasGps,
-        survey: s,
-      });
-    }
   });
 
   return result;

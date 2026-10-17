@@ -47,33 +47,62 @@ export const Cuotas: React.FC = () => {
               return isNaN(n) ? 0 : n;
             };
 
-            const liveSellers: SellerActivationRow[] = [];
+            const sheetMap = new Map<string, {
+              cartera: number;
+              aceite: { meta: number; activados: number };
+              azucar: { meta: number; activados: number };
+              pollo: { meta: number; activados: number };
+              estandarAsturias: { meta: number; activados: number };
+              mortadelaSalpicaoAsturias: { meta: number; activados: number };
+            }>();
+
             for (let i = 1; i < rows.length; i++) {
               const r = rows[i];
               const rawName = (r[0] || '').trim();
               if (!rawName || rawName.toUpperCase() === 'VENDEDOR' || rawName.toUpperCase().includes('TOTAL')) continue;
               const cleanName = normalizeSellerName(rawName);
-              const meta = getSellerMetadata(cleanName);
-
-              liveSellers.push({
-                id: `seller-${i}`,
-                vendedor: cleanName,
-                cartera: parseNum(r[1]),
-                supervisor: meta.supervisor,
-                zona: '',
-                region: meta.region,
-                rubros: {
+              const existing = sheetMap.get(cleanName);
+              if (existing) {
+                existing.cartera += parseNum(r[1]);
+                existing.aceite.meta += parseNum(r[2]);
+                existing.aceite.activados += parseNum(r[3]);
+                existing.azucar.meta += parseNum(r[4]);
+                existing.azucar.activados += parseNum(r[5]);
+                existing.pollo.meta += parseNum(r[6]);
+                existing.pollo.activados += parseNum(r[7]);
+                existing.estandarAsturias.meta += parseNum(r[8]);
+                existing.estandarAsturias.activados += parseNum(r[9]);
+                existing.mortadelaSalpicaoAsturias.meta += parseNum(r[10]);
+                existing.mortadelaSalpicaoAsturias.activados += parseNum(r[11]);
+              } else {
+                sheetMap.set(cleanName, {
+                  cartera: parseNum(r[1]),
                   aceite: { meta: parseNum(r[2]), activados: parseNum(r[3]) },
                   azucar: { meta: parseNum(r[4]), activados: parseNum(r[5]) },
                   pollo: { meta: parseNum(r[6]), activados: parseNum(r[7]) },
                   estandarAsturias: { meta: parseNum(r[8]), activados: parseNum(r[9]) },
                   mortadelaSalpicaoAsturias: { meta: parseNum(r[10]), activados: parseNum(r[11]) },
-                },
-              });
+                });
+              }
             }
 
-            if (liveSellers.length > 0) {
-              setSellers(liveSellers);
+            if (sheetMap.size > 0) {
+              const mergedSellers: SellerActivationRow[] = INITIAL_SELLERS_ACTIVATION.map((baseRow) => {
+                const live = sheetMap.get(baseRow.vendedor);
+                if (!live) return baseRow;
+                return {
+                  ...baseRow,
+                  cartera: baseRow.cartera,
+                  rubros: {
+                    aceite: live.aceite,
+                    azucar: live.azucar,
+                    pollo: live.pollo,
+                    estandarAsturias: live.estandarAsturias,
+                    mortadelaSalpicaoAsturias: live.mortadelaSalpicaoAsturias,
+                  },
+                };
+              });
+              setSellers(mergedSellers);
             }
           }
         }

@@ -19,14 +19,10 @@ export interface SellerVolumeQuota {
   };
 }
 
-// Metas y ejecución oficial de volumen mensual (Octubre 2026) extraídas directamente de la pestaña "Cuotas Volumen" del Google Sheet
-// Total Global (28 vendedores): Cuota = 2,914,293.70 Kg | Real = 945,146.60 Kg (32.4%)
-// - NELSON FINOL (14 vendedores): Cuota = 1,567,033.90 Kg | Real = 599,006.20 Kg (38.2%)
-// - JOHNATAN SOTO (8 vendedores): Cuota = 778,155.00 Kg | Real = 173,688.10 Kg (22.3%)
-// - ALI PEREZ (6 vendedores): Cuota = 569,104.80 Kg | Real = 172,452.30 Kg (30.3%)
+// Metas y ejecución oficial de volumen mensual (Octubre 2026) sincronizadas con las 25 rutas/vendedores oficiales y 3 supervisores
 export const SELLER_VOLUME_QUOTAS: Record<string, SellerVolumeQuota> = {
   // ==========================================
-  // SUPERVISOR: NELSON FINOL (14 Vendedores)
+  // SUPERVISOR: NELSON FINOL (12 Rutas Comerciales)
   // ==========================================
   'CARLOS FUENMAYOR': {
     kgs: 135530.30,
@@ -106,7 +102,7 @@ export const SELLER_VOLUME_QUOTAS: Record<string, SellerVolumeQuota> = {
       mortadelaSalpicaoAsturias: { q: 6850.90, r: 2572.70 },
     },
   },
-  'CUENTAS CLAVE 1 - MC': {
+  'MARIANA CHACIN': {
     kgs: 91100.80,
     realKgsOct: 54836.50,
     cajas: 13452,
@@ -119,7 +115,7 @@ export const SELLER_VOLUME_QUOTAS: Record<string, SellerVolumeQuota> = {
       mortadelaSalpicaoAsturias: { q: 6110.10, r: 2294.50 },
     },
   },
-  'CUENTAS CLAVE 2 - SV': {
+  'SAIRU VALLES': {
     kgs: 312852.50,
     realKgsOct: 119035.90,
     cajas: 49506,
@@ -130,32 +126,6 @@ export const SELLER_VOLUME_QUOTAS: Record<string, SellerVolumeQuota> = {
       pollo: { q: 65420.80, r: 28410.50 },
       estandarAsturias: { q: 2137.30, r: 911.40 },
       mortadelaSalpicaoAsturias: { q: 20982.80, r: 7879.80 },
-    },
-  },
-  'FOOD SERVICE SENIOR - JUAN HERNANDEZ': {
-    kgs: 14278.10,
-    realKgsOct: 4167.30,
-    cajas: 4739,
-    monto: 59309,
-    byCat: {
-      aceite: { q: 1210.40, r: 215.30 },
-      azucar: { q: 2680.50, r: 1120.00 },
-      pollo: { q: 3120.60, r: 980.40 },
-      estandarAsturias: { q: 97.50, r: 41.60 },
-      mortadelaSalpicaoAsturias: { q: 957.60, r: 359.60 },
-    },
-  },
-  'FOOD SERVICE SUR': {
-    kgs: 771.20,
-    realKgsOct: 1283.10,
-    cajas: 303,
-    monto: 2506,
-    byCat: {
-      aceite: { q: 65.20, r: 42.10 },
-      azucar: { q: 145.10, r: 320.00 },
-      pollo: { q: 165.40, r: 280.20 },
-      estandarAsturias: { q: 5.30, r: 2.30 },
-      mortadelaSalpicaoAsturias: { q: 51.70, r: 19.40 },
     },
   },
   'MARYERY GARCIA': {
@@ -212,8 +182,21 @@ export const SELLER_VOLUME_QUOTAS: Record<string, SellerVolumeQuota> = {
   },
 
   // ==========================================
-  // SUPERVISOR: JOHNATAN SOTO (8 Vendedores)
+  // SUPERVISOR: JOHNATAN SOTO (6 Carteras de Vendedores — Clientes de Johnatan pasaron a Mikelangelo Diaz)
   // ==========================================
+  'MIKELANGELO DIAZ': {
+    kgs: 282702.65,
+    realKgsOct: 32398.00,
+    cajas: 113157,
+    monto: 732062,
+    byCat: {
+      aceite: { q: 2882.80, r: 585.40 },
+      azucar: { q: 90853.80, r: 4060.00 },
+      pollo: { q: 78271.45, r: 14473.80 },
+      estandarAsturias: { q: 1549.60, r: 1222.80 },
+      mortadelaSalpicaoAsturias: { q: 11125.50, r: 5767.60 },
+    },
+  },
   'ADEL JARABA': {
     kgs: 116107.40,
     realKgsOct: 25187.60,
@@ -253,32 +236,6 @@ export const SELLER_VOLUME_QUOTAS: Record<string, SellerVolumeQuota> = {
       mortadelaSalpicaoAsturias: { q: 11329.30, r: 5078.90 },
     },
   },
-  'MIKELANGELO DIAZ': {
-    kgs: 131202.70,
-    realKgsOct: 30505.50,
-    cajas: 62657,
-    monto: 353312,
-    byCat: {
-      aceite: { q: 1672.50, r: 346.90 },
-      azucar: { q: 43510.50, r: 1080.00 },
-      pollo: { q: 29384.90, r: 13107.40 },
-      estandarAsturias: { q: 1353.20, r: 1096.80 },
-      mortadelaSalpicaoAsturias: { q: 6463.60, r: 4408.00 },
-    },
-  },
-  'MIKELANGELO DIAZ - VILLA DEL ROS': {
-    kgs: 151499.95,
-    realKgsOct: 1892.50,
-    cajas: 50500,
-    monto: 378750,
-    byCat: {
-      aceite: { q: 1210.30, r: 238.50 },
-      azucar: { q: 47343.30, r: 2980.00 },
-      pollo: { q: 48886.55, r: 1366.40 },
-      estandarAsturias: { q: 196.40, r: 126.00 },
-      mortadelaSalpicaoAsturias: { q: 4661.90, r: 1359.60 },
-    },
-  },
   'JUAN HERNANDEZ': {
     kgs: 95328.85,
     realKgsOct: 34735.10,
@@ -305,22 +262,9 @@ export const SELLER_VOLUME_QUOTAS: Record<string, SellerVolumeQuota> = {
       mortadelaSalpicaoAsturias: { q: 6841.20, r: 2730.00 },
     },
   },
-  'JAIDER MEDINA - FOOD SERVICE NORTE': {
-    kgs: 3193.76,
-    realKgsOct: 891.50,
-    cajas: 1693,
-    monto: 13991,
-    byCat: {
-      aceite: { q: 0, r: 19.90 },
-      azucar: { q: 0, r: 20.00 },
-      pollo: { q: 1170.80, r: 419.70 },
-      estandarAsturias: { q: 0, r: 0 },
-      mortadelaSalpicaoAsturias: { q: 1586.86, r: 16.20 },
-    },
-  },
 
   // ==========================================
-  // SUPERVISOR: ALI PEREZ (6 Vendedores)
+  // SUPERVISOR: ALI PEREZ (5 Rutas Comerciales)
   // ==========================================
   'ALI PEREZ': {
     kgs: 177011.10,
@@ -374,30 +318,17 @@ export const SELLER_VOLUME_QUOTAS: Record<string, SellerVolumeQuota> = {
       mortadelaSalpicaoAsturias: { q: 3230.10, r: 737.00 },
     },
   },
-  'OSCAR ORTIZ- CORO': {
-    kgs: 17644.00,
-    realKgsOct: 5602.90,
-    cajas: 5974,
-    monto: 50774,
+  'OSCAR ORTIZ': {
+    kgs: 23666.38,
+    realKgsOct: 8355.20,
+    cajas: 7477,
+    monto: 70066,
     byCat: {
-      aceite: { q: 1013.40, r: 79.50 },
-      azucar: { q: 2379.00, r: 960.00 },
-      pollo: { q: 1202.90, r: 1335.90 },
-      estandarAsturias: { q: 198.50, r: 62.70 },
-      mortadelaSalpicaoAsturias: { q: 9233.80, r: 399.20 },
-    },
-  },
-  'OSCAR ORTIZ- LA COSTA': {
-    kgs: 6022.38,
-    realKgsOct: 2752.30,
-    cajas: 1503,
-    monto: 19292,
-    byCat: {
-      aceite: { q: 534.90, r: 49.70 },
-      azucar: { q: 214.90, r: 320.00 },
-      pollo: { q: 130.20, r: 193.60 },
-      estandarAsturias: { q: 108.00, r: 22.80 },
-      mortadelaSalpicaoAsturias: { q: 1594.10, r: 378.80 },
+      aceite: { q: 1548.30, r: 129.20 },
+      azucar: { q: 2593.90, r: 1280.00 },
+      pollo: { q: 1333.10, r: 1529.50 },
+      estandarAsturias: { q: 306.50, r: 85.50 },
+      mortadelaSalpicaoAsturias: { q: 10827.90, r: 778.00 },
     },
   },
 };
