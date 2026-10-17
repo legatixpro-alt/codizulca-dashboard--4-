@@ -263,7 +263,7 @@ interface PersonalItem {
   role: 'Promotora' | 'Impulsadora' | 'Promotor Merchandising';
   zone: string;
   phone: string;
-  status: 'activo' | 'en_campo' | 'descanso';
+  status: 'activo' | 'en_campo' | 'descanso' | 'inactivo';
   assignedDegustaciones: number;
   reportsSubmitted: number;
   efficiencyScore: number;
@@ -5269,7 +5269,7 @@ export const TradeMarketing: React.FC = () => {
                                       onClick={() => {
                                         setPromoterFilter(p.name);
                                         setActiveSubmodule('degustaciones');
-                                        setActiveTab('actual');
+                                        setDegustacionSubtab('actual');
                                       }}
                                       className="w-full text-center text-[10px] text-amber-400 hover:text-amber-300 font-bold underline cursor-pointer pt-1"
                                     >

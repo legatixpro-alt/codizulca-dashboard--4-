@@ -444,7 +444,7 @@ export const SellerAuditMatrixPanel: React.FC<SellerAuditMatrixPanelProps> = ({
                       TOTAL CONSOLIDADO ({filteredRecords.length} Vendedores)
                     </td>
                     <td className="p-3 border-r border-white/10 text-center font-bold text-zinc-400">
-                      {supervisorFilter === 'ALL' ? '3 Equipos' : supervisorFilter}
+                      {selectedSupervisorFilter === 'ALL' ? '3 Equipos' : selectedSupervisorFilter}
                     </td>
                     <td className="p-2.5 text-center font-bold text-zinc-200 border-r border-white/10">
                       {formatAuditValue(totalMeta, metric)}

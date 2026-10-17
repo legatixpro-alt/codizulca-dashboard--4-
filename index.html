@@ -31,6 +31,25 @@
             e.preventDefault();
           }
         }, true);
+
+        // Auto-invalidate stale Service Worker and Workbox caches when version updates
+        try {
+          var APP_BUILD_VERSION = 'v3.2-20261017';
+          var prevVersion = localStorage.getItem('codizulca_app_build_version');
+          if (prevVersion !== APP_BUILD_VERSION) {
+            localStorage.setItem('codizulca_app_build_version', APP_BUILD_VERSION);
+            if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                registrations.forEach(function(reg) { reg.unregister(); });
+              });
+            }
+            if ('caches' in window) {
+              caches.keys().then(function(names) {
+                names.forEach(function(name) { caches.delete(name); });
+              });
+            }
+          }
+        } catch (err) {}
       })();
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
