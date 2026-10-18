@@ -236,7 +236,7 @@ export async function getCodibotDatabase(): Promise<Database> {
       if (fs.existsSync(clientsPath)) {
         const clients = JSON.parse(fs.readFileSync(clientsPath, 'utf8'));
         db.run('BEGIN TRANSACTION;');
-        const stmt = db.prepare('INSERT INTO clientes VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        const stmt = db.prepare('INSERT OR REPLACE INTO clientes VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
         for (const c of clients) {
           const monto = Number(c.monto || 0);
           const supervisor = (c.vendedor || '').toUpperCase().includes('NESTOR') ? 'Néstor Rincón' : 'José Bravo';
@@ -262,6 +262,7 @@ export async function getCodibotDatabase(): Promise<Database> {
         console.log(`[CodiBot SQL Engine] Loaded ${clients.length} clientes into SQLite.`);
       }
     } catch (err) {
+      try { db.run('ROLLBACK;'); } catch {}
       console.warn('[CodiBot SQL Engine] Error populating clientes:', err);
     }
 
@@ -352,6 +353,7 @@ export async function getCodibotDatabase(): Promise<Database> {
       db.run('COMMIT;');
       console.log('[CodiBot SQL Engine] Loaded 2026 sales transactions into SQLite.');
     } catch (err) {
+      try { db.run('ROLLBACK;'); } catch {}
       console.warn('[CodiBot SQL Engine] Error populating ventas:', err);
     }
 
@@ -362,7 +364,7 @@ export async function getCodibotDatabase(): Promise<Database> {
         const products = JSON.parse(fs.readFileSync(prodPath, 'utf8'));
         db.run('BEGIN TRANSACTION;');
         const stmtProd = db.prepare(`
-          INSERT INTO inventario (id, sku, nombre, categoria, modalidad, unidad_medida, stock_actual, stock_cajas, stock_kilos, precio_unitario_usd, ventas_totales_usd, cajas_vendidas, kilos_vendidos, rotacion, nivel_alerta, punto_reorden, pareto)
+          INSERT OR REPLACE INTO inventario (id, sku, nombre, categoria, modalidad, unidad_medida, stock_actual, stock_cajas, stock_kilos, precio_unitario_usd, ventas_totales_usd, cajas_vendidas, kilos_vendidos, rotacion, nivel_alerta, punto_reorden, pareto)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
 
@@ -418,6 +420,7 @@ export async function getCodibotDatabase(): Promise<Database> {
         console.log(`[CodiBot SQL Engine] Loaded ${products.length} productos into inventario.`);
       }
     } catch (err) {
+      try { db.run('ROLLBACK;'); } catch {}
       console.warn('[CodiBot SQL Engine] Error populating inventario:', err);
     }
 
@@ -428,7 +431,7 @@ export async function getCodibotDatabase(): Promise<Database> {
         const surveys = JSON.parse(fs.readFileSync(surveysPath, 'utf8'));
         db.run('BEGIN TRANSACTION;');
         const stmtGeo = db.prepare(`
-          INSERT INTO geocercas (id, cliente_id, cliente_nombre, vendedor_email, vendedor, estado_encuesta, tipo_cliente, rif_cedula, telefono, estado, municipio, latitud, longitud, tiene_gps, fecha, notas)
+          INSERT OR REPLACE INTO geocercas (id, cliente_id, cliente_nombre, vendedor_email, vendedor, estado_encuesta, tipo_cliente, rif_cedula, telefono, estado, municipio, latitud, longitud, tiene_gps, fecha, notas)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
 
@@ -458,6 +461,7 @@ export async function getCodibotDatabase(): Promise<Database> {
         console.log(`[CodiBot SQL Engine] Loaded ${surveys.length} geocercas/encuestas into SQLite.`);
       }
     } catch (err) {
+      try { db.run('ROLLBACK;'); } catch {}
       console.warn('[CodiBot SQL Engine] Error populating geocercas:', err);
     }
 

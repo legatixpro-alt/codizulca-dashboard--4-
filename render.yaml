@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: codizulca-dashboard
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: VITE_APP_ENV
+        value: production
+      - key: VITE_SUPABASE_URL
+        value: https://uterioexpfweghxfbvoa.supabase.co
+      - key: SUPABASE_URL
+        value: https://uterioexpfweghxfbvoa.supabase.co

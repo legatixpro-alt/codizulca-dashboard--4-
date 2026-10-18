@@ -3,10 +3,13 @@ import dotenv from 'dotenv';
 dotenv.config();
 import path from 'path';
 import fs from 'fs';
-import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI, Type } from '@google/genai';
 import { createClient } from '@supabase/supabase-js';
 import Papa from 'papaparse';
+
+const DEFAULT_SUPABASE_URL = 'https://uterioexpfweghxfbvoa.supabase.co';
+const DEFAULT_SUPABASE_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0ZXJpb2V4cGZ3ZWdoeGZidm9hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5NTg3ODYsImV4cCI6MjEwMzUzNDc4Nn0.bZnN4vrXUDlcoIaI7l39O-bU4GQp05SvJdio_cn6niI';
 import {
   getCodibotDatabase,
   executeCodibotSqlQuery,
@@ -83,8 +86,8 @@ async function startServer() {
         return res.json(historicalAllCache);
       }
       
-      const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
       
       if (!supabaseUrl || !supabaseKey) {
         if (historicalAllCache) return res.json(historicalAllCache);
@@ -319,8 +322,8 @@ async function startServer() {
   };
 
   const syncSellersMonthlyVolumeFromSupabase = async () => {
-    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
 
     const sellerMonthMap = new Map();
     const monthlyTotalsMap = new Map();
@@ -3794,8 +3797,14 @@ Responde con un JSON estructurado con:
     }
   });
 
+  const isProduction =
+    process.env.NODE_ENV === 'production' ||
+    Boolean(process.env.RENDER) ||
+    Boolean(process.argv[1] && process.argv[1].includes('server.cjs'));
+
   // Vite middleware for development
-  if (process.env.NODE_ENV !== 'production') {
+  if (!isProduction) {
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: {
         middlewareMode: true,
