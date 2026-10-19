@@ -60,7 +60,7 @@ export default function App() {
               <Route path="checkin" element={<CampoAsistencia />} />
               <Route path="asistencia" element={<CampoAsistencia />} />
               <Route path="encuestas" element={<CampoEncuestas />} />
-              <Route path="precios" element={<CampoPrecios />} />
+              <Route path="precios" element={<Navigate to="/portal/ruta" replace />} />
               <Route path="inventario" element={<CampoInventario />} />
               <Route path="merchandising" element={<CampoMerchandising />} />
               <Route path="perfil" element={<PortalPerfil />} />
