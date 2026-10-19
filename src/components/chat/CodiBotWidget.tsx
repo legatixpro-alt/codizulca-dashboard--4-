@@ -88,8 +88,8 @@ export const CodiBotHeadAvatar: React.FC<{
         <img 
           src={codibotAvatar} 
           alt="CodiBot Avatar" 
-          className="w-full h-full object-cover scale-[1.8] translate-y-[-10%]"
-          style={{ objectPosition: '50% 18%' }}
+          className="w-full h-full object-cover scale-[1.04]"
+          style={{ objectPosition: 'center' }}
           onError={(e) => {
             (e.target as HTMLElement).style.display = 'none';
           }}
@@ -112,11 +112,11 @@ export const CodiBotPillBadge: React.FC<{
       onClick={onClick}
       className={cn(
         "relative inline-flex items-center gap-2.5 bg-[#e00613] hover:bg-[#c90510] text-white pl-2 pr-4 py-1.5 rounded-full select-none cursor-pointer transition-all duration-200 active:scale-95 group",
-        isFloating && "shadow-[0_8px_24px_-4px_rgba(0,0,0,0.8),0_0_16px_rgba(224,6,19,0.4)] hover:scale-105 border border-red-400/40",
+        isFloating && "shadow-[0_8px_24px_-4px_rgba(0,0,0,0.8),0_0_16px_rgba(224,6,19,0.4)] hover:scale-105 border border-red-400/40 pl-1.5 pr-4 py-1.5",
         className
       )}
     >
-      <CodiBotHeadAvatar size="md" />
+      <CodiBotHeadAvatar size={isFloating ? "lg" : "md"} />
 
       <div className="flex flex-col text-left leading-tight">
         <span className="text-[14px] font-bold text-white tracking-tight font-sans">
@@ -703,6 +703,16 @@ export const CodiBotWidget: React.FC = () => {
 
   return (
     <>
+      {/* Floating CodiBot Trigger at Bottom Right */}
+      {!isOpen && (
+        <div className="fixed bottom-5 right-5 z-50 animate-in fade-in zoom-in-95 duration-200">
+          <CodiBotPillBadge
+            onClick={() => setIsOpen(true)}
+            isFloating={true}
+          />
+        </div>
+      )}
+
       {/* Interactive Compact Chat Window (Optimized to take less screen space) */}
       {isOpen && (
         <div
@@ -808,16 +818,16 @@ export const CodiBotWidget: React.FC = () => {
             {messages.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center p-4 text-center text-zinc-400 space-y-3 overflow-y-auto">
                 {/* Compact Robot Showcase */}
-                <div className="relative group">
-                  <div className="w-24 h-32 rounded-2xl overflow-hidden border border-red-500/40 shadow-[0_8px_20px_rgba(224,6,19,0.3)] bg-gradient-to-b from-zinc-900 to-black relative flex items-center justify-center">
+                <div className="relative group flex flex-col items-center">
+                  <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-red-500/40 shadow-[0_8px_20px_rgba(224,6,19,0.3)] bg-[#0a0a0c] relative flex items-center justify-center">
                     <img 
                       src={codibotAvatar} 
                       alt="CodiBot 3D" 
-                      className="w-full h-full object-contain p-1 filter drop-shadow-[0_6px_12px_rgba(0,0,0,0.9)]"
+                      className="w-full h-full object-cover scale-[1.04]"
                     />
-                    <div className="absolute bottom-1 inset-x-1.5 py-0.5 rounded bg-black/80 text-[8px] font-mono text-red-400 font-bold text-center border border-red-500/30">
-                      EN LÍNEA
-                    </div>
+                  </div>
+                  <div className="-mt-2 z-10 px-2.5 py-0.5 rounded-full bg-black/90 text-[8px] font-mono text-red-400 font-bold text-center border border-red-500/30 shadow">
+                    EN LÍNEA
                   </div>
                 </div>
 

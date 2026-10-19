@@ -674,6 +674,11 @@ export const MonthlyVolumeHistoryTable: React.FC<MonthlyVolumeHistoryTableProps>
       const metricLabel = metric === 'cajas' ? 'Bultos (Cajas)' : metric === 'kgs' ? 'Kilos (Kg)' : 'Ventas Netas ($ USD)';
       const viewLabel = viewLevel === 'vendedor' ? 'Detalle por Vendedor' : viewLevel === 'supervisores' ? 'Consolidado por Supervisor' : 'Consolidado por Región';
       const supervisorText = supervisorFilter !== 'ALL' ? `Supervisor: ${supervisorFilter}` : 'Todos los Supervisores';
+      const sellersFilterText =
+        selectedSellers.length > 0 && selectedSellers[0] !== '__NONE__'
+          ? ` | Vendedores (${selectedSellers.length}): ${selectedSellers.slice(0, 3).join(', ')}${selectedSellers.length > 3 ? '...' : ''}`
+          : '';
+      const searchFilterText = searchTerm.trim() ? ` | Búsqueda: "${searchTerm.trim()}"` : '';
       const fechaHora = new Date().toLocaleString('es-VE', { dateStyle: 'short', timeStyle: 'short' });
 
       // Header Banner Codizulca
@@ -688,7 +693,11 @@ export const MonthlyVolumeHistoryTable: React.FC<MonthlyVolumeHistoryTableProps>
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(8);
       doc.setTextColor(100, 116, 139);
-      doc.text(`Año: ${data?.ano || 2026}  |  Métrica: ${metricLabel}  |  Vista: ${viewLabel}  |  ${supervisorText}`, 21, 21);
+      doc.text(
+        `Año: ${data?.ano || 2026}  |  Métrica: ${metricLabel}  |  Vista: ${viewLabel}  |  ${supervisorText}${sellersFilterText}${searchFilterText}`,
+        21,
+        21
+      );
 
       doc.setFontSize(7.5);
       doc.text(`Generado: ${fechaHora}`, doc.internal.pageSize.width - 14, 15.5, { align: 'right' });
@@ -696,14 +705,15 @@ export const MonthlyVolumeHistoryTable: React.FC<MonthlyVolumeHistoryTableProps>
         doc.text(`Comparativa: ${comparisonInfo.currMonth} vs ${comparisonInfo.prevMonth}`, doc.internal.pageSize.width - 14, 21, { align: 'right' });
       }
 
-      const hasComp = comparisonInfo.hasComparison && comparisonInfo.currMonth && comparisonInfo.prevMonth;
+      const hasComp = Boolean(comparisonInfo.hasComparison && comparisonInfo.currMonth && comparisonInfo.prevMonth);
+      const showTotalCol = !hasComp || monthsToExport.length > 2;
 
       // Table Headers
       const headRow: string[] = [];
       if (viewLevel === 'vendedor') {
         headRow.push('VENDEDOR', 'SUPERVISOR', 'ZONA');
       } else if (viewLevel === 'supervisores') {
-        headRow.push('SUPERVISOR', 'REGIÓN', 'VEND.');
+        headRow.push('SUPERVISOR / VENDEDOR', 'REGIÓN / ZONA', 'VEND.');
       } else {
         headRow.push('REGIÓN', 'SUPERV.', 'VEND.');
       }
@@ -714,7 +724,8 @@ export const MonthlyVolumeHistoryTable: React.FC<MonthlyVolumeHistoryTableProps>
 
       if (hasComp) {
         headRow.push(`DIF. (${comparisonInfo.currMonth?.slice(0, 3)} vs ${comparisonInfo.prevMonth?.slice(0, 3)})`, 'VAR %');
-      } else {
+      }
+      if (showTotalCol) {
         headRow.push('TOTAL PERÍODO');
       }
 
@@ -743,7 +754,8 @@ export const MonthlyVolumeHistoryTable: React.FC<MonthlyVolumeHistoryTableProps>
             const d = valCurr - valPrev;
             const p = valPrev > 0 ? ((valCurr - valPrev) / valPrev) * 100 : (valCurr > 0 ? 100 : 0);
             row.push((d > 0 ? '+' : '') + formatVal(d), (p > 0 ? '+' : '') + p.toFixed(1) + '%');
-          } else {
+          }
+          if (showTotalCol) {
             const total = monthsToExport.reduce((acc, m) => acc + (s.months[m] ? getMetricValue(s.months[m], metric) : 0), 0);
             row.push(formatVal(total));
           }
@@ -763,11 +775,48 @@ export const MonthlyVolumeHistoryTable: React.FC<MonthlyVolumeHistoryTableProps>
             const d = valCurr - valPrev;
             const p = valPrev > 0 ? ((valCurr - valPrev) / valPrev) * 100 : (valCurr > 0 ? 100 : 0);
             row.push((d > 0 ? '+' : '') + formatVal(d), (p > 0 ? '+' : '') + p.toFixed(1) + '%');
-          } else {
+          }
+          if (showTotalCol) {
             const total = monthsToExport.reduce((acc, m) => acc + (s.months[m] ? getMetricValue(s.months[m], metric) : 0), 0);
             row.push(formatVal(total));
           }
           bodyRows.push(row);
+
+          const includeSellers =
+            expandedSupervisors.has(s.supervisor) ||
+            supervisorFilter !== 'ALL' ||
+            selectedSellers.length > 0 ||
+            searchTerm.trim().length > 0;
+
+          if (includeSellers && s.sellers && s.sellers.length > 0) {
+            s.sellers.forEach((seller, sIdx) => {
+              const sRow: any[] = [`   -> ${seller.vendedor}`, seller.zona || '-', `#${sIdx + 1}`];
+              monthsToExport.forEach((m) => {
+                const item = seller.months[m];
+                sRow.push(item ? formatVal(getMetricValue(item, metric)) : '0');
+              });
+
+              if (hasComp && comparisonInfo.currMonth && comparisonInfo.prevMonth) {
+                const valPrev = seller.months[comparisonInfo.prevMonth]
+                  ? getMetricValue(seller.months[comparisonInfo.prevMonth], metric)
+                  : 0;
+                const valCurr = seller.months[comparisonInfo.currMonth]
+                  ? getMetricValue(seller.months[comparisonInfo.currMonth], metric)
+                  : 0;
+                const d = valCurr - valPrev;
+                const p = valPrev > 0 ? ((valCurr - valPrev) / valPrev) * 100 : valCurr > 0 ? 100 : 0;
+                sRow.push((d > 0 ? '+' : '') + formatVal(d), (p > 0 ? '+' : '') + p.toFixed(1) + '%');
+              }
+              if (showTotalCol) {
+                const total = monthsToExport.reduce(
+                  (acc, m) => acc + (seller.months[m] ? getMetricValue(seller.months[m], metric) : 0),
+                  0
+                );
+                sRow.push(formatVal(total));
+              }
+              bodyRows.push(sRow);
+            });
+          }
         });
       } else {
         regionRows.forEach((r) => {
@@ -783,7 +832,8 @@ export const MonthlyVolumeHistoryTable: React.FC<MonthlyVolumeHistoryTableProps>
             const d = valCurr - valPrev;
             const p = valPrev > 0 ? ((valCurr - valPrev) / valPrev) * 100 : (valCurr > 0 ? 100 : 0);
             row.push((d > 0 ? '+' : '') + formatVal(d), (p > 0 ? '+' : '') + p.toFixed(1) + '%');
-          } else {
+          }
+          if (showTotalCol) {
             const total = monthsToExport.reduce((acc, m) => acc + (r.months[m] ? getMetricValue(r.months[m], metric) : 0), 0);
             row.push(formatVal(total));
           }
@@ -801,7 +851,8 @@ export const MonthlyVolumeHistoryTable: React.FC<MonthlyVolumeHistoryTableProps>
         const d = footerTotals.diff;
         const p = footerTotals.pct;
         footRow.push((d > 0 ? '+' : '') + formatVal(d), (p > 0 ? '+' : '') + p.toFixed(1) + '%');
-      } else {
+      }
+      if (showTotalCol) {
         const overall = monthsToExport.reduce((acc, m) => acc + (footerTotals.monthTotals[m] || 0), 0);
         footRow.push(formatVal(overall));
       }
@@ -844,6 +895,15 @@ export const MonthlyVolumeHistoryTable: React.FC<MonthlyVolumeHistoryTableProps>
           fillColor: [248, 250, 252],
         },
         columnStyles,
+        didParseCell: (dataCell) => {
+          if (dataCell.section === 'body' && viewLevel === 'supervisores') {
+            const firstCell = String((dataCell.row.raw as any[])?.[0] || '');
+            if (!firstCell.startsWith('   ->')) {
+              dataCell.cell.styles.fillColor = [226, 232, 240];
+              dataCell.cell.styles.fontStyle = 'bold';
+            }
+          }
+        },
         didDrawPage: (dataInfo) => {
           const str = `Página ${dataInfo.pageNumber} de ${doc.getNumberOfPages()}`;
           doc.setFontSize(7);

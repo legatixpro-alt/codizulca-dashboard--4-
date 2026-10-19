@@ -753,12 +753,31 @@ export const ParetoSubmodule: React.FC = () => {
 
   // Handlers de Exportación (Opción 5)
   const handleExportPDF = async () => {
-    const listToExport = displayRows.length > 0 ? displayRows : allRows;
+    const listToExport = displayRows;
     if (listToExport.length === 0 || isExportingPDF) return;
     try {
       setIsExportingPDF(true);
       await new Promise((r) => setTimeout(r, 60));
-      exportParetoToPDF(listToExport, summaryStats, insights, dimension, metric, monthsExportLabel);
+
+      const activeFilterParts: string[] = [];
+      if (selectedSupervisor !== 'ALL') activeFilterParts.push(`Supervisor: ${selectedSupervisor}`);
+      if (selectedCanal !== 'ALL') activeFilterParts.push(`Canal: ${selectedCanal}`);
+      if (filterClass !== 'ALL') activeFilterParts.push(`Clase ABC: ${filterClass}`);
+      if (filterInsight !== 'ALL') activeFilterParts.push(`Insight: ${filterInsight}`);
+      if (clientLimit !== 'ALL') activeFilterParts.push(`Limite: Top ${clientLimit}`);
+      if (searchTerm.trim()) activeFilterParts.push(`Busqueda: "${searchTerm.trim()}"`);
+      const filterMetadata =
+        activeFilterParts.length > 0 ? activeFilterParts.join(' | ') : 'Todos los registros (Sin filtro)';
+
+      exportParetoToPDF(
+        listToExport,
+        summaryStats,
+        insights,
+        dimension,
+        metric,
+        monthsExportLabel,
+        filterMetadata
+      );
     } catch (err) {
       console.error('Error generando PDF de Pareto:', err);
     } finally {
@@ -1460,6 +1479,17 @@ export const ParetoSubmodule: React.FC = () => {
                 Solo C
               </button>
             </div>
+
+            <button
+              type="button"
+              onClick={handleExportPDF}
+              disabled={isExportingPDF || displayRows.length === 0}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600/20 hover:bg-red-600 border border-red-500/40 text-red-300 hover:text-white rounded-lg text-xs font-semibold transition-all cursor-pointer shadow-sm disabled:opacity-50"
+              title="Exportar cuadro general de Pareto filtrado a PDF"
+            >
+              <FileText className={`w-3.5 h-3.5 ${isExportingPDF ? 'animate-bounce' : ''}`} />
+              <span>{isExportingPDF ? 'Generando...' : 'Exportar PDF'}</span>
+            </button>
           </div>
         </div>
 

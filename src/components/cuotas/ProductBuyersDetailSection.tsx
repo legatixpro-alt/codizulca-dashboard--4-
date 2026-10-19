@@ -17,9 +17,12 @@ import {
   ExternalLink,
   ShieldAlert,
   ArrowUpRight,
-  FileSpreadsheet
+  FileSpreadsheet,
+  FileDown
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { ParetoRowItem, ParetoMetric, MONTH_LABELS } from './paretoTypes';
 
 export interface ProductBuyerItem {
@@ -192,6 +195,100 @@ export const ProductBuyersDetailSection: React.FC<ProductBuyersDetailSectionProp
 
   const monthLabel = MONTH_LABELS[selectedMonth] || selectedMonth;
 
+  const handleExportPDF = () => {
+    if (filteredBuyers.length === 0) return;
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    doc.setFillColor(220, 38, 38);
+    doc.rect(14, 10, 3.5, 15, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.setTextColor(30, 41, 59);
+    doc.text(`CODIZULCA - COMPRADORES DE PRODUCTO (SKU #${product.id})`, 21, 14.5);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(100, 116, 139);
+    doc.text(`Producto: ${product.nombre}  |  Periodo: ${monthLabel}`, 21, 19.5);
+
+    const filterParts: string[] = [
+      `Limite: ${clientLimit === 'ALL' ? 'Todos' : `Top ${clientLimit}`}`,
+    ];
+    if (selectedSupervisor !== 'ALL') filterParts.push(`Supervisor: ${selectedSupervisor}`);
+    if (selectedCanal !== 'ALL') filterParts.push(`Canal: ${selectedCanal}`);
+    if (searchTerm.trim()) filterParts.push(`Busqueda: "${searchTerm.trim()}"`);
+
+    doc.setFontSize(7.5);
+    doc.text(
+      `Exportando ${filteredBuyers.length} registros  |  Filtros: ${filterParts.join(' | ')}  |  Fecha: ${new Date().toLocaleString('es-VE')}`,
+      21,
+      24
+    );
+
+    const headRow = [
+      '#',
+      'CODIGO',
+      'CLIENTE / RAZON SOCIAL',
+      'CANAL',
+      'VENDEDOR',
+      'SUPERVISOR',
+      'MONTO ($)',
+      'CAJAS',
+      'KILOS',
+      '% PROD.',
+      '% ACUM.',
+      'CLASE',
+    ];
+
+    const bodyRows = filteredBuyers.map((b) => [
+      b.ranking,
+      b.id_cliente,
+      b.cliente,
+      b.canal,
+      b.vendedor,
+      b.supervisor,
+      `$${Math.round(b.monto).toLocaleString('es-VE')}`,
+      Math.round(b.cajas).toLocaleString('es-VE'),
+      Math.round(b.kgs).toLocaleString('es-VE'),
+      `${b.pctCompras}%`,
+      `${b.pctAcumulado}%`,
+      `CLASE ${b.clasificacion}`,
+    ]);
+
+    const sumMonto = filteredBuyers.reduce((a, b) => a + b.monto, 0);
+    const sumCajas = filteredBuyers.reduce((a, b) => a + b.cajas, 0);
+    const sumKgs = filteredBuyers.reduce((a, b) => a + b.kgs, 0);
+    const sumPct = filteredBuyers.reduce((a, b) => a + b.pctCompras, 0);
+
+    const footRow = [
+      'TOTAL',
+      '',
+      `${filteredBuyers.length} Clientes`,
+      '',
+      '',
+      '',
+      `$${Math.round(sumMonto).toLocaleString('es-VE')}`,
+      Math.round(sumCajas).toLocaleString('es-VE'),
+      Math.round(sumKgs).toLocaleString('es-VE'),
+      `${Math.min(100, sumPct).toFixed(1)}%`,
+      '',
+      '',
+    ];
+
+    autoTable(doc, {
+      startY: 27,
+      head: [headRow],
+      body: bodyRows,
+      foot: [footRow],
+      theme: 'grid',
+      styles: { fontSize: 7, cellPadding: 1.4, textColor: [30, 41, 59] },
+      headStyles: { fillColor: [30, 41, 59], textColor: [255, 255, 255], fontStyle: 'bold' },
+      footStyles: { fillColor: [185, 28, 28], textColor: [255, 255, 255], fontStyle: 'bold' },
+    });
+
+    const safeName = product.nombre.replace(/[/\\?%*:|"<>]/g, '_').slice(0, 30);
+    doc.save(`Compradores_Producto_${product.id}_${safeName}_${new Date().toISOString().slice(0, 10)}.pdf`);
+  };
+
   return (
     <div className="bg-zinc-950 border-2 border-red-600/70 rounded-2xl p-5 shadow-2xl space-y-5 animate-in fade-in slide-in-from-top-4 duration-300 relative overflow-hidden">
       {/* Top red glow accent */}
@@ -226,8 +323,19 @@ export const ProductBuyersDetailSection: React.FC<ProductBuyersDetailSectionProp
           </div>
         </div>
 
-        {/* Acciones: Descargar Excel y Deseleccionar */}
-        <div className="flex items-center gap-2 self-end lg:self-center">
+        {/* Acciones: Descargar PDF, Excel y Deseleccionar */}
+        <div className="flex items-center gap-2 self-end lg:self-center flex-wrap">
+          <button
+            type="button"
+            onClick={handleExportPDF}
+            disabled={filteredBuyers.length === 0}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600/20 hover:bg-red-600 border border-red-500/40 text-red-300 hover:text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer disabled:opacity-50"
+            title="Exportar listado de compradores a PDF"
+          >
+            <FileDown className="w-3.5 h-3.5" />
+            <span>Exportar PDF ({filteredBuyers.length})</span>
+          </button>
+
           <button
             type="button"
             onClick={handleExportExcel}

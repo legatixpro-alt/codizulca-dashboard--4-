@@ -22,8 +22,11 @@ import {
   AlertTriangle,
   Calendar,
   History,
-  ExternalLink
+  ExternalLink,
+  FileDown
 } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import {
   DEFAULT_DIAS_LABORABLES,
   DEFAULT_DIAS_TRANSCURRIDOS,
@@ -404,6 +407,178 @@ export const SupervisorVolumeComparativeAnalysis: React.FC<SupervisorVolumeCompa
     setHistorySeller(name);
   };
 
+  // Exportar Cuadro General de Análisis Comparativo a PDF respetando todos los filtros
+  const handleExportPDF = () => {
+    const doc = new jsPDF({
+      orientation: 'landscape',
+      unit: 'mm',
+      format: 'a4',
+    });
+
+    const skuLabel = SKU_FILTER_OPTIONS.find((o) => o.id === selectedSku)?.label || selectedSku;
+
+    doc.setFontSize(13.5);
+    doc.setTextColor(185, 28, 28);
+    doc.text(
+      `CODIZULCA - CUADRO GENERAL COMPARATIVO DE CUOTAS DE VOLUMEN (${activeAnalysisMonth} 2026)`,
+      14,
+      14
+    );
+
+    const activeFilters: string[] = [
+      `Mes: ${activeAnalysisMonth} 2026`,
+      `Metrica: ${metricLabel}`,
+      `SKU/Rubro: ${skuLabel}`,
+    ];
+    if (selectedSupervisor !== 'ALL') activeFilters.push(`Supervisor: ${selectedSupervisor}`);
+    if (selectedSellers.length > 0 && selectedSellers[0] !== '__NONE__') {
+      activeFilters.push(
+        `Vendedores (${selectedSellers.length}): ${selectedSellers.slice(0, 4).join(', ')}${
+          selectedSellers.length > 4 ? '...' : ''
+        }`
+      );
+    }
+
+    doc.setFontSize(8.5);
+    doc.setTextColor(90, 90, 90);
+    doc.text(
+      `${activeFilters.join(' | ')} | Meta al Dia: ${metaAlDiaPct}% | Exportado: ${new Date().toLocaleString('es-VE')}`,
+      14,
+      20
+    );
+
+    const headRow = [
+      'SUPERVISOR / VENDEDOR',
+      'EQUIPO',
+      `META (${metricLabel})`,
+      `REAL (${metricLabel})`,
+      '% CUMPL. REAL',
+      `META AL DIA (${metaAlDiaPct}%)`,
+      'PROYECCION CIERRE',
+      '% PROYECTADO',
+      'BRECHA FALTANTE',
+      'RITMO DIARIO REQ.',
+    ];
+
+    const bodyRows: any[][] = [];
+
+    const filteredSupervisors = supervisorsConsolidated.filter((sup) => {
+      if (selectedSupervisor !== 'ALL' && sup.id !== selectedSupervisor) return false;
+      if (selectedSellers.length > 0 && selectedSellers[0] !== '__NONE__') {
+        return (sup.sellers || []).some((s) => selectedSellers.includes(s.name));
+      }
+      return true;
+    });
+
+    filteredSupervisors.forEach((sup) => {
+      const sellersToDisplay =
+        selectedSellers.length > 0 && selectedSellers[0] !== '__NONE__'
+          ? (sup.sellers || []).filter((s) => selectedSellers.includes(s.name))
+          : sup.sellers || [];
+
+      const supMeta =
+        selectedSellers.length > 0 && selectedSellers[0] !== '__NONE__'
+          ? sellersToDisplay.reduce((a, b) => a + b.meta, 0)
+          : sup.meta;
+      const supReal =
+        selectedSellers.length > 0 && selectedSellers[0] !== '__NONE__'
+          ? sellersToDisplay.reduce((a, b) => a + b.real, 0)
+          : sup.real;
+      const supPctReal = supMeta > 0 ? Number(((supReal / supMeta) * 100).toFixed(1)) : 0;
+      const supProy = supReal * factorProyeccion;
+      const supPctProy = supMeta > 0 ? Number(((supProy / supMeta) * 100).toFixed(1)) : 0;
+      const supBrecha = Math.max(0, supMeta - supReal);
+      const supRitmo = supBrecha / diasRestantes;
+      const isAboveDaily = supPctReal >= metaAlDiaPct;
+
+      bodyRows.push([
+        `${sup.name} (${sup.region || ''})`,
+        `${sellersToDisplay.length} vend.`,
+        formatUnit(supMeta),
+        formatUnit(supReal),
+        `${supPctReal}%`,
+        supPctReal >= 100 ? 'Superado' : isAboveDaily ? 'Al Dia' : 'En Riesgo',
+        formatUnit(supProy),
+        `${supPctProy}%`,
+        supBrecha > 0 ? `-${formatUnit(supBrecha)}` : 'Completada',
+        supBrecha > 0 ? `${formatUnit(supRitmo)} /dia` : '-',
+      ]);
+
+      sellersToDisplay.forEach((seller, idx) => {
+        const isSellerAboveDaily = seller.pctReal >= metaAlDiaPct;
+        bodyRows.push([
+          `   -> ${seller.name}`,
+          `#${idx + 1}`,
+          formatUnit(seller.meta),
+          formatUnit(seller.real),
+          `${seller.pctReal}%`,
+          seller.pctReal >= 100 ? 'Superado' : isSellerAboveDaily ? 'En Ritmo' : 'Retrasado',
+          formatUnit(seller.proyectado),
+          `${seller.pctProyectado}%`,
+          seller.brecha > 0 ? `-${formatUnit(seller.brecha)}` : 'Meta OK',
+          seller.brecha > 0 ? `${formatUnit(seller.ritmoDiario)} /dia` : '-',
+        ]);
+      });
+    });
+
+    const footRow = [
+      `TOTAL CONSOLIDADO (${selectedSupervisor === 'ALL' ? `${filteredSupervisors.length} Equipos` : selectedSupervisor})`,
+      `${totals.count} vend.`,
+      formatUnit(totals.meta),
+      formatUnit(totals.real),
+      `${totals.pctReal}%`,
+      totals.pctReal >= metaAlDiaPct
+        ? 'En Ritmo'
+        : `Retraso (${(totals.pctReal - metaAlDiaPct).toFixed(1)}%)`,
+      formatUnit(totals.proyectado),
+      `${totals.pctProyectado}%`,
+      totals.brecha > 0 ? `-${formatUnit(totals.brecha)}` : 'Completada',
+      totals.brecha > 0 ? `${formatUnit(totals.brecha / diasRestantes)} /dia` : '-',
+    ];
+
+    autoTable(doc, {
+      startY: 24,
+      head: [headRow],
+      body: bodyRows,
+      foot: [footRow],
+      theme: 'grid',
+      styles: {
+        fontSize: 7.5,
+        cellPadding: 1.8,
+        halign: 'center',
+        valign: 'middle',
+      },
+      headStyles: {
+        fillColor: [24, 24, 27],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+      },
+      footStyles: {
+        fillColor: [185, 28, 28],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+      },
+      columnStyles: {
+        0: { halign: 'left', fontStyle: 'bold', cellWidth: 55 },
+      },
+      didParseCell: (data) => {
+        if (data.section === 'body') {
+          const firstCell = String((data.row.raw as any[])?.[0] || '');
+          if (!firstCell.startsWith('   ->')) {
+            data.cell.styles.fillColor = [235, 235, 240];
+            data.cell.styles.fontStyle = 'bold';
+          }
+        }
+      },
+    });
+
+    doc.save(
+      `Cuotas_Volumen_Comparativo_${activeAnalysisMonth}_${metricLabel}_${new Date()
+        .toISOString()
+        .slice(0, 10)}.pdf`
+    );
+  };
+
   // Formateador de Tooltip
   const CustomTooltip = ({ active, payload }: any) => {
     if (!active || !payload || !payload.length) return null;
@@ -637,6 +812,17 @@ export const SupervisorVolumeComparativeAnalysis: React.FC<SupervisorVolumeCompa
               </button>
             </div>
 
+            {/* Botón Exportar PDF */}
+            <button
+              type="button"
+              onClick={handleExportPDF}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600/20 hover:bg-red-600 border border-red-500/40 text-red-300 hover:text-white rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-sm"
+              title="Exportar cuadro comparativo filtrado a PDF"
+            >
+              <FileDown className="w-3.5 h-3.5" />
+              <span>Exportar PDF</span>
+            </button>
+
             {/* Botón [ Ocultar / Mostrar ] */}
             <button
               type="button"
@@ -810,14 +996,25 @@ export const SupervisorVolumeComparativeAnalysis: React.FC<SupervisorVolumeCompa
             {/* 4. TABLA CONSOLIDADA CON ACCIONES Y BOTÓN DE HISTORIAL */}
             {(displayMode === 'ambos' || displayMode === 'tabla') && (
               <div className="space-y-3 pt-2">
-                <div className="flex items-center justify-between text-xs text-zinc-400">
+                <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-zinc-400">
                   <span className="font-bold text-white uppercase tracking-wider text-[11px]">
                     CONSOLIDADO DETALLADO POR SUPERVISOR Y VENDEDORES
                   </span>
-                  <span className="text-[11px] text-zinc-400 flex items-center gap-1.5">
-                    <History className="w-3 h-3 text-red-400" />
-                    Haz clic en el botón <strong className="text-white">"Historial"</strong> de cualquier vendedor para ver su evolución mensual completa.
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-[11px] text-zinc-400 flex items-center gap-1.5">
+                      <History className="w-3 h-3 text-red-400" />
+                      Haz clic en el botón <strong className="text-white">"Historial"</strong> de cualquier vendedor para ver su evolución mensual completa.
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleExportPDF}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600/20 hover:bg-red-600 border border-red-500/40 text-red-300 hover:text-white rounded-lg text-xs font-semibold transition-all cursor-pointer shadow-sm"
+                      title="Exportar cuadro general filtrado a PDF"
+                    >
+                      <FileDown className="w-3.5 h-3.5" />
+                      <span>Exportar PDF</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="border border-white/10 rounded-xl overflow-hidden bg-zinc-950/70">
@@ -847,8 +1044,19 @@ export const SupervisorVolumeComparativeAnalysis: React.FC<SupervisorVolumeCompa
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-white/5">
-                        {supervisorsConsolidated.map((sup) => {
-                          const isExpanded = expandedRow === sup.id || selectedSupervisor === sup.id;
+                        {supervisorsConsolidated
+                          .filter((sup) => {
+                            if (selectedSupervisor !== 'ALL' && sup.id !== selectedSupervisor) return false;
+                            if (selectedSellers.length > 0 && selectedSellers[0] !== '__NONE__') {
+                              return (sup.sellers || []).some((s) => selectedSellers.includes(s.name));
+                            }
+                            return true;
+                          })
+                          .map((sup) => {
+                          const isExpanded =
+                            expandedRow === sup.id ||
+                            selectedSupervisor === sup.id ||
+                            (selectedSellers.length > 0 && selectedSellers[0] !== '__NONE__');
                           const isAboveDaily = sup.pctReal >= metaAlDiaPct;
 
                           // Filtrar vendedores según la multiselección si está activa

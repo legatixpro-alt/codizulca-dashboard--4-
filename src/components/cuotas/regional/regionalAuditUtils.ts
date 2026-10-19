@@ -507,8 +507,7 @@ export const exportRegionalAuditToPDF = (
 
   const criticalSellers = sellerAuditRecords
     .filter((s) => s.riskLevel === 'rojo' || s.riskLevel === 'amarillo')
-    .sort((a, b) => a.pctCumplimiento - b.pctCumplimiento)
-    .slice(0, 10);
+    .sort((a, b) => a.pctCumplimiento - b.pctCumplimiento);
 
   const criticalTableData = criticalSellers.map((s) => [
     s.vendedor,

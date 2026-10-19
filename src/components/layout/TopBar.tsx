@@ -52,11 +52,6 @@ export const TopBar: React.FC<TopBarProps> = ({ onMenuToggle }) => {
       </div>
 
       <div className="flex items-center gap-2 sm:gap-4">
-        {/* CodiBot Quick Trigger Button */}
-        <CodiBotPillBadge 
-          onClick={handleOpenCodiBot}
-          className="scale-90 origin-right py-1.5 px-3.5"
-        />
 
         <div className="hidden sm:flex items-center gap-2 text-sm text-zinc-400">
           <Badge variant="outline" className="bg-zinc-900/50 border-white/10 text-zinc-300 font-mono tracking-widest text-[10px] px-2 py-0.5 uppercase">

@@ -11,8 +11,11 @@ import {
   ChevronRight,
   ChevronDown,
   ChevronsUpDown,
-  Users
+  Users,
+  FileDown
 } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { 
   SellerActivationRow, 
   RUBROS_CONFIG, 
@@ -227,6 +230,185 @@ export const RubrosActivationTable: React.FC<RubrosActivationTableProps> = ({
     return totals;
   }, [filteredSellers]);
 
+  const handleExportPDF = () => {
+    const doc = new jsPDF({
+      orientation: 'landscape',
+      unit: 'mm',
+      format: 'a4',
+    });
+
+    const viewLabel =
+      viewLevel === 'vendedor'
+        ? 'Por Vendedor'
+        : viewLevel === 'supervisores'
+        ? 'Consolidado por Supervisores'
+        : 'Gerencia Regional';
+
+    doc.setFontSize(14);
+    doc.setTextColor(185, 28, 28);
+    doc.text(
+      `CODIZULCA - CUADRO GENERAL DE ACTIVACION POR RUBROS (${viewLabel.toUpperCase()})`,
+      14,
+      14
+    );
+
+    const activeFilters: string[] = [];
+    if (supervisorFilter !== 'ALL') activeFilters.push(`Supervisor: ${supervisorFilter}`);
+    if (selectedSellers.length > 0 && selectedSellers[0] !== '__NONE__') {
+      activeFilters.push(
+        `Vendedores (${selectedSellers.length}): ${selectedSellers.slice(0, 4).join(', ')}${
+          selectedSellers.length > 4 ? '...' : ''
+        }`
+      );
+    }
+    if (searchTerm.trim()) activeFilters.push(`Busqueda: "${searchTerm.trim()}"`);
+
+    doc.setFontSize(8.5);
+    doc.setTextColor(90, 90, 90);
+    doc.text(
+      `Vista: ${viewLabel} | Registros: ${
+        viewLevel === 'vendedor'
+          ? `${filteredSellers.length} Vendedores`
+          : viewLevel === 'supervisores'
+          ? `${consolidatedBySupervisor.length} Supervisores (${filteredSellers.length} Vendedores)`
+          : `${consolidatedByRegion.length} Regiones`
+      } | Filtros: ${activeFilters.length > 0 ? activeFilters.join(' | ') : 'Todos (Sin filtro)'} | Exportado: ${new Date().toLocaleString('es-VE')}`,
+      14,
+      20
+    );
+
+    const col1Label =
+      viewLevel === 'vendedor'
+        ? 'VENDEDOR'
+        : viewLevel === 'supervisores'
+        ? 'SUPERVISOR / VENDEDOR'
+        : 'REGION';
+    const col2Label =
+      viewLevel === 'vendedor'
+        ? 'SUPERVISOR'
+        : viewLevel === 'supervisores'
+        ? 'VENDEDORES'
+        : 'SUPERVISORES';
+
+    const headRow1: any[] = [
+      { content: col1Label, rowSpan: 2, styles: { valign: 'middle', halign: 'left' } },
+      { content: col2Label, rowSpan: 2, styles: { valign: 'middle', halign: 'center' } },
+    ];
+    const headRow2: any[] = [];
+
+    RUBROS_CONFIG.forEach((rubro) => {
+      headRow1.push({
+        content: rubro.label,
+        colSpan: 3,
+        styles: { halign: 'center', fillColor: [39, 39, 42] },
+      });
+      headRow2.push(
+        { content: 'META', styles: { halign: 'center' } },
+        { content: 'ACT.', styles: { halign: 'center' } },
+        { content: '%', styles: { halign: 'center' } }
+      );
+    });
+
+    const bodyRows: any[][] = [];
+
+    if (viewLevel === 'vendedor') {
+      filteredSellers.forEach((row) => {
+        const line: any[] = [row.vendedor, row.supervisor];
+        RUBROS_CONFIG.forEach((rubro) => {
+          const d = row.rubros[rubro.key];
+          const pct = d.meta > 0 ? (d.activados / d.meta) * 100 : 0;
+          line.push(d.meta, d.activados, `${pct.toFixed(1)}%`);
+        });
+        bodyRows.push(line);
+      });
+    } else if (viewLevel === 'supervisores') {
+      consolidatedBySupervisor.forEach((row) => {
+        const supLine: any[] = [`${row.supervisor} (${row.region})`, `${row.sellersCount}`];
+        RUBROS_CONFIG.forEach((rubro) => {
+          const d = row.rubros[rubro.key];
+          const pct = d.meta > 0 ? (d.activados / d.meta) * 100 : 0;
+          supLine.push(d.meta, d.activados, `${pct.toFixed(1)}%`);
+        });
+        bodyRows.push(supLine);
+
+        // Si el supervisor está desplegado o hay filtro de vendedores/búsqueda activo, incluir el desglose de vendedores
+        const includeSellers =
+          expandedSupervisors.has(row.supervisor) ||
+          supervisorFilter !== 'ALL' ||
+          selectedSellers.length > 0 ||
+          searchTerm.trim().length > 0;
+
+        if (includeSellers) {
+          row.sellers.forEach((seller, idx) => {
+            const sLine: any[] = [`   -> ${seller.vendedor}`, `#${idx + 1}`];
+            RUBROS_CONFIG.forEach((rubro) => {
+              const sData = seller.rubros[rubro.key];
+              const sPct = sData.meta > 0 ? (sData.activados / sData.meta) * 100 : 0;
+              sLine.push(sData.meta, sData.activados, `${sPct.toFixed(1)}%`);
+            });
+            bodyRows.push(sLine);
+          });
+        }
+      });
+    } else {
+      consolidatedByRegion.forEach((row) => {
+        const line: any[] = [row.region, `${row.supervisorsCount}`];
+        RUBROS_CONFIG.forEach((rubro) => {
+          const d = row.rubros[rubro.key];
+          const pct = d.meta > 0 ? (d.activados / d.meta) * 100 : 0;
+          line.push(d.meta, d.activados, `${pct.toFixed(1)}%`);
+        });
+        bodyRows.push(line);
+      });
+    }
+
+    const footRow: any[] = ['TOTAL GENERAL / PROMEDIO', ''];
+    RUBROS_CONFIG.forEach((rubro) => {
+      const d = grandTotals[rubro.key];
+      const pct = d.meta > 0 ? (d.activados / d.meta) * 100 : 0;
+      footRow.push(d.meta, d.activados, `${pct.toFixed(1)}%`);
+    });
+
+    autoTable(doc, {
+      startY: 24,
+      head: [headRow1, headRow2],
+      body: bodyRows,
+      foot: [footRow],
+      theme: 'grid',
+      styles: {
+        fontSize: 6.5,
+        cellPadding: 1.5,
+        halign: 'center',
+        valign: 'middle',
+      },
+      headStyles: {
+        fillColor: [24, 24, 27],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+      },
+      footStyles: {
+        fillColor: [185, 28, 28],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+      },
+      columnStyles: {
+        0: { halign: 'left', fontStyle: 'bold', cellWidth: 42 },
+        1: { halign: 'center', cellWidth: 26 },
+      },
+      didParseCell: (data) => {
+        if (data.section === 'body' && viewLevel === 'supervisores') {
+          const firstCell = String((data.row.raw as any[])?.[0] || '');
+          if (!firstCell.startsWith('   ->')) {
+            data.cell.styles.fillColor = [240, 240, 245];
+            data.cell.styles.fontStyle = 'bold';
+          }
+        }
+      },
+    });
+
+    doc.save(`Cuotas_Activacion_${viewLevel}_${new Date().toISOString().slice(0, 10)}.pdf`);
+  };
+
   const getPercentColor = (percent: number) => {
     if (percent >= 100) return 'text-emerald-400 font-bold';
     if (percent >= 80) return 'text-green-400 font-semibold';
@@ -319,6 +501,16 @@ export const RubrosActivationTable: React.FC<RubrosActivationTableProps> = ({
               </span>
             </button>
           )}
+
+          <button
+            type="button"
+            onClick={handleExportPDF}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600/20 hover:bg-red-600 border border-red-500/40 text-red-300 hover:text-white rounded-lg text-xs font-semibold transition-all cursor-pointer shadow-sm"
+            title="Exportar cuadro general filtrado a PDF"
+          >
+            <FileDown className="w-3.5 h-3.5" />
+            <span>Exportar PDF</span>
+          </button>
 
           <span className="font-mono bg-zinc-900 border border-white/10 px-2.5 py-1.5 rounded-lg">
             {viewLevel === 'vendedor' && `${filteredSellers.length} Vendedores`}

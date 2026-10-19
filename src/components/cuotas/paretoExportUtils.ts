@@ -153,7 +153,8 @@ export const exportParetoToPDF = (
   insights: ParetoInsightsData | null,
   dimension: ParetoDimension,
   metric: ParetoMetric,
-  selectedMonth: string
+  selectedMonth: string,
+  filterMetadata?: string
 ) => {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   const fechaHora = new Date().toLocaleString('es-VE', { dateStyle: 'short', timeStyle: 'short' });
@@ -161,82 +162,188 @@ export const exportParetoToPDF = (
   const metricLabel = getParetoMetricLabel(metric);
   const monthLabel = MONTH_LABELS[selectedMonth] || selectedMonth;
 
+  const filteredSum = rows.reduce((acc, r) => acc + r.valor, 0);
+  const filteredPct = rows.reduce((acc, r) => acc + r.pctIndividual, 0);
+  const lastCumulativePct = rows.length > 0 ? rows[rows.length - 1].pctAcumulado : 0;
+
   // Franja institucional Codizulca
   doc.setFillColor(220, 38, 38);
-  doc.rect(14, 10, 3.5, 14, 'F');
+  doc.rect(14, 10, 3.5, 16, 'F');
 
   // Encabezado
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(13);
   doc.setTextColor(30, 41, 59);
-  doc.text(`CODIZULCA C.A. - ANÁLISIS DE CONCENTRACIÓN PARETO 80/20 (${dimLabel.toUpperCase()})`, 21, 15);
+  doc.text(`CODIZULCA C.A. - CUADRO GENERAL PARETO 80/20 (${dimLabel.toUpperCase()})`, 21, 14.5);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(100, 116, 139);
   doc.text(
-    `Período: ${monthLabel}  |  Métrica: ${metricLabel}  |  Universo: ${summary?.totalEntities || 0} Entidades  |  Regla 80/20: Top ${summary?.paretoRatio || 0}% genera el 80%`,
+    `Periodo: ${monthLabel}  |  Metrica: ${metricLabel}  |  Mostrando: ${rows.length} de ${summary?.totalEntities || rows.length} Entidades  |  Regla 80/20: Top ${summary?.paretoRatio || 0}% genera el 80%`,
     21,
-    21
+    19.5
   );
+  if (filterMetadata) {
+    doc.setFontSize(7.5);
+    doc.text(`Filtros Aplicados: ${filterMetadata}`, 21, 24);
+  }
 
   doc.setFontSize(7.5);
-  doc.text(`Generado: ${fechaHora}`, doc.internal.pageSize.width - 14, 15, { align: 'right' });
+  doc.text(`Generado: ${fechaHora}`, doc.internal.pageSize.width - 14, 14.5, { align: 'right' });
   if (insights) {
     doc.text(
-      `Concentración Top 5: ${insights.top5Pct}%  |  Riesgo: ${insights.concentrationLevel}`,
+      `Concentracion Top 5: ${insights.top5Pct}%  |  Riesgo: ${insights.concentrationLevel}`,
       doc.internal.pageSize.width - 14,
-      21,
+      19.5,
       { align: 'right' }
     );
   }
 
-  // Estructura de tabla
-  const head = [
-    ['#', 'ENTIDAD / RAZÓN SOCIAL', 'CANAL / VENDEDOR', 'SUPERVISOR', 'VALOR', '% IND.', '% ACUM.', 'CLASE', 'ESTADO'],
-  ];
+  const metricColTitle =
+    metric === 'monto' ? 'TOTAL VENTAS ($)' : metric === 'cajas' ? 'TOTAL CAJAS' : 'TOTAL KILOS';
 
-  const body = rows.slice(0, 350).map((r) => {
-    let estado = 'Normal';
-    if (r.insightStatus === 'AT_RISK') estado = '🚨 En Riesgo';
-    else if (r.insightStatus === 'GROWTH_OPPORTUNITY') estado = '🚀 Potencial';
-    else if (r.insightStatus === 'TOP_ANCHOR') estado = '⭐ Top 10';
+  let headRow: string[] = [];
+  if (dimension === 'clientes') {
+    headRow = [
+      '#',
+      'CLIENTE / RAZON SOCIAL',
+      'CANAL',
+      'VENDEDOR',
+      'SUPERVISOR',
+      metricColTitle,
+      '% INDIV.',
+      '% ACUM.',
+      'CLASE ABC',
+      'DIAGNOSTICO / INSIGHT',
+    ];
+  } else if (dimension === 'productos') {
+    headRow = [
+      '#',
+      'ARTICULO / DESCRIPCION',
+      'CODIGO',
+      metricColTitle,
+      '% INDIV.',
+      '% ACUM.',
+      'CLASE ABC',
+      'DIAGNOSTICO / INSIGHT',
+    ];
+  } else if (dimension === 'vendedores') {
+    headRow = [
+      '#',
+      'VENDEDOR',
+      'SUPERVISOR',
+      'ZONA',
+      metricColTitle,
+      '% INDIV.',
+      '% ACUM.',
+      'CLASE ABC',
+      'DIAGNOSTICO / INSIGHT',
+    ];
+  } else if (dimension === 'zonas') {
+    headRow = [
+      '#',
+      'ZONA COMERCIAL',
+      'SUPERVISOR',
+      'VENDEDORES',
+      metricColTitle,
+      '% INDIV.',
+      '% ACUM.',
+      'CLASE ABC',
+      'DIAGNOSTICO / INSIGHT',
+    ];
+  } else {
+    headRow = [
+      '#',
+      'CANAL DE DISTRIBUCION',
+      'CLIENTES ACTIVOS',
+      metricColTitle,
+      '% INDIV.',
+      '% ACUM.',
+      'CLASE ABC',
+      'DIAGNOSTICO / INSIGHT',
+    ];
+  }
 
-    return [
-      r.ranking,
-      r.nombre,
-      r.canal ? `${r.canal} - ${r.secundario || ''}` : r.secundario || '-',
-      r.supervisor || '-',
+  const body = rows.map((r) => {
+    let estado = 'Estable';
+    if (r.insightStatus === 'AT_RISK') {
+      estado = r.dropPct ? `[EN RIESGO -${r.dropPct}%]` : '[EN RIESGO / SIN COMPRA]';
+    } else if (r.insightStatus === 'GROWTH_OPPORTUNITY') {
+      estado = '[POTENCIAL EN CRECIMIENTO]';
+    } else if (r.insightStatus === 'TOP_ANCHOR' || r.ranking <= 10) {
+      estado = '[CUENTA ANCLA TOP 10]';
+    }
+
+    const commonTail = [
       formatParetoValue(r.valor, metric),
       `${r.pctIndividual.toFixed(2)}%`,
-      `${r.pctAcumulado.toFixed(2)}%`,
+      `${r.pctAcumulado.toFixed(1)}%`,
       `CLASE ${r.clasificacion}`,
       estado,
     ];
+
+    if (dimension === 'clientes') {
+      return [
+        r.ranking,
+        r.nombre,
+        r.canal || 'GENERAL',
+        r.secundario || '-',
+        r.supervisor || '-',
+        ...commonTail,
+      ];
+    }
+    if (dimension === 'productos') {
+      return [r.ranking, r.nombre, r.id || '-', ...commonTail];
+    }
+    if (dimension === 'vendedores') {
+      return [r.ranking, r.nombre, r.supervisor || '-', r.zona || '-', ...commonTail];
+    }
+    if (dimension === 'zonas') {
+      return [r.ranking, r.nombre, r.supervisor || '-', r.terciario || '-', ...commonTail];
+    }
+    return [r.ranking, r.nombre, r.secundario || '-', ...commonTail];
   });
+
+  const middleEmptyCols =
+    dimension === 'clientes'
+      ? ['', '', '']
+      : dimension === 'vendedores' || dimension === 'zonas'
+      ? ['', '']
+      : [''];
 
   const foot = [
     [
       'TOTAL',
-      `${summary?.totalEntities || 0} Entidades`,
-      '',
-      '',
-      formatParetoValue(summary?.totalSum || 0, metric),
-      '100.0%',
-      '100.0%',
+      `${rows.length} Registros Exportados`,
+      ...middleEmptyCols,
+      formatParetoValue(filteredSum, metric),
+      `${Math.min(100, filteredPct).toFixed(1)}%`,
+      `${Math.min(100, lastCumulativePct).toFixed(1)}%`,
       '',
       '',
     ],
   ];
 
+  const valColIdx = 2 + middleEmptyCols.length;
+  const columnStyles: Record<number, any> = {
+    0: { halign: 'center', fontStyle: 'bold', cellWidth: 10 },
+    1: { halign: 'left', cellWidth: dimension === 'clientes' ? 62 : 75 },
+    [valColIdx]: { halign: 'right', fontStyle: 'bold' },
+    [valColIdx + 1]: { halign: 'right' },
+    [valColIdx + 2]: { halign: 'right', fontStyle: 'bold' },
+    [valColIdx + 3]: { halign: 'center', fontStyle: 'bold' },
+    [valColIdx + 4]: { halign: 'center', fontSize: 6.5 },
+  };
+
   autoTable(doc, {
-    startY: 26,
-    head,
+    startY: filterMetadata ? 27 : 25,
+    head: [headRow],
     body,
     foot,
     theme: 'grid',
     styles: {
-      fontSize: 7.2,
+      fontSize: 7,
       cellPadding: 1.4,
       textColor: [30, 41, 59],
     },
@@ -244,30 +351,20 @@ export const exportParetoToPDF = (
       fillColor: [30, 41, 59],
       textColor: [255, 255, 255],
       fontStyle: 'bold',
-      fontSize: 7.5,
+      fontSize: 7.2,
     },
     footStyles: {
-      fillColor: [241, 245, 249],
-      textColor: [15, 23, 42],
+      fillColor: [185, 28, 28],
+      textColor: [255, 255, 255],
       fontStyle: 'bold',
       fontSize: 7.5,
     },
     alternateRowStyles: {
       fillColor: [248, 250, 252],
     },
-    columnStyles: {
-      0: { halign: 'center', fontStyle: 'bold', cellWidth: 10 },
-      1: { halign: 'left', cellWidth: 70 },
-      2: { halign: 'left', cellWidth: 45 },
-      3: { halign: 'left', cellWidth: 35 },
-      4: { halign: 'right', fontStyle: 'bold' },
-      5: { halign: 'right' },
-      6: { halign: 'right', fontStyle: 'bold' },
-      7: { halign: 'center', fontStyle: 'bold' },
-      8: { halign: 'center', fontSize: 6.5 },
-    },
+    columnStyles,
     didDrawPage: (dataInfo) => {
-      const str = `Página ${dataInfo.pageNumber} de ${doc.getNumberOfPages()}`;
+      const str = `Pagina ${dataInfo.pageNumber} de ${doc.getNumberOfPages()}`;
       doc.setFontSize(7);
       doc.setTextColor(148, 163, 184);
       doc.text(
@@ -282,3 +379,4 @@ export const exportParetoToPDF = (
   const dateStr = new Date().toISOString().slice(0, 10);
   doc.save(`Codizulca_Pareto_${dimension.toUpperCase()}_${metric.toUpperCase()}_${dateStr}.pdf`);
 };
+

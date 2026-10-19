@@ -15,8 +15,11 @@ import {
   ExternalLink,
   SlidersHorizontal,
   Flame,
-  ArrowUpDown
+  ArrowUpDown,
+  FileDown
 } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import {
   SellerAuditRecord,
   RegionalAuditMetric,
@@ -103,6 +106,112 @@ export const SellerAuditMatrixPanel: React.FC<SellerAuditMatrixPanelProps> = ({
   };
 
   const metaAlDiaPct = Number(((diasTranscurridos / diasLaborables) * 100).toFixed(1));
+
+  const handleExportPDF = () => {
+    if (filteredRecords.length === 0) return;
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    const metricLabel = getMetricBadgeLabel(metric);
+
+    doc.setFillColor(220, 38, 38);
+    doc.rect(14, 10, 3.5, 15, 'F');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.setTextColor(30, 41, 59);
+    doc.text('CODIZULCA - MATRIZ DE AUDITORIA 1-A-1: SUPERVISORES VS VENDEDORES', 21, 14.5);
+
+    const activeFilters: string[] = [
+      `Metrica: ${metricLabel}`,
+      `Supervisor: ${selectedSupervisorFilter === 'ALL' ? 'Todos' : selectedSupervisorFilter}`,
+      `Riesgo: ${riskFilter === 'ALL' ? 'Todos' : riskFilter.toUpperCase()}`,
+    ];
+    if (searchTerm.trim()) activeFilters.push(`Busqueda: "${searchTerm.trim()}"`);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(100, 116, 139);
+    doc.text(
+      `Mostrando ${filteredRecords.length} de ${sellerRecords.length} vendedores  |  Corte Dia ${diasTranscurridos}/${diasLaborables} (Meta al Dia: ${metaAlDiaPct}%)`,
+      21,
+      19.5
+    );
+    doc.setFontSize(7.5);
+    doc.text(
+      `Filtros: ${activeFilters.join(' | ')}  |  Exportado: ${new Date().toLocaleString('es-VE')}`,
+      21,
+      24
+    );
+
+    const headRow = [
+      'VENDEDOR',
+      'SUPERVISOR',
+      'META MES',
+      'REAL ACUM.',
+      '% CUMP.',
+      'PROYECCION EOM',
+      'BRECHA',
+      'ULT. ACOMPAN.',
+      'DIAGNOSTICO Y CAUSA DE REZAGO',
+    ];
+
+    const bodyRows = filteredRecords.map((row) => [
+      row.vendedor,
+      row.supervisor,
+      formatAuditValue(row.meta, metric),
+      formatAuditValue(row.real, metric),
+      `${row.pctCumplimiento.toFixed(1)}%`,
+      `${formatAuditValue(row.proyectadoEOM, metric)} (${row.pctProyectado.toFixed(0)}%)`,
+      row.brecha > 0 ? formatAuditValue(row.brecha, metric) : 'Cubierta',
+      `Hace ${row.diasUltimaSupervision} dias (${row.fechaUltimaSupervision})`,
+      row.causaRaizDesviacion || 'En evaluacion regular',
+    ]);
+
+    const totalMeta = filteredRecords.reduce((acc, r) => acc + (r.meta || 0), 0);
+    const totalReal = filteredRecords.reduce((acc, r) => acc + (r.real || 0), 0);
+    const totalProy = filteredRecords.reduce((acc, r) => acc + (r.proyectadoEOM || 0), 0);
+    const totalBrecha = Math.max(0, totalMeta - totalReal);
+    const pctCumpTotal = totalMeta > 0 ? (totalReal / totalMeta) * 100 : 0;
+    const pctProyTotal = totalMeta > 0 ? (totalProy / totalMeta) * 100 : 0;
+    const avgDiasSup =
+      filteredRecords.reduce((acc, r) => acc + (r.diasUltimaSupervision || 0), 0) /
+      filteredRecords.length;
+
+    const footRow = [
+      `TOTAL CONSOLIDADO (${filteredRecords.length} Vendedores)`,
+      selectedSupervisorFilter === 'ALL' ? '3 Equipos' : selectedSupervisorFilter,
+      formatAuditValue(totalMeta, metric),
+      formatAuditValue(totalReal, metric),
+      `${pctCumpTotal.toFixed(1)}%`,
+      `${formatAuditValue(totalProy, metric)} (${pctProyTotal.toFixed(0)}%)`,
+      totalBrecha > 0 ? formatAuditValue(totalBrecha, metric) : 'Cubierta',
+      `Prom: ${avgDiasSup.toFixed(1)} dias`,
+      `Meta al Dia: ${metaAlDiaPct.toFixed(1)}%`,
+    ];
+
+    autoTable(doc, {
+      startY: 27,
+      head: [headRow],
+      body: bodyRows,
+      foot: [footRow],
+      theme: 'grid',
+      styles: { fontSize: 7, cellPadding: 1.5, textColor: [30, 41, 59], valign: 'middle' },
+      headStyles: { fillColor: [30, 41, 59], textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' },
+      footStyles: { fillColor: [185, 28, 28], textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' },
+      columnStyles: {
+        0: { halign: 'left', fontStyle: 'bold', cellWidth: 42 },
+        1: { halign: 'left', cellWidth: 30 },
+        2: { halign: 'right' },
+        3: { halign: 'right', fontStyle: 'bold' },
+        4: { halign: 'center', fontStyle: 'bold' },
+        5: { halign: 'right' },
+        6: { halign: 'right', fontStyle: 'bold' },
+        7: { halign: 'center', cellWidth: 30 },
+        8: { halign: 'left', cellWidth: 65 },
+      },
+    });
+
+    doc.save(`Auditoria_Matriz_Vendedores_${metric}_${new Date().toISOString().slice(0, 10)}.pdf`);
+  };
 
   return (
     <div className="space-y-4">
@@ -198,7 +307,7 @@ export const SellerAuditMatrixPanel: React.FC<SellerAuditMatrixPanelProps> = ({
           <span className="text-zinc-500">de {sellerRecords.length} vendedores</span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
             onClick={() => setRiskFilter('rojo')}
@@ -220,6 +329,16 @@ export const SellerAuditMatrixPanel: React.FC<SellerAuditMatrixPanelProps> = ({
             }`}
           >
             Restablecer Filtros
+          </button>
+          <button
+            type="button"
+            onClick={handleExportPDF}
+            disabled={filteredRecords.length === 0}
+            className="flex items-center gap-1.5 px-3 py-1 bg-red-600/20 hover:bg-red-600 border border-red-500/40 text-red-300 hover:text-white rounded-md text-[11px] font-bold transition-all cursor-pointer shadow-sm disabled:opacity-50"
+            title="Exportar matriz de auditoría filtrada a PDF"
+          >
+            <FileDown className="w-3.5 h-3.5" />
+            <span>Exportar PDF</span>
           </button>
         </div>
       </div>

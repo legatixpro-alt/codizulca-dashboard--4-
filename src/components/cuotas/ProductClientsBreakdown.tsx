@@ -19,8 +19,11 @@ import {
   SlidersHorizontal,
   ArrowUpDown,
   Truck,
+  FileDown,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import {
   ParetoRowItem,
   ParetoMetric,
@@ -319,7 +322,6 @@ export const ProductClientsBreakdown: React.FC<ProductClientsBreakdownProps> = (
         sortedActiveMonths.forEach((m) => {
           baseObj[MONTH_LABELS[m] || m] = c.monthlyBreakdown[m] || 0;
         });
-        baseObj['Tendencia / Variación'] = c.trendDescription || '-';
       }
 
       return baseObj;
@@ -330,6 +332,108 @@ export const ProductClientsBreakdown: React.FC<ProductClientsBreakdownProps> = (
     XLSX.utils.book_append_sheet(wb, ws, 'Clientes Compradores');
     const safeName = product.nombre.replace(/[/\\?%*:|"<>]/g, '').slice(0, 25);
     XLSX.writeFile(wb, `Clientes_${safeName}_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  };
+
+  // Export to PDF
+  const handleExportPDF = () => {
+    if (filteredClients.length === 0) return;
+
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    const metricLabel = getParetoMetricLabel(metric);
+
+    doc.setFillColor(220, 38, 38);
+    doc.rect(14, 10, 3.5, 15, 'F');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.setTextColor(30, 41, 59);
+    doc.text(
+      `CODIZULCA - CLIENTES COMPRADORES DE PRODUCTO (SKU #${product.id})`,
+      21,
+      14.5
+    );
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(100, 116, 139);
+    doc.text(
+      `Producto: ${product.nombre}  |  Periodo: ${periodLabelText}  |  Metrica: ${metricLabel}`,
+      21,
+      19.5
+    );
+
+    const filterParts: string[] = [
+      `Limite: ${clientLimit === 'ALL' ? 'Todos' : `Top ${clientLimit}`}`,
+    ];
+    if (searchTerm.trim()) filterParts.push(`Busqueda: "${searchTerm.trim()}"`);
+    doc.setFontSize(7.5);
+    doc.text(
+      `Mostrando ${filteredClients.length} de ${countBuyers} compradores  |  Filtros: ${filterParts.join(' | ')}  |  Exportado: ${new Date().toLocaleString('es-VE')}`,
+      21,
+      24
+    );
+
+    const isComparative = sortedActiveMonths.length >= 2 && viewMode === 'comparative';
+
+    const headRow: string[] = ['#', 'CODIGO', 'CLIENTE / RAZON SOCIAL', 'VENDEDOR'];
+    if (isComparative) {
+      sortedActiveMonths.forEach((m) => {
+        headRow.push((MONTH_LABELS[m] || m).slice(0, 3).toUpperCase());
+      });
+    }
+    headRow.push(`TOTAL (${metricLabel})`, '% PROD.', '% ACUM.', 'CLASE ABC');
+
+    const bodyRows = filteredClients.map((c) => {
+      const row: any[] = [c.ranking, c.id_cliente, c.cliente, c.vendedor];
+      if (isComparative) {
+        sortedActiveMonths.forEach((m) => {
+          row.push(formatParetoValue(c.monthlyBreakdown[m] || 0, metric));
+        });
+      }
+      row.push(
+        formatParetoValue(c.val, metric),
+        `${c.pctIndividual.toFixed(2)}%`,
+        `${c.pctCumulative.toFixed(2)}%`,
+        `CLASE ${c.clasificacion}`
+      );
+      return row;
+    });
+
+    const filteredSum = filteredClients.reduce((acc, c) => acc + c.val, 0);
+    const filteredPct = filteredClients.reduce((acc, c) => acc + c.pctIndividual, 0);
+    const footRow: any[] = ['TOTAL', '', `${filteredClients.length} Clientes Exportados`, ''];
+    if (isComparative) {
+      sortedActiveMonths.forEach((m) => {
+        const mSum = filteredClients.reduce((acc, c) => acc + (c.monthlyBreakdown[m] || 0), 0);
+        footRow.push(formatParetoValue(mSum, metric));
+      });
+    }
+    footRow.push(
+      formatParetoValue(filteredSum, metric),
+      `${Math.min(100, filteredPct).toFixed(1)}%`,
+      '',
+      ''
+    );
+
+    autoTable(doc, {
+      startY: 27,
+      head: [headRow],
+      body: bodyRows,
+      foot: [footRow],
+      theme: 'grid',
+      styles: { fontSize: 7, cellPadding: 1.5, textColor: [30, 41, 59] },
+      headStyles: { fillColor: [30, 41, 59], textColor: [255, 255, 255], fontStyle: 'bold' },
+      footStyles: { fillColor: [185, 28, 28], textColor: [255, 255, 255], fontStyle: 'bold' },
+      columnStyles: {
+        0: { halign: 'center', fontStyle: 'bold', cellWidth: 10 },
+        1: { halign: 'center', cellWidth: 22 },
+        2: { halign: 'left', cellWidth: 70 },
+        3: { halign: 'left', cellWidth: 45 },
+      },
+    });
+
+    const safeName = product.nombre.replace(/[/\\?%*:|"<>]/g, '').slice(0, 25);
+    doc.save(`Clientes_Producto_${safeName}_${new Date().toISOString().slice(0, 10)}.pdf`);
   };
 
   return (
@@ -388,11 +492,21 @@ export const ProductClientsBreakdown: React.FC<ProductClientsBreakdownProps> = (
 
           <button
             type="button"
+            onClick={handleExportPDF}
+            className="px-3.5 py-2 rounded-xl bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white border border-red-500/40 text-xs font-bold flex items-center gap-2 transition-all shadow-sm cursor-pointer"
+            title="Exportar clientes compradores filtrados a PDF"
+          >
+            <FileDown className="w-4 h-4" />
+            <span>Exportar PDF ({filteredClients.length})</span>
+          </button>
+
+          <button
+            type="button"
             onClick={handleExportExcel}
             className="px-3.5 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-white/10 hover:border-red-500/50 text-xs font-bold flex items-center gap-2 transition-all shadow-sm cursor-pointer"
           >
             <Download className="w-4 h-4 text-red-400" />
-            <span className="hidden sm:inline">Exportar Clientes</span>
+            <span className="hidden sm:inline">Exportar Excel</span>
             <span>({filteredClients.length})</span>
           </button>
 

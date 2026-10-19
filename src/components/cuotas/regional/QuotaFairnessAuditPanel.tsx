@@ -8,8 +8,11 @@ import {
   Info,
   HelpCircle,
   ShieldCheck,
-  ArrowRight
+  ArrowRight,
+  FileDown
 } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import {
   SellerAuditRecord,
   RegionalAuditMetric
@@ -45,6 +48,104 @@ export const QuotaFairnessAuditPanel: React.FC<QuotaFairnessAuditPanelProps> = (
   const sobrecargadasCount = sellerRecords.filter((s) => s.calibracionCuota === 'sobrecargada').length;
   const subestimadasCount = sellerRecords.filter((s) => s.calibracionCuota === 'subestimada').length;
   const equilibradasCount = sellerRecords.filter((s) => s.calibracionCuota === 'equilibrada').length;
+
+  const handleExportPDF = () => {
+    if (filtered.length === 0) return;
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    const metricLabel = getMetricBadgeLabel(metric);
+
+    doc.setFillColor(220, 38, 38);
+    doc.rect(14, 10, 3.5, 15, 'F');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.setTextColor(30, 41, 59);
+    doc.text(
+      'CODIZULCA - AUDITORIA DE CALIBRACION DE CUOTAS Y SESGOS DE ASIGNACION',
+      21,
+      14.5
+    );
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(100, 116, 139);
+    doc.text(
+      `Metrica: ${metricLabel}  |  Supervisor: ${selectedSupervisor === 'ALL' ? 'Todos' : selectedSupervisor}  |  Calibracion: ${filterCalibracion.toUpperCase()}  |  Registros: ${filtered.length}`,
+      21,
+      19.5
+    );
+    doc.setFontSize(7.5);
+    doc.text(`Exportado: ${new Date().toLocaleString('es-VE')}`, 21, 24);
+
+    const headRow = [
+      'VENDEDOR',
+      'SUPERVISOR',
+      'PROMEDIO HISTORICO',
+      'CUOTA ASIGNADA',
+      '% CRECIMIENTO EXIGIDO',
+      'DIAGNOSTICO DE CUOTA',
+      'RECOMENDACION REGIONAL',
+    ];
+
+    const bodyRows = filtered.map((row) => {
+      const isOver = row.calibracionCuota === 'sobrecargada';
+      const isUnder = row.calibracionCuota === 'subestimada';
+      const diag = isOver ? 'Sobrecargada' : isUnder ? 'Subestimada' : 'Calibrada';
+      const rec = isOver
+        ? 'Exigencia muy alta vs historico. Estructurar combos promocionales o moderar meta.'
+        : isUnder
+        ? 'Cuota holgada. Sugerido incrementar cuota en rubros de mayor rotacion.'
+        : 'Meta armonica y desafiante; alineada a la estacionalidad de la zona.';
+
+      return [
+        row.vendedor,
+        row.supervisor,
+        formatAuditValue(row.promedioHistorico, metric),
+        formatAuditValue(row.meta, metric),
+        row.pctCrecimientoExigido >= 0
+          ? `+${row.pctCrecimientoExigido.toFixed(1)}%`
+          : `${row.pctCrecimientoExigido.toFixed(1)}%`,
+        diag,
+        rec,
+      ];
+    });
+
+    const sumHist = filtered.reduce((acc, r) => acc + (r.promedioHistorico || 0), 0);
+    const sumMeta = filtered.reduce((acc, r) => acc + (r.meta || 0), 0);
+    const pctGrowthTotal = sumHist > 0 ? ((sumMeta - sumHist) / sumHist) * 100 : 0;
+
+    const footRow = [
+      `TOTAL CONSOLIDADO (${filtered.length} Vendedores)`,
+      selectedSupervisor === 'ALL' ? 'Todos' : selectedSupervisor,
+      formatAuditValue(sumHist, metric),
+      formatAuditValue(sumMeta, metric),
+      pctGrowthTotal >= 0 ? `+${pctGrowthTotal.toFixed(1)}%` : `${pctGrowthTotal.toFixed(1)}%`,
+      '',
+      '',
+    ];
+
+    autoTable(doc, {
+      startY: 27,
+      head: [headRow],
+      body: bodyRows,
+      foot: [footRow],
+      theme: 'grid',
+      styles: { fontSize: 7.2, cellPadding: 1.6, textColor: [30, 41, 59], valign: 'middle' },
+      headStyles: { fillColor: [30, 41, 59], textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' },
+      footStyles: { fillColor: [185, 28, 28], textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' },
+      columnStyles: {
+        0: { halign: 'left', fontStyle: 'bold', cellWidth: 44 },
+        1: { halign: 'left', cellWidth: 32 },
+        2: { halign: 'right' },
+        3: { halign: 'right', fontStyle: 'bold' },
+        4: { halign: 'center', fontStyle: 'bold' },
+        5: { halign: 'center', fontStyle: 'bold' },
+        6: { halign: 'left', cellWidth: 85 },
+      },
+    });
+
+    doc.save(`Auditoria_Calibracion_Cuotas_${metric}_${new Date().toISOString().slice(0, 10)}.pdf`);
+  };
 
   return (
     <div className="space-y-6">
@@ -141,7 +242,7 @@ export const QuotaFairnessAuditPanel: React.FC<QuotaFairnessAuditPanelProps> = (
           </select>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="text-zinc-400 font-bold">Calibración:</span>
           <div className="inline-flex rounded-lg p-0.5 bg-zinc-900 border border-white/10">
             <button
@@ -181,6 +282,17 @@ export const QuotaFairnessAuditPanel: React.FC<QuotaFairnessAuditPanelProps> = (
               Equilibradas
             </button>
           </div>
+
+          <button
+            type="button"
+            onClick={handleExportPDF}
+            disabled={filtered.length === 0}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600/20 hover:bg-red-600 border border-red-500/40 text-red-300 hover:text-white rounded-lg text-xs font-bold transition-all cursor-pointer shadow-sm disabled:opacity-50"
+            title="Exportar cuadro de calibración de cuotas filtrado a PDF"
+          >
+            <FileDown className="w-3.5 h-3.5" />
+            <span>Exportar PDF</span>
+          </button>
         </div>
       </div>
 
