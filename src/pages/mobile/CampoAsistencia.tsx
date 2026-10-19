@@ -19,6 +19,7 @@ import {
   campoService
 } from '../../lib/campoService';
 import { checkinsService } from '../../lib/checkinsService';
+import { CampoStoreSelector } from '../../components/mobile/CampoStoreSelector';
 import {
   trazabilidadService,
   formatCoordinatesDMS,
@@ -55,8 +56,9 @@ export const CampoAsistencia: React.FC<{ activePromoterName?: string }> = ({
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const nativeFileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // 1. CAPTURA DE GPS EN TIEMPO REAL CON PRECISIÓN ESTRICTA
+  // 1. CAPTURA DE GPS EN TIEMPO REAL CON PRECISIÓN ESTRICTA + FALLBACK INTERIORES (iOS / Android)
   const requestGps = useCallback(() => {
     if (!navigator.geolocation) {
       setGpsError('La geolocalización no está soportada en este navegador.');
@@ -66,27 +68,47 @@ export const CampoAsistencia: React.FC<{ activePromoterName?: string }> = ({
     setIsCapturingGps(true);
     setGpsError(null);
 
+    const onSuccess = (pos: GeolocationPosition) => {
+      setGpsLocation({
+        lat: Number(pos.coords.latitude.toFixed(6)),
+        lng: Number(pos.coords.longitude.toFixed(6)),
+        accuracy: Math.round(pos.coords.accuracy || 15)
+      });
+      setIsCapturingGps(false);
+    };
+
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setGpsLocation({
-          lat: Number(pos.coords.latitude.toFixed(6)),
-          lng: Number(pos.coords.longitude.toFixed(6)),
-          accuracy: Math.round(pos.coords.accuracy)
-        });
-        setIsCapturingGps(false);
-      },
+      onSuccess,
       (err) => {
+        // Si falla el bloqueo satelital en interiores (techo metálico en supermercados en iOS/Android), reintenta con triangulación Wi-Fi / Red Celular
+        if (err.code === 2 || err.code === 3) {
+          navigator.geolocation.getCurrentPosition(
+            onSuccess,
+            (errFallback) => {
+              let msg = 'No se pudo obtener la ubicación GPS.';
+              if (errFallback.code === 1) msg = 'Permiso de ubicación denegado. Actívalo en Ajustes de tu teléfono.';
+              if (errFallback.code === 2) msg = 'Señal de ubicación no disponible en este momento.';
+              if (errFallback.code === 3) msg = 'Tiempo de espera de GPS agotado. Presiona Reintentar.';
+              setGpsError(msg);
+              setIsCapturingGps(false);
+            },
+            {
+              enableHighAccuracy: false,
+              timeout: 10000,
+              maximumAge: 60000
+            }
+          );
+          return;
+        }
         let msg = 'No se pudo obtener la ubicación GPS.';
-        if (err.code === 1) msg = 'Permiso de ubicación denegado por el usuario.';
-        if (err.code === 2) msg = 'Señal satelital no disponible en este momento.';
-        if (err.code === 3) msg = 'Tiempo de espera de GPS agotado.';
+        if (err.code === 1) msg = 'Permiso de ubicación denegado. Actívalo en Ajustes de tu teléfono.';
         setGpsError(msg);
         setIsCapturingGps(false);
       },
       {
         enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 10000
+        timeout: 10000,
+        maximumAge: 15000
       }
     );
   }, []);
@@ -95,61 +117,129 @@ export const CampoAsistencia: React.FC<{ activePromoterName?: string }> = ({
     requestGps();
   }, [requestGps]);
 
-  // 2. CÁMARA WEBRTC IN-APP ANTI-CRASH (SIN INVOCAR APP EXTERNA)
+  // 2. CÁMARA WEBRTC IN-APP ANTI-CRASH (OPTIMIZADA PARA ANDROID & iOS SAFARI)
+  const releaseStream = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+  }, []);
+
+  const stopCamera = useCallback(() => {
+    releaseStream();
+    setIsCameraActive(false);
+  }, [releaseStream]);
+
   const startCamera = useCallback(async () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      nativeFileInputRef.current?.click();
+      return;
+    }
     try {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((t) => t.stop());
-      }
+      releaseStream();
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          facingMode: facingMode,
+          facingMode: { ideal: facingMode },
           width: { ideal: 720 },
           height: { ideal: 960 }
         },
         audio: false
       });
       streamRef.current = stream;
+      setIsCameraActive(true);
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.play();
+        videoRef.current.setAttribute('playsinline', 'true');
+        videoRef.current.play().catch(() => {});
       }
-      setIsCameraActive(true);
     } catch (err) {
-      console.warn('Error al iniciar WebRTC:', err);
+      console.warn('Error al iniciar WebRTC con restricciones ideales:', err);
       try {
         const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
         streamRef.current = fallbackStream;
+        setIsCameraActive(true);
         if (videoRef.current) {
           videoRef.current.srcObject = fallbackStream;
-          videoRef.current.play();
+          videoRef.current.setAttribute('playsinline', 'true');
+          videoRef.current.play().catch(() => {});
         }
-        setIsCameraActive(true);
       } catch (e2) {
-        alert('No se pudo acceder a la cámara. Revisa los permisos.');
+        // Fallback automático a cámara nativa de iOS / Android si WebRTC está bloqueado
+        nativeFileInputRef.current?.click();
       }
     }
-  }, [facingMode]);
-
-  const stopCamera = useCallback(() => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
-    }
-    setIsCameraActive(false);
-  }, []);
+  }, [facingMode, releaseStream]);
 
   useEffect(() => {
     if (isCameraActive) {
       startCamera();
     }
     return () => {
-      stopCamera();
+      releaseStream();
     };
-  }, [facingMode, isCameraActive, startCamera, stopCamera]);
+  }, [facingMode, isCameraActive, startCamera, releaseStream]);
 
   const toggleFacingMode = () => {
     setFacingMode((prev) => (prev === 'user' ? 'environment' : 'user'));
+  };
+
+  // Fallback universal para cámara nativa de iOS / Android con compresión y estampado digital
+  const handleNativePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsProcessingPhoto(true);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          const TARGET_WIDTH = 720;
+          const vWidth = img.width || 720;
+          const vHeight = img.height || 960;
+          const TARGET_HEIGHT = Math.round((vHeight / vWidth) * TARGET_WIDTH);
+
+          canvas.width = TARGET_WIDTH;
+          canvas.height = TARGET_HEIGHT;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return;
+
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+          const now = new Date();
+          const dateStr = now.toLocaleDateString('es-VE') + ' • ' + now.toLocaleTimeString('es-VE', { hour12: true });
+          const gpsStr = gpsLocation
+            ? `GPS: ${gpsLocation.lat}, ${gpsLocation.lng} (±${gpsLocation.accuracy || 10}m)`
+            : 'GPS: PENDIENTE DE SATÉLITE';
+
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+          ctx.fillRect(0, canvas.height - 65, canvas.width, 65);
+          ctx.fillStyle = '#dc2626';
+          ctx.fillRect(0, canvas.height - 65, canvas.width, 3);
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 15px sans-serif';
+          ctx.fillText(`CODIZULCA ASISTENCIA • [${checkInType.toUpperCase()}]`, 14, canvas.height - 40);
+          ctx.fillStyle = '#10b981';
+          ctx.font = 'bold 12px monospace';
+          ctx.fillText(`${storeName.slice(0, 32)} • ${dateStr}`, 14, canvas.height - 22);
+          ctx.fillStyle = '#d4d4d8';
+          ctx.font = '11px monospace';
+          ctx.fillText(gpsStr, 14, canvas.height - 8);
+
+          const jpegUrl = canvas.toDataURL('image/jpeg', 0.65);
+          setSelfieDataUrl(jpegUrl);
+          stopCamera();
+        } finally {
+          setIsProcessingPhoto(false);
+          if (nativeFileInputRef.current) nativeFileInputRef.current.value = '';
+        }
+      };
+      img.onerror = () => setIsProcessingPhoto(false);
+      img.src = event.target?.result as string;
+    };
+    reader.onerror = () => setIsProcessingPhoto(false);
+    reader.readAsDataURL(file);
   };
 
   // Capturar selfie con compresión en Canvas a 720px y estampado digital
@@ -356,18 +446,11 @@ export const CampoAsistencia: React.FC<{ activePromoterName?: string }> = ({
 
         {/* PDV Selector */}
         <div className="mt-3 pt-3 border-t border-neutral-800/80">
-          <label className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 block mb-1">
-            Punto de Venta / Sucursal:
-          </label>
-          <select
+          <CampoStoreSelector
             value={storeName}
-            onChange={(e) => setStoreName(e.target.value)}
-            className="w-full bg-[#171717] border border-neutral-800 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-red-500"
-          >
-            {FREQUENT_STORES.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
+            onChange={(val) => setStoreName(val)}
+            label="Punto de Venta / Sucursal:"
+          />
         </div>
       </div>
 
@@ -554,17 +637,35 @@ export const CampoAsistencia: React.FC<{ activePromoterName?: string }> = ({
               )}
             </div>
 
-            {/* Controles de Cámara */}
-            <div>
+            {/* Controles de Cámara (WebRTC In-App + Cámara Nativa Android/iOS) */}
+            <div className="space-y-2">
+              <input
+                ref={nativeFileInputRef}
+                type="file"
+                accept="image/*"
+                capture={facingMode === 'user' ? 'user' : 'environment'}
+                onChange={handleNativePhotoUpload}
+                className="hidden"
+              />
               {!isCameraActive && !selfieDataUrl ? (
-                <button
-                  type="button"
-                  onClick={() => setIsCameraActive(true)}
-                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-red-600/30 active:scale-[0.98] transition-all cursor-pointer"
-                >
-                  <Camera className="w-4 h-4" />
-                  <span>Activar Cámara In-App</span>
-                </button>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsCameraActive(true)}
+                    className="w-full py-3.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-red-600/30 active:scale-[0.98] transition-all cursor-pointer"
+                  >
+                    <Camera className="w-4 h-4" />
+                    <span>Activar Cámara In-App</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => nativeFileInputRef.current?.click()}
+                    className="w-full py-3.5 rounded-xl bg-[#171717] hover:bg-neutral-800 border border-neutral-700 text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 active:scale-[0.98] transition-all cursor-pointer"
+                  >
+                    <Camera className="w-4 h-4 text-emerald-400" />
+                    <span>Cámara Nativa (iOS / Android)</span>
+                  </button>
+                </div>
               ) : isCameraActive ? (
                 <button
                   type="button"

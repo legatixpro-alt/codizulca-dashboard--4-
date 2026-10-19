@@ -61,45 +61,51 @@ export const CampoEscaneoGondola: React.FC<{ activePromoterName?: string }> = ({
   const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
   const [isOfflineSaved, setIsOfflineSaved] = useState<boolean>(false);
 
-  // Referencias de WebRTC
+  // Referencias de WebRTC y cámara nativa (iOS / Android)
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const nativeFileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Inicializar o detener streaming WebRTC
+  // Inicializar o detener streaming WebRTC (Compatible con iOS Safari y Android Chrome)
   const startCamera = async () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      nativeFileInputRef.current?.click();
+      return;
+    }
     try {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());
       }
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          facingMode: 'environment', // Cámara trasera para góndolas
+          facingMode: { ideal: 'environment' }, // Cámara trasera para góndolas
           width: { ideal: 1280 },
           height: { ideal: 720 }
         },
         audio: false
       });
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
-      }
       setIsCameraActive(true);
     } catch (err) {
       console.warn('Cámara trasera no accesible directamente:', err);
       try {
         const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
         streamRef.current = fallbackStream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = fallbackStream;
-          videoRef.current.play();
-        }
         setIsCameraActive(true);
       } catch (e2) {
-        alert('No se pudo acceder a la cámara. Revisa los permisos en tu navegador.');
+        nativeFileInputRef.current?.click();
       }
     }
   };
+
+  // Asegurar que cuando <video> se monte en iOS / Android, reciba el stream activo
+  useEffect(() => {
+    if (isCameraActive && streamRef.current && videoRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+      videoRef.current.setAttribute('playsinline', 'true');
+      videoRef.current.play().catch(() => {});
+    }
+  }, [isCameraActive]);
 
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
@@ -114,6 +120,41 @@ export const CampoEscaneoGondola: React.FC<{ activePromoterName?: string }> = ({
       stopCamera();
     };
   }, [stopCamera]);
+
+  // Fallback para captura desde cámara nativa de iOS / Android
+  const handleNativeShelfPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 1200;
+        canvas.height = Math.round((img.height / img.width) * 1200) || 720;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        const timestamp = new Date().toLocaleTimeString('es-VE') + ' ' + new Date().toLocaleDateString('es-VE');
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.fillRect(0, canvas.height - 32, canvas.width, 32);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 13px monospace';
+        ctx.fillText(`CODIZULCA SHELF-SCAN • ${storeName.slice(0, 28)} • ${timestamp}`, 10, canvas.height - 10);
+
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
+        const updatedPhotos = [...capturedPhotos, dataUrl].slice(0, 3);
+        setCapturedPhotos(updatedPhotos);
+        runComputerVisionAnalysis(canvas, updatedPhotos.length, dataUrl);
+        if (nativeFileInputRef.current) nativeFileInputRef.current.value = '';
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Capturar foto y ejecutar algoritmo de visión por computadora
   const handleCapturePhoto = () => {
@@ -493,16 +534,34 @@ _Generado por Codizulca Trade Marketing Intelligence_`;
             </div>
 
             {/* Controles de Disparo */}
-            <div className="flex items-center gap-2">
+            <input
+              ref={nativeFileInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={handleNativeShelfPhoto}
+              className="hidden"
+            />
+            <div className="flex flex-col sm:flex-row items-center gap-2">
               {!isCameraActive ? (
-                <button
-                  type="button"
-                  onClick={startCamera}
-                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-red-600/30 active:scale-[0.98] transition-all cursor-pointer"
-                >
-                  <Camera className="w-4 h-4" />
-                  <span>Activar Cámara Gran Angular</span>
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={startCamera}
+                    className="w-full py-3.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-red-600/30 active:scale-[0.98] transition-all cursor-pointer"
+                  >
+                    <Camera className="w-4 h-4" />
+                    <span>Activar Cámara Gran Angular</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => nativeFileInputRef.current?.click()}
+                    className="w-full py-3.5 rounded-xl bg-[#171717] hover:bg-neutral-800 border border-neutral-700 text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 active:scale-[0.98] transition-all cursor-pointer"
+                  >
+                    <Camera className="w-4 h-4 text-emerald-400" />
+                    <span>Cámara Nativa (iOS / Android)</span>
+                  </button>
+                </>
               ) : (
                 <>
                   <button

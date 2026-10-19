@@ -4461,8 +4461,17 @@ Responde con un JSON estructurado con:
     });
     // Intercept /@vite/client in sandboxed iframe environment to prevent WebSocket errors and unhandled rejections
     app.use((req, res, next) => {
-      if (req.url === '/' || req.url?.startsWith('/index.html')) {
+      if (
+        req.url === '/' ||
+        req.url?.startsWith('/index.html') ||
+        req.url?.startsWith('/portal') ||
+        req.url?.startsWith('/dashboard') ||
+        req.url?.startsWith('/login')
+      ) {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        try {
+          vite.moduleGraph.invalidateAll();
+        } catch {}
       }
       if (req.url?.startsWith('/@vite/client')) {
         const origWrite = res.write;
@@ -4492,6 +4501,21 @@ Responde con un JSON estructurado con:
   } else {
     // Production static serving with cache-busting headers for entrypoints & Service Worker
     const distPath = path.join(process.cwd(), 'dist');
+    app.get('/sw.js', (_req, res) => {
+      res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.send(`
+        self.addEventListener('install', () => self.skipWaiting());
+        self.addEventListener('activate', (event) => {
+          event.waitUntil(
+            caches.keys().then((names) => Promise.all(names.map((n) => caches.delete(n))))
+              .then(() => self.registration.unregister())
+              .then(() => self.clients.matchAll())
+              .then((clients) => clients.forEach((client) => client.navigate(client.url)))
+          );
+        });
+      `);
+    });
     app.use(
       express.static(distPath, {
         setHeaders: (res, filePath) => {

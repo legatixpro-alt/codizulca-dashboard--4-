@@ -21,6 +21,7 @@ import {
   PriceSurveyPayload,
   PromoterProfile
 } from '../../lib/campoService';
+import { CampoStoreSelector } from '../../components/mobile/CampoStoreSelector';
 
 export const CampoPrecios: React.FC<{ activePromoterName?: string }> = ({
   activePromoterName
@@ -181,18 +182,11 @@ export const CampoPrecios: React.FC<{ activePromoterName?: string }> = ({
 
         {/* PDV Selector */}
         <div className="mt-3 pt-3 border-t border-neutral-800/80">
-          <label className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 block mb-1">
-            Punto de Venta / Comercio:
-          </label>
-          <select
+          <CampoStoreSelector
             value={storeName}
-            onChange={(e) => setStoreName(e.target.value)}
-            className="w-full bg-[#171717] border border-neutral-800 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-red-500"
-          >
-            {FREQUENT_STORES.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
+            onChange={(val) => setStoreName(val)}
+            label="Punto de Venta / Comercio:"
+          />
         </div>
       </div>
 

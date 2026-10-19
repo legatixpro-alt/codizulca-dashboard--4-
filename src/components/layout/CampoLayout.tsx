@@ -181,12 +181,12 @@ export const CampoLayout: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#000000] text-white flex flex-col font-sans selection:bg-red-600 selection:text-white pb-20">
+    <div className="min-h-[100dvh] bg-[#000000] text-white flex flex-col font-sans selection:bg-red-600 selection:text-white pb-20 pb-safe">
       
       {/* ========================================================================= */}
       {/* 2.A. BARRA SUPERIOR FIJA (STICKY HEADER)                                */}
       {/* ========================================================================= */}
-      <header className="sticky top-0 z-40 bg-[#0d0d0d]/95 backdrop-blur-md border-b border-[#262626] px-3.5 py-2.5 shadow-xl">
+      <header className="sticky top-0 z-40 bg-[#0d0d0d]/95 backdrop-blur-md border-b border-[#262626] px-3.5 py-2.5 pt-safe shadow-xl">
         <div className="max-w-[512px] mx-auto flex items-center justify-between gap-2">
           
           {/* Logo CZ + Título Codizulca Campo */}

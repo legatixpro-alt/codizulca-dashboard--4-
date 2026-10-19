@@ -35,6 +35,28 @@
   
   body {
     @apply bg-[hsl(var(--background))] text-[hsl(var(--foreground))] antialiased;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    overscroll-behavior-y: none;
+  }
+
+  button,
+  a,
+  select,
+  input,
+  textarea,
+  label {
+    touch-action: manipulation;
+  }
+
+  /* Evitar auto-zoom forzado de Safari en iOS al enfocar campos de formulario */
+  @media screen and (max-width: 768px) {
+    input,
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
   }
 }
 
@@ -47,5 +69,13 @@
   .animate-spin-coin {
     animation: spin-coin 4s linear infinite;
     transform-style: preserve-3d;
+  }
+
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
   }
 }

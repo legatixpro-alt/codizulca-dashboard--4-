@@ -17,6 +17,7 @@ import {
 import { useOutletContext } from 'react-router-dom';
 import { STORAGE_KEY_ACTIVE_STORE } from '../../lib/checkinsService';
 import { degustacionesService } from '../../lib/degustacionesService';
+import { CampoStoreSelector } from '../../components/mobile/CampoStoreSelector';
 
 const AVAILABLE_PRODUCTS = Array.from(
   new Set([
@@ -257,37 +258,11 @@ export const CampoEncuestas: React.FC<{ activePromoterName?: string }> = ({
           
           {/* CARD 1: TIENDA / LOCAL Y PRODUCTO IMPULSADO - CATEGORÍA */}
           <div className="bg-[#0d0d0d] border border-neutral-800 rounded-2xl p-4 space-y-3 shadow-xl">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 block">
-                TIENDA / LOCAL
-              </label>
-              <select
-                value={FREQUENT_STORES.includes(storeName) ? storeName : ''}
-                onChange={(e) => {
-                  if (e.target.value) setStoreName(e.target.value);
-                }}
-                className="w-full bg-[#171717] border border-neutral-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500 cursor-pointer"
-              >
-                <option value="">Seleccionar sucursal frecuente (Alkosto / PDV)...</option>
-                {FREQUENT_STORES.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-              <input
-                type="text"
-                list="encuestas-frequent-stores"
-                value={storeName}
-                onChange={(e) => setStoreName(e.target.value)}
-                placeholder="Ej. ALKOSTO DONDE COMPRAR ES GANAR, C.A. (LA LIMPIA)"
-                className="w-full bg-[#000000] border border-neutral-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-red-500 transition-colors"
-                required
-              />
-              <datalist id="encuestas-frequent-stores">
-                {FREQUENT_STORES.map((s) => (
-                  <option key={s} value={s} />
-                ))}
-              </datalist>
-            </div>
+            <CampoStoreSelector
+              value={storeName}
+              onChange={(val) => setStoreName(val)}
+              label="TIENDA / LOCAL"
+            />
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
@@ -390,37 +365,11 @@ export const CampoEncuestas: React.FC<{ activePromoterName?: string }> = ({
           
           {/* CARD 1: TIENDA / LOCAL Y PRODUCTO IMPULSADO - CATEGORÍA */}
           <div className="bg-[#0d0d0d] border border-neutral-800 rounded-2xl p-4 space-y-3 shadow-xl">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 block">
-                TIENDA / LOCAL
-              </label>
-              <select
-                value={FREQUENT_STORES.includes(storeName) ? storeName : ''}
-                onChange={(e) => {
-                  if (e.target.value) setStoreName(e.target.value);
-                }}
-                className="w-full bg-[#171717] border border-neutral-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500 cursor-pointer"
-              >
-                <option value="">Seleccionar sucursal frecuente (Alkosto / PDV)...</option>
-                {FREQUENT_STORES.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-              <input
-                type="text"
-                list="encuestas-frequent-stores-larga"
-                value={storeName}
-                onChange={(e) => setStoreName(e.target.value)}
-                placeholder="Ej. ALKOSTO DONDE COMPRAR ES GANAR, C.A. (LA LIMPIA)"
-                className="w-full bg-[#000000] border border-neutral-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-red-500 transition-colors"
-                required
-              />
-              <datalist id="encuestas-frequent-stores-larga">
-                {FREQUENT_STORES.map((s) => (
-                  <option key={s} value={s} />
-                ))}
-              </datalist>
-            </div>
+            <CampoStoreSelector
+              value={storeName}
+              onChange={(val) => setStoreName(val)}
+              label="TIENDA / LOCAL"
+            />
 
             <div>
               <div className="flex items-center justify-between mb-1.5">

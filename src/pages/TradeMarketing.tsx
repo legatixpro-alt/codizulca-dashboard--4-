@@ -274,6 +274,28 @@ export const ALKOSTO_BRANCHES = [
     supervisor: 'SAIRU VALLES (Cuentas Clave)',
     rif: 'J-413243580',
     isKeyAccount: true
+  },
+  {
+    id: 'OLIMPICA-01',
+    nombre: 'OLIMPICA MAYORISTA',
+    cadena: 'OLIMPICA',
+    zona: 'Maracaibo / San Francisco',
+    region: 'Occidente / Maracaibo',
+    canal: 'MAYORISTAS / SUPERMERCADOS',
+    supervisor: 'SAIRU VALLES (Cuentas Clave)',
+    rif: 'J-400000010',
+    isKeyAccount: true
+  },
+  {
+    id: 'OLIMPICA-02',
+    nombre: 'OLIMPICA SÚPER MARKET',
+    cadena: 'OLIMPICA',
+    zona: 'Maracaibo / San Francisco',
+    region: 'Occidente / Maracaibo',
+    canal: 'SUPERMERCADOS',
+    supervisor: 'SAIRU VALLES (Cuentas Clave)',
+    rif: 'J-400000020',
+    isKeyAccount: true
   }
 ];
 
@@ -6965,14 +6987,21 @@ export const TradeMarketing: React.FC = () => {
                   placeholder="Ej: Olimpica mayorista, Alkosto Bella Vista..."
                   className="w-full bg-zinc-900 border border-white/10 rounded-xl px-3.5 py-2.5 text-white font-medium focus:outline-none focus:border-red-500 text-xs"
                 />
-                <div className="flex items-center gap-2 pt-1">
+                <div className="flex items-center flex-wrap gap-1.5 pt-1">
                   <span className="text-[10px] text-zinc-500">Sugerencias rápidas:</span>
                   <button
                     type="button"
-                    onClick={() => setNewReportForm({ ...newReportForm, client: 'Olimpica mayorista' })}
+                    onClick={() => setNewReportForm({ ...newReportForm, client: 'OLIMPICA MAYORISTA' })}
                     className="text-[10px] px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors"
                   >
-                    Olimpica mayorista
+                    Olimpica Mayorista
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewReportForm({ ...newReportForm, client: 'OLIMPICA SÚPER MARKET' })}
+                    className="text-[10px] px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors"
+                  >
+                    Olimpica Súper Market
                   </button>
                   <button
                     type="button"

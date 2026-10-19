@@ -43,10 +43,12 @@ const FREQUENT_STORES = [
   "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (LA LIMPIA)",
   "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (Bella Vista)",
   "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (Maracaibo Norte)",
+  "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (Cabimas)",
+  "OLIMPICA MAYORISTA",
+  "OLIMPICA SÚPER MARKET",
   "Supermercado Olímpica (El Bajo)",
   "Hipermercado Viviana Bella Vista",
-  "Central Madeirense San Francisco",
-  "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (Cabimas)"
+  "Central Madeirense San Francisco"
 ];
 
 const SPECIALIZED_PROMOTERS = [
@@ -228,12 +230,25 @@ export const PortalMerchandising: React.FC = () => {
   };
 
   // =========================================================================
-  // CANVAS DE FIRMA TÁCTIL (Touch & Pointer fluido con suavizado)
+  // CANVAS DE FIRMA TÁCTIL (Touch & Pointer fluido con suavizado para iOS / Android)
   // =========================================================================
-  const initCanvas = useCallback(() => {
+  const lastCanvasWidthRef = useRef<number>(0);
+
+  const initCanvas = useCallback((forceReset = false) => {
     const canvas = signatureCanvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
+    if (rect.width === 0) return;
+
+    // En iOS Safari y Android Chrome, mostrar/ocultar el teclado o la barra de direcciones dispara resize vertical.
+    // Evitamos borrar la firma si el ancho del contenedor no cambió.
+    if (!forceReset && lastCanvasWidthRef.current > 0 && Math.abs(rect.width - lastCanvasWidthRef.current) < 8) {
+      return;
+    }
+
+    const prevDataUrl = !forceReset && lastCanvasWidthRef.current > 0 ? canvas.toDataURL() : null;
+    lastCanvasWidthRef.current = rect.width;
+
     const dpr = window.devicePixelRatio || 1;
     canvas.width = rect.width * dpr;
     canvas.height = rect.height * dpr;
@@ -244,13 +259,22 @@ export const PortalMerchandising: React.FC = () => {
       ctx.lineJoin = 'round';
       ctx.lineWidth = 2.5;
       ctx.strokeStyle = '#1e3a8a'; // Azul corporativo de firma
+
+      if (prevDataUrl) {
+        const img = new Image();
+        img.onload = () => {
+          ctx.drawImage(img, 0, 0, rect.width, rect.height);
+        };
+        img.src = prevDataUrl;
+      }
     }
   }, []);
 
   useEffect(() => {
-    initCanvas();
-    window.addEventListener('resize', initCanvas);
-    return () => window.removeEventListener('resize', initCanvas);
+    initCanvas(true);
+    const onResize = () => initCanvas(false);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
   }, [initCanvas]);
 
   const getCanvasCoords = (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent) => {

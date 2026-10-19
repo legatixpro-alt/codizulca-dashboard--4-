@@ -228,6 +228,8 @@ export const PROMOTERS_LIST: PromoterProfile[] = [
 export const FREQUENT_STORES = [
   "ALKOSTO DONDE COMPRAR ES GANAR, C.A.",
   "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (LA LIMPIA)",
+  "OLIMPICA MAYORISTA",
+  "OLIMPICA SÚPER MARKET",
   "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (AV DELICIAS)",
   "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (SAN FELIPE)",
   "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (PLAZA BARALT)",
@@ -238,6 +240,38 @@ export const FREQUENT_STORES = [
   "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (TRUJILLO)",
   "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (ZONA INDUSTRIAL)"
 ];
+
+const CUSTOM_STORES_STORAGE_KEY = 'codizulca_custom_stores_v1';
+
+export function getCustomStores(): string[] {
+  try {
+    const raw = localStorage.getItem(CUSTOM_STORES_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((s) => typeof s === 'string' && s.trim().length > 0) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function getAllAvailableStores(): string[] {
+  const custom = getCustomStores();
+  return Array.from(new Set([...FREQUENT_STORES, ...custom]));
+}
+
+export function addCustomStoreToCatalog(storeName: string): string[] {
+  const cleaned = storeName.trim().toUpperCase();
+  if (!cleaned) return getAllAvailableStores();
+  const existingCustom = getCustomStores();
+  const nextCustom = Array.from(new Set([...existingCustom, cleaned]));
+  try {
+    localStorage.setItem(CUSTOM_STORES_STORAGE_KEY, JSON.stringify(nextCustom));
+    window.dispatchEvent(new CustomEvent('codizulca_stores_updated', { detail: { store: cleaned } }));
+  } catch {
+    // ignore storage errors
+  }
+  return getAllAvailableStores();
+}
 
 // Tasa Oficial BCV de Referencia (Actualizable o por defecto)
 export const OFFICIAL_BCV_RATE = 36.85;
