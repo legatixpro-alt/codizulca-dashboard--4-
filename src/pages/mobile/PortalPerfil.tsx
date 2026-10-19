@@ -229,7 +229,7 @@ export const PortalPerfil: React.FC = () => {
           <span className="text-zinc-400">Contraseña</span>
           <div className="flex items-center gap-2">
             <span className="font-mono font-bold text-red-400">
-              {showPassword ? (activePromoter.password || 'codi123') : '••••••••'}
+              {showPassword ? ((!activePromoter.password || activePromoter.password === 'codi123') ? 'Codi.123' : activePromoter.password) : '••••••••'}
             </span>
             <button
               onClick={() => setShowPassword(!showPassword)}

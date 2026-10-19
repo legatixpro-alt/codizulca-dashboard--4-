@@ -34,18 +34,28 @@
 
         // Auto-invalidate stale Service Worker and Workbox caches when version updates
         try {
-          var APP_BUILD_VERSION = 'v3.2-20261017';
+          var APP_BUILD_VERSION = 'v3.9-20261019-promotoras-pdf-codibot';
           var prevVersion = localStorage.getItem('codizulca_app_build_version');
           if (prevVersion !== APP_BUILD_VERSION) {
             localStorage.setItem('codizulca_app_build_version', APP_BUILD_VERSION);
+            var cleanupPromises = [];
             if ('serviceWorker' in navigator) {
-              navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                registrations.forEach(function(reg) { reg.unregister(); });
-              });
+              cleanupPromises.push(
+                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                  return Promise.all(registrations.map(function(reg) { return reg.unregister(); }));
+                })
+              );
             }
             if ('caches' in window) {
-              caches.keys().then(function(names) {
-                names.forEach(function(name) { caches.delete(name); });
+              cleanupPromises.push(
+                caches.keys().then(function(names) {
+                  return Promise.all(names.map(function(name) { return caches.delete(name); }));
+                })
+              );
+            }
+            if (prevVersion && cleanupPromises.length > 0) {
+              Promise.all(cleanupPromises).then(function() {
+                window.location.reload();
               });
             }
           }
@@ -65,8 +75,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Codizulca" />
     <link rel="apple-touch-icon" href="https://placehold.co/180x180/dc2626/ffffff.png?text=C&font=sans-serif" />
-    <script type="module" crossorigin src="/assets/index-BrWcd9SI.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-Dr7ZhprK.css">
+    <script type="module" crossorigin src="/assets/index-BbqdeMJS.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-DFCw0dt2.css">
   <link rel="manifest" href="/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/registerSW.js"></script></head>
   <body>
     <div id="root"></div>

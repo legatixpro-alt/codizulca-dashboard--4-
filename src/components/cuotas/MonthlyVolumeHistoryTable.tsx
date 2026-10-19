@@ -922,6 +922,14 @@ export const MonthlyVolumeHistoryTable: React.FC<MonthlyVolumeHistoryTableProps>
     }
   };
 
+  useEffect(() => {
+    const onExportEvent = () => {
+      handleExportPDF();
+    };
+    window.addEventListener('cuotas-export-pdf', onExportEvent);
+    return () => window.removeEventListener('cuotas-export-pdf', onExportEvent);
+  });
+
   // Export CSV
   const handleExportCSV = () => {
     if (!data) return;

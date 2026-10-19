@@ -333,6 +333,12 @@ export const RegionalManagerAuditSubmodule: React.FC<RegionalManagerAuditSubmodu
     }
   };
 
+  useEffect(() => {
+    const onExportEvent = () => handleExportPDF();
+    window.addEventListener('cuotas-export-pdf', onExportEvent);
+    return () => window.removeEventListener('cuotas-export-pdf', onExportEvent);
+  });
+
   const metaAlDiaPct = ((diasTranscurridos / diasLaborables) * 100).toFixed(1);
 
   return (

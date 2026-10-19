@@ -5776,7 +5776,7 @@ export const TradeMarketing: React.FC = () => {
                                     <span className="text-zinc-500">Contraseña App:</span>
                                     <div className="flex items-center gap-1.5">
                                       <span className="font-mono text-zinc-300 font-bold">
-                                        {isPassRevealed ? (p.password || 'codi123') : '••••••••'}
+                                        {isPassRevealed ? (p.password || 'Codi.123') : '••••••••'}
                                       </span>
                                       <button
                                         type="button"
@@ -5952,7 +5952,7 @@ export const TradeMarketing: React.FC = () => {
                           status: formData.get('status') as StaffMember['status'],
                           phone: formData.get('phone') as string,
                           email: formData.get('email') as string,
-                          password: (formData.get('password') as string) || editingStaffMember?.password || 'codi123',
+                          password: (formData.get('password') as string) || editingStaffMember?.password || 'Codi.123',
                           address: formData.get('address') as string,
                           assignedStore: formData.get('assignedStore') as string,
                           photoUrl: (formData.get('photoUrl') as string) || editingStaffMember?.photoUrl || '',
@@ -6105,8 +6105,8 @@ export const TradeMarketing: React.FC = () => {
                             type="text"
                             name="password"
                             required
-                            defaultValue={editingStaffMember?.password || 'codi123'}
-                            placeholder="codi123"
+                            defaultValue={editingStaffMember?.password || 'Codi.123'}
+                            placeholder="Codi.123"
                             className="w-full bg-zinc-900 border border-white/10 rounded-xl px-3 py-2 text-white placeholder-zinc-500 focus:outline-none focus:border-red-500 font-mono"
                           />
                         </div>
@@ -7314,7 +7314,7 @@ export const TradeMarketing: React.FC = () => {
                             <div className="flex items-center gap-1">
                               <span>🔑</span>
                               <span className="text-red-400 font-bold">
-                                {isPassRev ? (s.password || 'codi123') : '••••••••'}
+                                {isPassRev ? (s.password || 'Codi.123') : '••••••••'}
                               </span>
                               <button
                                 type="button"
@@ -7333,7 +7333,7 @@ export const TradeMarketing: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => {
-                            const text = `Credenciales Codizulca Campo\nPromotora: ${s.name}\nCorreo: ${s.email}\nContraseña: ${s.password || 'codi123'}\nEnlace: ${portalUrl}`;
+                            const text = `Credenciales Codizulca Campo\nPromotora: ${s.name}\nCorreo: ${s.email}\nContraseña: ${s.password || 'Codi.123'}\nEnlace: ${portalUrl}`;
                             navigator.clipboard.writeText(text);
                             setCopiedCredentialId(s.id);
                             setTimeout(() => setCopiedCredentialId(null), 2500);

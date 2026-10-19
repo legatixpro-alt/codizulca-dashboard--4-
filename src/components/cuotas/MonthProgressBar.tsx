@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Share2, ShieldCheck } from 'lucide-react';
+import { Calendar, Share2, ShieldCheck, FileText } from 'lucide-react';
 
 export type MainTab = 'activacion' | 'volumen' | 'pareto';
 export type ViewLevel = 'vendedor' | 'supervisores' | 'gerente';
@@ -24,6 +24,10 @@ export const MonthProgressBar: React.FC<MonthProgressBarProps> = ({
   diasTranscurridos = 15,
 }) => {
   const porcentaje = Number(((diasTranscurridos / diasLaborables) * 100).toFixed(1));
+
+  const handleGlobalExportPDF = () => {
+    window.dispatchEvent(new CustomEvent('cuotas-export-pdf'));
+  };
 
   return (
     <div className="bg-zinc-950/80 border border-white/10 rounded-xl p-3.5 sm:p-4 shadow-xl space-y-4">
@@ -137,15 +141,27 @@ export const MonthProgressBar: React.FC<MonthProgressBarProps> = ({
           </button>
         </div>
 
-        {/* Compartir Button */}
-        <button
-          type="button"
-          onClick={onShare}
-          className="inline-flex items-center gap-2 bg-[#00a854] hover:bg-[#009248] text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-lg shadow-md transition-all active:scale-95 shrink-0"
-        >
-          <Share2 className="w-4 h-4" />
-          <span>Compartir</span>
-        </button>
+        {/* Exportar PDF & Compartir Buttons */}
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={handleGlobalExportPDF}
+            className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-500 text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-lg shadow-md transition-all active:scale-95 shrink-0 cursor-pointer"
+            title="Exportar el cuadro general activo en PDF respetando los filtros aplicados"
+          >
+            <FileText className="w-4 h-4" />
+            <span>Exportar PDF</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={onShare}
+            className="inline-flex items-center gap-2 bg-[#00a854] hover:bg-[#009248] text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-lg shadow-md transition-all active:scale-95 shrink-0 cursor-pointer"
+          >
+            <Share2 className="w-4 h-4" />
+            <span>Compartir</span>
+          </button>
+        </div>
       </div>
     </div>
   );

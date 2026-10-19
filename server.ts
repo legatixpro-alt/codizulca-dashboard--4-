@@ -3454,9 +3454,13 @@ Responde con un JSON estructurado con:
   // Submódulo de Personal de Campo (Trade Marketing & RRHH)
   const staffFilePath = path.join(process.cwd(), 'data_staff.json');
   let memoryStaff: any[] = [];
+  const normalizeStaffRecord = (s: any) => ({
+    ...s,
+    password: (!s?.password || s.password === 'codi123' || s.password === 'codi.123') ? 'Codi.123' : s.password,
+  });
   try {
     if (fs.existsSync(staffFilePath)) {
-      memoryStaff = JSON.parse(fs.readFileSync(staffFilePath, 'utf8'));
+      memoryStaff = JSON.parse(fs.readFileSync(staffFilePath, 'utf8')).map(normalizeStaffRecord);
     }
   } catch (e) {
     console.warn('[Staff] Error leyendo archivo de personal:', e);
@@ -3465,7 +3469,7 @@ Responde con un JSON estructurado con:
   app.get('/api/staff', (req, res) => {
     try {
       if (fs.existsSync(staffFilePath)) {
-        memoryStaff = JSON.parse(fs.readFileSync(staffFilePath, 'utf8'));
+        memoryStaff = JSON.parse(fs.readFileSync(staffFilePath, 'utf8')).map(normalizeStaffRecord);
       }
     } catch (e) {
       console.warn('[Staff] Error recargando personal de disco:', e);
@@ -4419,6 +4423,34 @@ Responde con un JSON estructurado con:
 
   // Vite middleware for development
   if (!isProduction) {
+    // In development mode, serve a self-unregistering Service Worker at /sw.js so any previously
+    // installed production PWA Service Worker immediately clears its precache and unregisters itself
+    app.get('/sw.js', (_req, res) => {
+      res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.send(`
+        self.addEventListener('install', () => self.skipWaiting());
+        self.addEventListener('activate', (event) => {
+          event.waitUntil(
+            caches.keys().then((names) => Promise.all(names.map((n) => caches.delete(n))))
+              .then(() => self.registration.unregister())
+              .then(() => self.clients.matchAll())
+              .then((clients) => clients.forEach((client) => client.navigate(client.url)))
+          );
+        });
+      `);
+    });
+
+    app.get('/registerSW.js', (_req, res) => {
+      res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.send(`
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then((regs) => regs.forEach((r) => r.unregister()));
+        }
+      `);
+    });
+
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: {
@@ -4429,6 +4461,9 @@ Responde con un JSON estructurado con:
     });
     // Intercept /@vite/client in sandboxed iframe environment to prevent WebSocket errors and unhandled rejections
     app.use((req, res, next) => {
+      if (req.url === '/' || req.url?.startsWith('/index.html')) {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      }
       if (req.url?.startsWith('/@vite/client')) {
         const origWrite = res.write;
         const origEnd = res.end;

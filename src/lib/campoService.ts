@@ -170,32 +170,32 @@ export interface PromoterProfile {
 
 export const PROMOTERS_LIST: PromoterProfile[] = [
   // Plantilla Fija (13)
-  { id: 'STF-001', name: 'NICOLE GODOY', role: 'Impulsadora', zone: 'CORO', phone: '0412-4352924', tag: 'Plantilla Fija', email: 'godoyaraujonicole@gmail.com', password: 'codi123', photoUrl: '/avatars/nicole_godoy.jpg', assignedStore: 'VARIAS' },
-  { id: 'STF-002', name: 'FERNANDA LEON', role: 'Impulsadora', zone: 'LA VILLA', phone: '0412-7808330', tag: 'Plantilla Fija', email: 'fer171205@gmail.com', password: 'codi123', photoUrl: '/avatars/fernanda_leon.jpg', assignedStore: 'VARIAS' },
-  { id: 'STF-003', name: 'NISMARY DERIZAN', role: 'Impulsadora', zone: 'LA VILLA', phone: '0412-7809301', tag: 'Plantilla Fija', email: 'Nismariderizan3@gmail.com', password: 'codi123', photoUrl: '/avatars/nismary_derizan.jpg', assignedStore: 'VARIAS' },
-  { id: 'STF-004', name: 'DARIANNYS FERRER', role: 'Impulsadora', zone: 'SANTA MARIA', phone: '0412-1985197', tag: 'Plantilla Fija', email: 'dariannysferrer23@gmail.com', password: 'codi123', photoUrl: '/avatars/dariannys_ferrer.jpg', assignedStore: 'ALKOSTO BELLA VISTA Y DELICIAS' },
-  { id: 'STF-005', name: 'CAMILA MORALES', role: 'Impulsadora', zone: 'MARA', phone: '0412-1680424', tag: 'Plantilla Fija', email: 'Camimi2507@gmail.com', password: 'codi123', photoUrl: '/avatars/camila_morales.jpg', assignedStore: 'VARIOS' },
-  { id: 'STF-006', name: 'CARELIZ REYES', role: 'Impulsadora', zone: 'PUNTO FIJO', phone: '04146103171', tag: 'Plantilla Fija', email: 'REYESCARELIZ3@GMAIL.COM', password: 'codi123', photoUrl: '/avatars/careliz_reyes.jpg', assignedStore: 'VARIAS' },
-  { id: 'STF-007', name: 'Maria de los Ángeles Almarza Arnedo', role: 'Impulsadora', zone: 'Cabimas', phone: '+58 424-1431342', tag: 'Plantilla Fija', email: 'Mariaalmarza16@gmail.com', password: 'codi123', photoUrl: '/avatars/maria_almarza.jpg', assignedStore: 'Varios' },
-  { id: 'STF-008', name: 'SCARLETH PIÑA', role: 'Impulsadora', zone: 'CABIMAS', phone: '58 412-4514626', tag: 'Plantilla Fija', email: 'scarmichell22@gmail.com', password: 'codi123', photoUrl: '/avatars/scarleth_pina.jpg', assignedStore: 'ALKOSTO CABIMAS' },
-  { id: 'STF-010', name: 'ana echeverria', role: 'Impulsadora', zone: 'urb cuatricentenario', phone: '58 424-8133259', tag: 'Plantilla Fija', email: 'anavecheverriar@gmail.com', password: 'codi123', photoUrl: '/avatars/ana_echeverria.jpg', assignedStore: 'ALKOSTO ZONA INDUSTRIAL' },
-  { id: 'STF-011', name: 'OSMAIRY VILLASMIL', role: 'Promotora', zone: 'EL SILENCIO', phone: '58 414-6713750', tag: 'Plantilla Fija', email: 'luzz010203@gmail.com', password: 'codi123', photoUrl: '/avatars/osmairy_villasmil.jpg', assignedStore: 'ALKOSTO COROMOTO' },
-  { id: 'STF-012', name: 'TANIA CARDENAS', role: 'Promotora', zone: 'C3 CERCA DEL BARRIO INTEGRACION', phone: '+58 416-0177582', tag: 'Plantilla Fija', email: 'tataacardenas@gmail.com', password: 'codi123', photoUrl: '/avatars/tania_cardenas.jpg', assignedStore: 'ALKOSTO TRIBUNALES' },
-  { id: 'STF-013', name: 'NAIRELIS ANTUNEZ', role: 'Impulsadora', zone: 'BARRIO DIA DE LAS MADRES', phone: '58 424-7317216', tag: 'Plantilla Fija', email: 'antuneznairelis@gmail.com', password: 'codi123', photoUrl: '/avatars/nairelis_antunez.jpg', assignedStore: 'ALKOSTO LA LIMPIA' },
-  { id: 'STF-014', name: 'JAIVELIN FEREIRA', role: 'Impulsadora', zone: 'EL BAJO', phone: '58 412-8048525', tag: 'Plantilla Fija', email: 'jaivelinfereira20@gmail.com', password: 'codi123', photoUrl: '/avatars/jaivelin_fereira.jpg', assignedStore: 'OLIMPICA Y ALKOSTO' },
+  { id: 'STF-001', name: 'NICOLE GODOY', role: 'Impulsadora', zone: 'CORO', phone: '0412-4352924', tag: 'Plantilla Fija', email: 'godoyaraujonicole@gmail.com', password: 'Codi.123', photoUrl: '/avatars/nicole_godoy.jpg', assignedStore: 'VARIAS' },
+  { id: 'STF-002', name: 'FERNANDA LEON', role: 'Impulsadora', zone: 'LA VILLA', phone: '0412-7808330', tag: 'Plantilla Fija', email: 'fer171205@gmail.com', password: 'Codi.123', photoUrl: '/avatars/fernanda_leon.jpg', assignedStore: 'VARIAS' },
+  { id: 'STF-003', name: 'NISMARY DERIZAN', role: 'Impulsadora', zone: 'LA VILLA', phone: '0412-7809301', tag: 'Plantilla Fija', email: 'Nismariderizan3@gmail.com', password: 'Codi.123', photoUrl: '/avatars/nismary_derizan.jpg', assignedStore: 'VARIAS' },
+  { id: 'STF-004', name: 'DARIANNYS FERRER', role: 'Impulsadora', zone: 'SANTA MARIA', phone: '0412-1985197', tag: 'Plantilla Fija', email: 'dariannysferrer23@gmail.com', password: 'Codi.123', photoUrl: '/avatars/dariannys_ferrer.jpg', assignedStore: 'ALKOSTO BELLA VISTA Y DELICIAS' },
+  { id: 'STF-005', name: 'CAMILA MORALES', role: 'Impulsadora', zone: 'MARA', phone: '0412-1680424', tag: 'Plantilla Fija', email: 'Camimi2507@gmail.com', password: 'Codi.123', photoUrl: '/avatars/camila_morales.jpg', assignedStore: 'VARIOS' },
+  { id: 'STF-006', name: 'CARELIZ REYES', role: 'Impulsadora', zone: 'PUNTO FIJO', phone: '04146103171', tag: 'Plantilla Fija', email: 'REYESCARELIZ3@GMAIL.COM', password: 'Codi.123', photoUrl: '/avatars/careliz_reyes.jpg', assignedStore: 'VARIAS' },
+  { id: 'STF-007', name: 'Maria de los Ángeles Almarza Arnedo', role: 'Impulsadora', zone: 'Cabimas', phone: '+58 424-1431342', tag: 'Plantilla Fija', email: 'Mariaalmarza16@gmail.com', password: 'Codi.123', photoUrl: '/avatars/maria_almarza.jpg', assignedStore: 'Varios' },
+  { id: 'STF-008', name: 'SCARLETH PIÑA', role: 'Impulsadora', zone: 'CABIMAS', phone: '58 412-4514626', tag: 'Plantilla Fija', email: 'scarmichell22@gmail.com', password: 'Codi.123', photoUrl: '/avatars/scarleth_pina.jpg', assignedStore: 'ALKOSTO CABIMAS' },
+  { id: 'STF-010', name: 'ana echeverria', role: 'Impulsadora', zone: 'urb cuatricentenario', phone: '58 424-8133259', tag: 'Plantilla Fija', email: 'anavecheverriar@gmail.com', password: 'Codi.123', photoUrl: '/avatars/ana_echeverria.jpg', assignedStore: 'ALKOSTO ZONA INDUSTRIAL' },
+  { id: 'STF-011', name: 'OSMAIRY VILLASMIL', role: 'Promotora', zone: 'EL SILENCIO', phone: '58 414-6713750', tag: 'Plantilla Fija', email: 'luzz010203@gmail.com', password: 'Codi.123', photoUrl: '/avatars/osmairy_villasmil.jpg', assignedStore: 'ALKOSTO COROMOTO' },
+  { id: 'STF-012', name: 'TANIA CARDENAS', role: 'Promotora', zone: 'C3 CERCA DEL BARRIO INTEGRACION', phone: '+58 416-0177582', tag: 'Plantilla Fija', email: 'tataacardenas@gmail.com', password: 'Codi.123', photoUrl: '/avatars/tania_cardenas.jpg', assignedStore: 'ALKOSTO TRIBUNALES' },
+  { id: 'STF-013', name: 'NAIRELIS ANTUNEZ', role: 'Impulsadora', zone: 'BARRIO DIA DE LAS MADRES', phone: '58 424-7317216', tag: 'Plantilla Fija', email: 'antuneznairelis@gmail.com', password: 'Codi.123', photoUrl: '/avatars/nairelis_antunez.jpg', assignedStore: 'ALKOSTO LA LIMPIA' },
+  { id: 'STF-014', name: 'JAIVELIN FEREIRA', role: 'Impulsadora', zone: 'EL BAJO', phone: '58 412-8048525', tag: 'Plantilla Fija', email: 'jaivelinfereira20@gmail.com', password: 'Codi.123', photoUrl: '/avatars/jaivelin_fereira.jpg', assignedStore: 'OLIMPICA Y ALKOSTO' },
   // Plantilla Eventual (9)
-  { id: 'STF-016', name: 'AHYRLET RUIZ', role: 'Impulsadora', zone: 'C2', phone: '58 414-3632102', tag: 'Eventual', email: 'ruizahyrleth22@gmail.com', password: 'codi123', photoUrl: '/avatars/ahyrlet_ruiz.jpg', assignedStore: 'TODAS' },
-  { id: 'STF-017', name: 'VALERIA ACEVEDO', role: 'Promotora', zone: 'URB CUATRICENTENARIO', phone: '58 412-6094222', tag: 'Eventual', email: 'valevalentina0111@gmail.com', password: 'codi123', photoUrl: '/avatars/valeria_acevedo.jpg', assignedStore: 'TODOS' },
-  { id: 'STF-018', name: 'CLAUDIA ALVAREZ', role: 'Promotora', zone: 'C2', phone: '58 424-6428938', tag: 'Eventual', email: 'clausofidaza@gmail.com', password: 'codi123', photoUrl: '/avatars/claudia_alvarez.jpg', assignedStore: 'TODAS' },
-  { id: 'STF-019', name: 'JELARY ACOSTA', role: 'Promotora', zone: 'VIA EL MOJAN', phone: '58 424-6832444', tag: 'Eventual', email: 'jelaryacosta@gmail.com', password: 'codi123', photoUrl: '/avatars/jelary_acosta.jpg', assignedStore: 'TODAS' },
-  { id: 'STF-020', name: 'MARIANGEL VALDIVIESO', role: 'Promotora', zone: 'URB LA POPULAR', phone: '58 412-6414929', tag: 'Eventual', email: 'mariangelulacio3110@gmail.com', password: 'codi123', photoUrl: '/avatars/mariangel_valdivieso.jpg', assignedStore: 'TODAS' },
-  { id: 'STF-021', name: 'ANGELICA SANCHEZ', role: 'Promotora', zone: 'PLAZA DE LAS MADRES', phone: '58 422-1652997', tag: 'Eventual', email: 'angelicaquero13@gmail.com', password: 'codi123', photoUrl: '/avatars/angelica_sanchez.jpg', assignedStore: 'TODAS' },
-  { id: 'STF-022', name: 'ENELIANGELA GONZALEZ', role: 'Promotora', zone: 'URB EL VARILLAL', phone: '58 412-0676693', tag: 'Eventual', email: 'eneliejoseph@gmail.com', password: 'codi123', photoUrl: '/avatars/eneliangela_gonzalez.jpg', assignedStore: 'TODAS' },
-  { id: 'STF-024', name: 'MARIANYEL ARANDA', role: 'Promotora', zone: 'SAN FRANCISCO', phone: '58 412-0800647', tag: 'Eventual', email: 'marianyelaranda@gmail.com', password: 'codi123', photoUrl: '/avatars/marianyel_aranda.jpg', assignedStore: 'TODAS' },
-  { id: 'STF-025', name: 'JULIANNYS GIL', role: 'Promotora', zone: 'AV LA LIMPIA', phone: '58 424-6779726', tag: 'Eventual', email: 'juliannys.gil.crespo@gmail.com', password: 'codi123', photoUrl: '/avatars/juliannys_gil.jpg', assignedStore: 'TODAS' },
+  { id: 'STF-016', name: 'AHYRLET RUIZ', role: 'Impulsadora', zone: 'C2', phone: '58 414-3632102', tag: 'Eventual', email: 'ruizahyrleth22@gmail.com', password: 'Codi.123', photoUrl: '/avatars/ahyrlet_ruiz.jpg', assignedStore: 'TODAS' },
+  { id: 'STF-017', name: 'VALERIA ACEVEDO', role: 'Promotora', zone: 'URB CUATRICENTENARIO', phone: '58 412-6094222', tag: 'Eventual', email: 'valevalentina0111@gmail.com', password: 'Codi.123', photoUrl: '/avatars/valeria_acevedo.jpg', assignedStore: 'TODOS' },
+  { id: 'STF-018', name: 'CLAUDIA ALVAREZ', role: 'Promotora', zone: 'C2', phone: '58 424-6428938', tag: 'Eventual', email: 'clausofidaza@gmail.com', password: 'Codi.123', photoUrl: '/avatars/claudia_alvarez.jpg', assignedStore: 'TODAS' },
+  { id: 'STF-019', name: 'JELARY ACOSTA', role: 'Promotora', zone: 'VIA EL MOJAN', phone: '58 424-6832444', tag: 'Eventual', email: 'jelaryacosta@gmail.com', password: 'Codi.123', photoUrl: '/avatars/jelary_acosta.jpg', assignedStore: 'TODAS' },
+  { id: 'STF-020', name: 'MARIANGEL VALDIVIESO', role: 'Promotora', zone: 'URB LA POPULAR', phone: '58 412-6414929', tag: 'Eventual', email: 'mariangelulacio3110@gmail.com', password: 'Codi.123', photoUrl: '/avatars/mariangel_valdivieso.jpg', assignedStore: 'TODAS' },
+  { id: 'STF-021', name: 'ANGELICA SANCHEZ', role: 'Promotora', zone: 'PLAZA DE LAS MADRES', phone: '58 422-1652997', tag: 'Eventual', email: 'angelicaquero13@gmail.com', password: 'Codi.123', photoUrl: '/avatars/angelica_sanchez.jpg', assignedStore: 'TODAS' },
+  { id: 'STF-022', name: 'ENELIANGELA GONZALEZ', role: 'Promotora', zone: 'URB EL VARILLAL', phone: '58 412-0676693', tag: 'Eventual', email: 'eneliejoseph@gmail.com', password: 'Codi.123', photoUrl: '/avatars/eneliangela_gonzalez.jpg', assignedStore: 'TODAS' },
+  { id: 'STF-024', name: 'MARIANYEL ARANDA', role: 'Promotora', zone: 'SAN FRANCISCO', phone: '58 412-0800647', tag: 'Eventual', email: 'marianyelaranda@gmail.com', password: 'Codi.123', photoUrl: '/avatars/marianyel_aranda.jpg', assignedStore: 'TODAS' },
+  { id: 'STF-025', name: 'JULIANNYS GIL', role: 'Promotora', zone: 'AV LA LIMPIA', phone: '58 424-6779726', tag: 'Eventual', email: 'juliannys.gil.crespo@gmail.com', password: 'Codi.123', photoUrl: '/avatars/juliannys_gil.jpg', assignedStore: 'TODAS' },
   // Mercaderistas (2)
-  { id: 'STF-026', name: 'JOSE BARROSO', role: 'Promotor Merchandising', zone: '-', phone: '412-0696135', tag: 'Merchandising', email: 'joseabraham.barroso@gmail.com', password: 'codi123', photoUrl: '/avatars/jose_barroso.jpg', assignedStore: 'NORTE' },
-  { id: 'STF-027', name: 'ZIORELI GRANGGER', role: 'Promotor Merchandising', zone: 'cuatricentenario 1 etapa', phone: '0414-6069963', tag: 'Merchandising', email: 'Ziorelis.grangger@codizulca.com', password: 'codi123', photoUrl: '/avatars/zioreli_grangger.jpg', assignedStore: 'Merchandising' }
+  { id: 'STF-026', name: 'JOSE BARROSO', role: 'Promotor Merchandising', zone: '-', phone: '412-0696135', tag: 'Merchandising', email: 'joseabraham.barroso@gmail.com', password: 'Codi.123', photoUrl: '/avatars/jose_barroso.jpg', assignedStore: 'NORTE' },
+  { id: 'STF-027', name: 'ZIORELI GRANGGER', role: 'Promotor Merchandising', zone: 'cuatricentenario 1 etapa', phone: '0414-6069963', tag: 'Merchandising', email: 'Ziorelis.grangger@codizulca.com', password: 'Codi.123', photoUrl: '/avatars/zioreli_grangger.jpg', assignedStore: 'Merchandising' }
 ];
 
 export const FREQUENT_STORES = [
@@ -301,14 +301,18 @@ export const campoService = {
       };
     }
 
-    // 3. Validar Contraseña
+    // 3. Validar Contraseña (la contraseña oficial para todas las promotoras es Codi.123)
     const validPasswords = [
+      'Codi.123',
+      'codi.123',
+      'CODI.123',
       matchStaff?.password,
       matchPromoter?.password,
       'codi123',
+      'Codi123',
       '123456',
       'admin123'
-    ].filter(Boolean);
+    ].filter(Boolean) as string[];
 
     // También aceptar últimos 4 dígitos del teléfono
     const phone = matchStaff?.phone || matchPromoter?.phone || '';
@@ -317,7 +321,9 @@ export const campoService = {
       validPasswords.push(cleanPhoneDigits.slice(-4));
     }
 
-    const isValidPassword = validPasswords.some(p => p === cleanPass);
+    const isValidPassword = validPasswords.some(
+      p => p === cleanPass || p.toLowerCase() === cleanPass.toLowerCase()
+    );
 
     if (!isValidPassword) {
       return {
@@ -335,7 +341,7 @@ export const campoService = {
       phone: matchStaff?.phone || matchPromoter?.phone || '',
       tag: matchStaff?.category === 'fija' ? 'Plantilla Fija' : matchStaff?.category === 'merchandising' ? 'Merchandising' : 'Eventual',
       email: matchStaff?.email || matchPromoter?.email || cleanEmail,
-      password: matchStaff?.password || 'codi123',
+      password: (!matchStaff?.password || matchStaff.password === 'codi123') ? 'Codi.123' : matchStaff.password,
       photoUrl: matchStaff?.photoUrl || matchPromoter?.photoUrl,
       assignedStore: matchStaff?.assignedStore || matchPromoter?.assignedStore
     };

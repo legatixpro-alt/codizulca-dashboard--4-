@@ -33,7 +33,7 @@ export const INITIAL_STAFF_SEED: StaffMember[] = [
     "status": "Activo",
     "phone": "0412-4352924",
     "email": "godoyaraujonicole@gmail.com",
-    "password": "codi123",
+    "password": "Codi.123",
     "address": "CORO",
     "assignedStore": "VARIAS",
     "photoUrl": "/avatars/nicole_godoy.jpg",
@@ -50,7 +50,7 @@ export const INITIAL_STAFF_SEED: StaffMember[] = [
     "status": "Activo",
     "phone": "0412-7808330",
     "email": "fer171205@gmail.com",
-    "password": "codi123",
+    "password": "Codi.123",
     "address": "LA VILLA",
     "assignedStore": "VARIAS",
     "photoUrl": "/avatars/fernanda_leon.jpg",
@@ -67,7 +67,7 @@ export const INITIAL_STAFF_SEED: StaffMember[] = [
     "status": "Activo",
     "phone": "0412-7809301",
     "email": "Nismariderizan3@gmail.com",
-    "password": "codi123",
+    "password": "Codi.123",
     "address": "LA VILLA",
     "assignedStore": "VARIAS",
     "photoUrl": "/avatars/nismary_derizan.jpg",
@@ -84,7 +84,7 @@ export const INITIAL_STAFF_SEED: StaffMember[] = [
     "status": "Activo",
     "phone": "0412-1985197",
     "email": "dariannysferrer23@gmail.com",
-    "password": "codi123",
+    "password": "Codi.123",
     "address": "SANTA MARIA",
     "assignedStore": "ALKOSTO BELLA VISTA Y DELICIAS",
     "photoUrl": "/avatars/dariannys_ferrer.jpg",
@@ -101,7 +101,7 @@ export const INITIAL_STAFF_SEED: StaffMember[] = [
     "status": "Activo",
     "phone": "0412-1680424",
     "email": "Camimi2507@gmail.com",
-    "password": "codi123",
+    "password": "Codi.123",
     "address": "MARA",
     "assignedStore": "VARIOS",
     "photoUrl": "/avatars/camila_morales.jpg",
@@ -118,7 +118,7 @@ export const INITIAL_STAFF_SEED: StaffMember[] = [
     "status": "Activo",
     "phone": "04146103171",
     "email": "REYESCARELIZ3@GMAIL.COM",
-    "password": "codi123",
+    "password": "Codi.123",
     "address": "PUNTO FIJO",
     "assignedStore": "VARIAS",
     "photoUrl": "/avatars/careliz_reyes.jpg",
@@ -135,7 +135,7 @@ export const INITIAL_STAFF_SEED: StaffMember[] = [
     "status": "Activo",
     "phone": "+58 424-1431342",
     "email": "Mariaalmarza16@gmail.com",
-    "password": "codi123",
+    "password": "Codi.123",
     "address": "Cabimas",
     "assignedStore": "Varios",
     "photoUrl": "/avatars/maria_almarza.jpg",
@@ -152,7 +152,7 @@ export const INITIAL_STAFF_SEED: StaffMember[] = [
     "status": "Activo",
     "phone": "58 412-4514626",
     "email": "scarmichell22@gmail.com",
-    "password": "codi123",
+    "password": "Codi.123",
     "address": "CABIMAS",
     "assignedStore": "ALKOSTO CABIMAS",
     "photoUrl": "/avatars/scarleth_pina.jpg",
@@ -169,7 +169,7 @@ export const INITIAL_STAFF_SEED: StaffMember[] = [
     "status": "Activo",
     "phone": "58 424-8133259",
     "email": "anavecheverriar@gmail.com",
-    "password": "codi123",
+    "password": "Codi.123",
     "address": "urb cuatricentenario",
     "assignedStore": "ALKOSTO ZONA INDUSTRIAL",
     "photoUrl": "/avatars/ana_echeverria.jpg",
@@ -186,7 +186,7 @@ export const INITIAL_STAFF_SEED: StaffMember[] = [
     "status": "Activo",
     "phone": "58 414-6713750",
     "email": "luzz010203@gmail.com",
-    "password": "codi123",
+    "password": "Codi.123",
     "address": "EL SILENCIO",
     "assignedStore": "ALKOSTO COROMOTO",
     "photoUrl": "/avatars/osmairy_villasmil.jpg",
@@ -203,7 +203,7 @@ export const INITIAL_STAFF_SEED: StaffMember[] = [
     "status": "Activo",
     "phone": "+58 416-0177582",
     "email": "tataacardenas@gmail.com",
-    "password": "codi123",
+    "password": "Codi.123",
     "address": "C3 CERCA DEL BARRIO INTEGRACION",
     "assignedStore": "ALKOSTO TRIBUNALES",
     "photoUrl": "/avatars/tania_cardenas.jpg",
@@ -220,7 +220,7 @@ export const INITIAL_STAFF_SEED: StaffMember[] = [
     "status": "Activo",
     "phone": "58 424-7317216",
     "email": "antuneznairelis@gmail.com",
-    "password": "codi123",
+    "password": "Codi.123",
     "address": "BARRIO DIA DE LAS MADRES",
     "assignedStore": "ALKOSTO LA LIMPIA",
     "photoUrl": "/avatars/nairelis_antunez.jpg",
@@ -237,7 +237,7 @@ export const INITIAL_STAFF_SEED: StaffMember[] = [
     "status": "Activo",
     "phone": "58 412-8048525",
     "email": "jaivelinfereira20@gmail.com",
-    "password": "codi123",
+    "password": "Codi.123",
     "address": "EL BAJO",
     "assignedStore": "OLIMPICA Y ALKOSTO",
     "photoUrl": "/avatars/jaivelin_fereira.jpg",
@@ -254,7 +254,7 @@ export const INITIAL_STAFF_SEED: StaffMember[] = [
     "status": "Activo",
     "phone": "58 414-3632102",
     "email": "ruizahyrleth22@gmail.com",
-    "password": "codi123",
+    "password": "Codi.123",
     "address": "C2",
     "assignedStore": "TODAS",
     "photoUrl": "/avatars/ahyrlet_ruiz.jpg",
@@ -271,7 +271,7 @@ export const INITIAL_STAFF_SEED: StaffMember[] = [
     "status": "Activo",
     "phone": "58 412-6094222",
     "email": "valevalentina0111@gmail.com",
-    "password": "codi123",
+    "password": "Codi.123",
     "address": "URB CUATRICENTENARIO",
     "assignedStore": "TODOS",
     "photoUrl": "/avatars/valeria_acevedo.jpg",
@@ -288,7 +288,7 @@ export const INITIAL_STAFF_SEED: StaffMember[] = [
     "status": "Activo",
     "phone": "58 424-6428938",
     "email": "clausofidaza@gmail.com",
-    "password": "codi123",
+    "password": "Codi.123",
     "address": "C2",
     "assignedStore": "TODAS",
     "photoUrl": "/avatars/claudia_alvarez.jpg",
@@ -305,7 +305,7 @@ export const INITIAL_STAFF_SEED: StaffMember[] = [
     "status": "Activo",
     "phone": "58 424-6832444",
     "email": "jelaryacosta@gmail.com",
-    "password": "codi123",
+    "password": "Codi.123",
     "address": "VIA EL MOJAN",
     "assignedStore": "TODAS",
     "photoUrl": "/avatars/jelary_acosta.jpg",
@@ -322,7 +322,7 @@ export const INITIAL_STAFF_SEED: StaffMember[] = [
     "status": "Activo",
     "phone": "58 412-6414929",
     "email": "mariangelulacio3110@gmail.com",
-    "password": "codi123",
+    "password": "Codi.123",
     "address": "URB LA POPULAR",
     "assignedStore": "TODAS",
     "photoUrl": "/avatars/mariangel_valdivieso.jpg",
@@ -339,7 +339,7 @@ export const INITIAL_STAFF_SEED: StaffMember[] = [
     "status": "Activo",
     "phone": "58 422-1652997",
     "email": "angelicaquero13@gmail.com",
-    "password": "codi123",
+    "password": "Codi.123",
     "address": "PLAZA DE LAS MADRES",
     "assignedStore": "TODAS",
     "photoUrl": "/avatars/angelica_sanchez.jpg",
@@ -356,7 +356,7 @@ export const INITIAL_STAFF_SEED: StaffMember[] = [
     "status": "Activo",
     "phone": "58 412-0676693",
     "email": "eneliejoseph@gmail.com",
-    "password": "codi123",
+    "password": "Codi.123",
     "address": "URB EL VARILLAL",
     "assignedStore": "TODAS",
     "photoUrl": "/avatars/eneliangela_gonzalez.jpg",
@@ -373,7 +373,7 @@ export const INITIAL_STAFF_SEED: StaffMember[] = [
     "status": "Activo",
     "phone": "58 412-0800647",
     "email": "marianyelaranda@gmail.com",
-    "password": "codi123",
+    "password": "Codi.123",
     "address": "SAN FRANCISCO",
     "assignedStore": "TODAS",
     "photoUrl": "/avatars/marianyel_aranda.jpg",
@@ -390,7 +390,7 @@ export const INITIAL_STAFF_SEED: StaffMember[] = [
     "status": "Activo",
     "phone": "58 424-6779726",
     "email": "juliannys.gil.crespo@gmail.com",
-    "password": "codi123",
+    "password": "Codi.123",
     "address": "AV LA LIMPIA",
     "assignedStore": "TODAS",
     "photoUrl": "/avatars/juliannys_gil.jpg",
@@ -407,7 +407,7 @@ export const INITIAL_STAFF_SEED: StaffMember[] = [
     "status": "Activo",
     "phone": "412-0696135",
     "email": "joseabraham.barroso@gmail.com",
-    "password": "codi123",
+    "password": "Codi.123",
     "address": "-",
     "assignedStore": "NORTE",
     "photoUrl": "/avatars/jose_barroso.jpg",
@@ -424,7 +424,7 @@ export const INITIAL_STAFF_SEED: StaffMember[] = [
     "status": "Activo",
     "phone": "0414-6069963",
     "email": "Ziorelis.grangger@codizulca.com",
-    "password": "codi123",
+    "password": "Codi.123",
     "address": "cuatricentenario 1 etapa",
     "assignedStore": "Merchandising",
     "photoUrl": "/avatars/zioreli_grangger.jpg",
@@ -435,6 +435,11 @@ export const INITIAL_STAFF_SEED: StaffMember[] = [
   }
 ];
 
+const normalizeStaffPassword = (member: StaffMember): StaffMember => ({
+  ...member,
+  password: (!member.password || member.password === 'codi123' || member.password === 'codi.123') ? 'Codi.123' : member.password,
+});
+
 export const staffService = {
   async getAll(): Promise<StaffMember[]> {
     try {
@@ -442,8 +447,9 @@ export const staffService = {
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-          return data;
+          const normalized = data.map(normalizeStaffPassword);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+          return normalized;
         }
       }
     } catch {
@@ -455,7 +461,9 @@ export const staffService = {
       try {
         const parsed = JSON.parse(local);
         if (Array.isArray(parsed)) {
-          const validParsed = parsed.filter((p: any) => p && typeof p === 'object' && p.id && p.name);
+          const validParsed = parsed
+            .filter((p: any) => p && typeof p === 'object' && p.id && p.name)
+            .map(normalizeStaffPassword);
           if (validParsed.length > 0) {
             return validParsed;
           }
@@ -474,14 +482,14 @@ export const staffService = {
     let savedRecord: StaffMember;
 
     if (member.id) {
-      savedRecord = { ...member, id: member.id, password: member.password || 'codi123' } as StaffMember;
+      savedRecord = { ...member, id: member.id, password: member.password || 'Codi.123' } as StaffMember;
       const updated = current.map(s => s.id === member.id ? savedRecord : s);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     } else {
       savedRecord = {
         ...member,
         id: 'STF-' + Date.now().toString().slice(-5),
-        password: member.password || 'codi123'
+        password: member.password || 'Codi.123'
       } as StaffMember;
       const updated = [savedRecord, ...current];
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));

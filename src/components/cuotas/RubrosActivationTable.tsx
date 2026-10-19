@@ -409,6 +409,12 @@ export const RubrosActivationTable: React.FC<RubrosActivationTableProps> = ({
     doc.save(`Cuotas_Activacion_${viewLevel}_${new Date().toISOString().slice(0, 10)}.pdf`);
   };
 
+  useEffect(() => {
+    const onExportEvent = () => handleExportPDF();
+    window.addEventListener('cuotas-export-pdf', onExportEvent);
+    return () => window.removeEventListener('cuotas-export-pdf', onExportEvent);
+  });
+
   const getPercentColor = (percent: number) => {
     if (percent >= 100) return 'text-emerald-400 font-bold';
     if (percent >= 80) return 'text-green-400 font-semibold';

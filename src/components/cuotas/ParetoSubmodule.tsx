@@ -785,6 +785,14 @@ export const ParetoSubmodule: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    const onExportEvent = () => {
+      handleExportPDF();
+    };
+    window.addEventListener('cuotas-export-pdf', onExportEvent);
+    return () => window.removeEventListener('cuotas-export-pdf', onExportEvent);
+  });
+
   const handleExportExcel = async () => {
     const listToExport = displayRows.length > 0 ? displayRows : allRows;
     if (listToExport.length === 0 || isExportingExcel) return;
