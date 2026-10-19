@@ -19,6 +19,17 @@ import {
   synthesizeSqlForQuestion,
   generateExecutiveSummaryFallback
 } from './src/server/codibotSqlEngine';
+import {
+  CUOTAS_VOLUMEN_CSV_SEED,
+  OFFICIAL_SKU_SELLERS,
+  SellerSkuMetrics,
+  SkuVolumeItem,
+  classifySkuCategory,
+  normalizeSkuSellerName,
+  parseCuotasVolumenCsv,
+  resolveMacroRubroKeyForArticle,
+} from './src/components/cuotas/skuVolumeSeedData';
+
 
 async function startServer() {
   const app = express();
@@ -717,6 +728,385 @@ async function startServer() {
       res.status(500).json({ error: err.message });
     }
   });
+
+  // ==========================================
+  // CUOTAS: VOLUMEN POR SKU (TODOS LOS PRODUCTOS DE LA BASE DE DATOS + GOOGLE SHEETS)
+  // ==========================================
+  let skuVolumeBaseAggregationCache: {
+    octBySkuSeller: Map<string, Map<string, { kgs: number; cajas: number; monto: number; clients: Set<string> }>>;
+    octByMacroSeller: Map<string, Map<string, { kgs: number; cajas: number; monto: number; clients: Set<string> }>>;
+    octProductsMeta: Map<string, string>;
+    histBySkuSeller: Map<string, Map<string, { kgs: number; cajas: number; monto: number; monthsCount: number }>>;
+    allDbProducts: Array<{ id_articulo: string; articulo: string; monto: number; cajas: number; kgs: number }>;
+  } | null = null;
+
+  const getSkuVolumeBaseAggregation = () => {
+    if (skuVolumeBaseAggregationCache) return skuVolumeBaseAggregationCache;
+
+    const octBySkuSeller = new Map<string, Map<string, { kgs: number; cajas: number; monto: number; clients: Set<string> }>>();
+    const octByMacroSeller = new Map<string, Map<string, { kgs: number; cajas: number; monto: number; clients: Set<string> }>>();
+    const octProductsMeta = new Map<string, string>();
+    const histBySkuSeller = new Map<string, Map<string, { kgs: number; cajas: number; monto: number; monthsCount: number }>>();
+    const allDbProductsMap = new Map<string, { id_articulo: string; articulo: string; monto: number; cajas: number; kgs: number }>();
+
+    // 1. Load pareto_products_complete.json (180+ products)
+    try {
+      const productsPath = path.join(process.cwd(), 'pareto_products_complete.json');
+      if (fs.existsSync(productsPath)) {
+        const products = JSON.parse(fs.readFileSync(productsPath, 'utf8'));
+        if (Array.isArray(products)) {
+          for (const p of products) {
+            const idStr = String(p.id_articulo || '').trim();
+            if (!idStr) continue;
+            allDbProductsMap.set(idStr, {
+              id_articulo: idStr,
+              articulo: String(p.articulo || '').trim(),
+              monto: Number(p.monto) || 0,
+              cajas: Number(p.cajas) || 0,
+              kgs: Number(p.kgs) || 0,
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[SKU Volume] Error reading pareto_products_complete.json:', e);
+    }
+
+    // 2. Load october_sales_rows.json (October 2026 detailed rows by seller & product)
+    try {
+      const octPath = path.join(process.cwd(), 'october_sales_rows.json');
+      if (fs.existsSync(octPath)) {
+        const octRows = JSON.parse(fs.readFileSync(octPath, 'utf8'));
+        if (Array.isArray(octRows)) {
+          for (const r of octRows) {
+            const idStr = String(r.id_articulo || '').trim();
+            const artName = String(r.articulo || '').trim();
+            if (!idStr || !artName) continue;
+            octProductsMeta.set(idStr, artName);
+
+            if (!allDbProductsMap.has(idStr)) {
+              allDbProductsMap.set(idStr, {
+                id_articulo: idStr,
+                articulo: artName,
+                monto: 0,
+                cajas: 0,
+                kgs: 0,
+              });
+            }
+
+            const normSeller = normalizeSkuSellerName(r.vendedor || '');
+            if (!normSeller) continue;
+
+            const kgs = Number(r.kgs_lts) || 0;
+            const cajas = Number(r.cajas) || 0;
+            const monto = Number(r.monto) || 0;
+            const clientId = String(r.id_cliente || r.cliente || '');
+
+            if (!octBySkuSeller.has(idStr)) {
+              octBySkuSeller.set(idStr, new Map());
+            }
+            const skuMap = octBySkuSeller.get(idStr)!;
+            if (!skuMap.has(normSeller)) {
+              skuMap.set(normSeller, { kgs: 0, cajas: 0, monto: 0, clients: new Set() });
+            }
+            const sEntry = skuMap.get(normSeller)!;
+            sEntry.kgs += kgs;
+            sEntry.cajas += cajas;
+            sEntry.monto += monto;
+            if (clientId) sEntry.clients.add(clientId);
+
+            const macroKey = resolveMacroRubroKeyForArticle(artName);
+            if (macroKey) {
+              if (!octByMacroSeller.has(macroKey)) {
+                octByMacroSeller.set(macroKey, new Map());
+              }
+              const macroMap = octByMacroSeller.get(macroKey)!;
+              if (!macroMap.has(normSeller)) {
+                macroMap.set(normSeller, { kgs: 0, cajas: 0, monto: 0, clients: new Set() });
+              }
+              const mEntry = macroMap.get(normSeller)!;
+              mEntry.kgs += kgs;
+              mEntry.cajas += cajas;
+              mEntry.monto += monto;
+              if (clientId) mEntry.clients.add(clientId);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[SKU Volume] Error reading october_sales_rows.json:', e);
+    }
+
+    // 3. Load per-product historical client/seller cache from cache_product_clients/*.json
+    try {
+      const cacheDir = path.join(process.cwd(), 'cache_product_clients');
+      if (fs.existsSync(cacheDir)) {
+        const files = fs.readdirSync(cacheDir).filter((f) => f.endsWith('.json'));
+        for (const file of files) {
+          try {
+            const idStr = file.replace(/\.json$/, '').trim();
+            const raw = JSON.parse(fs.readFileSync(path.join(cacheDir, file), 'utf8'));
+            if (raw && Array.isArray(raw.clients)) {
+              const sMap = new Map<string, { kgs: number; cajas: number; monto: number; monthsSet: Set<string> }>();
+              for (const c of raw.clients) {
+                const normSeller = normalizeSkuSellerName(c.vendedor || '');
+                if (!normSeller) continue;
+                if (!sMap.has(normSeller)) {
+                  sMap.set(normSeller, { kgs: 0, cajas: 0, monto: 0, monthsSet: new Set() });
+                }
+                const entry = sMap.get(normSeller)!;
+                entry.kgs += Number(c.kgs) || 0;
+                entry.cajas += Number(c.cajas) || 0;
+                entry.monto += Number(c.monto) || 0;
+                if (c.months && typeof c.months === 'object') {
+                  for (const [mKey, mVal] of Object.entries(c.months as Record<string, any>)) {
+                    if ((Number(mVal?.kgs) || 0) > 0 || (Number(mVal?.monto) || 0) > 0) {
+                      entry.monthsSet.add(mKey);
+                    }
+                  }
+                }
+              }
+              const finalMap = new Map<string, { kgs: number; cajas: number; monto: number; monthsCount: number }>();
+              sMap.forEach((v, k) => {
+                finalMap.set(k, {
+                  kgs: Math.round(v.kgs * 100) / 100,
+                  cajas: Math.round(v.cajas * 100) / 100,
+                  monto: Math.round(v.monto * 100) / 100,
+                  monthsCount: Math.max(1, v.monthsSet.size || 6),
+                });
+              });
+              histBySkuSeller.set(idStr, finalMap);
+            }
+          } catch {}
+        }
+      }
+    } catch (e) {
+      console.warn('[SKU Volume] Error reading cache_product_clients:', e);
+    }
+
+    skuVolumeBaseAggregationCache = {
+      octBySkuSeller,
+      octByMacroSeller,
+      octProductsMeta,
+      histBySkuSeller,
+      allDbProducts: Array.from(allDbProductsMap.values()),
+    };
+    return skuVolumeBaseAggregationCache;
+  };
+
+  let skuVolumeResponseCache: { payload: any; timestamp: number } | null = null;
+
+  app.get('/api/cuotas/sku-volume', async (req, res) => {
+    try {
+      const forceRefresh = req.query.refresh === 'true';
+      const now = Date.now();
+      if (!forceRefresh && skuVolumeResponseCache && now - skuVolumeResponseCache.timestamp < 45000) {
+        return res.json(skuVolumeResponseCache.payload);
+      }
+
+      // 1. Obtain Cuotas Volumen CSV (live from Google Sheets or seed fallback)
+      let csvText = CUOTAS_VOLUMEN_CSV_SEED;
+      try {
+        const sheetUrl =
+          'https://docs.google.com/spreadsheets/d/16pU4iEcNU_1j6sB7rZbshu2PM8OyH5hI7a24-vYO7P0/gviz/tq?tqx=out:csv&sheet=' +
+          encodeURIComponent('Cuotas Volumen');
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 6500);
+        const sheetRes = await fetch(sheetUrl, { signal: controller.signal });
+        clearTimeout(timeout);
+        if (sheetRes.ok) {
+          const liveCsv = await sheetRes.text();
+          if (liveCsv && liveCsv.includes('POLLO TODAS LAS MARCAS')) {
+            csvText = liveCsv;
+          }
+        }
+      } catch {
+        // Use CUOTAS_VOLUMEN_CSV_SEED fallback silently
+      }
+
+      const sheetItems = parseCuotasVolumenCsv(csvText);
+      const baseAgg = getSkuVolumeBaseAggregation();
+      const seenProductCodes = new Set<string>();
+
+      // 2. Enrich the 49 official Google Sheet items with database cajas, monto, clientesCount, and historical data
+      for (const item of sheetItems) {
+        if (item.rawCod) {
+          seenProductCodes.add(item.rawCod);
+        }
+        const octMap = item.rawCod
+          ? baseAgg.octBySkuSeller.get(item.rawCod)
+          : baseAgg.octByMacroSeller.get(item.cod);
+        const histMap = item.rawCod ? baseAgg.histBySkuSeller.get(item.rawCod) : undefined;
+
+        let totCajas = 0;
+        let totMonto = 0;
+        let totClients = 0;
+        let totHistKg = 0;
+        let totHistCajas = 0;
+        let totHistMonto = 0;
+
+        for (const s of OFFICIAL_SKU_SELLERS) {
+          const sName = s.name;
+          if (!item.bySeller[sName]) {
+            item.bySeller[sName] = {
+              cuotaKg: 0,
+              ventaKg: 0,
+              cajas: 0,
+              monto: 0,
+              clientesCount: 0,
+              histKg: 0,
+              histCajas: 0,
+              histMonto: 0,
+            };
+          }
+          const octSeller = octMap?.get(sName);
+          if (octSeller) {
+            item.bySeller[sName].cajas = Math.round(octSeller.cajas * 100) / 100;
+            item.bySeller[sName].monto = Math.round(octSeller.monto * 100) / 100;
+            item.bySeller[sName].clientesCount = octSeller.clients.size;
+            totCajas += octSeller.cajas;
+            totMonto += octSeller.monto;
+            totClients += octSeller.clients.size;
+          }
+          const histSeller = histMap?.get(sName);
+          if (histSeller) {
+            item.bySeller[sName].histKg = histSeller.kgs;
+            item.bySeller[sName].histCajas = histSeller.cajas;
+            item.bySeller[sName].histMonto = histSeller.monto;
+            totHistKg += histSeller.kgs;
+            totHistCajas += histSeller.cajas;
+            totHistMonto += histSeller.monto;
+          }
+        }
+
+        item.totalCajas = Math.round(totCajas * 100) / 100;
+        item.totalMonto = Math.round(totMonto * 100) / 100;
+        item.totalClientesCount = totClients;
+        item.totalHistKg = Math.round(totHistKg * 100) / 100;
+        item.totalHistCajas = Math.round(totHistCajas * 100) / 100;
+        item.totalHistMonto = Math.round(totHistMonto * 100) / 100;
+      }
+
+      // 3. Add ALL remaining products from the database (pareto_products_complete.json + october_sales_rows.json)
+      const catalogItems: SkuVolumeItem[] = [];
+      let orderIdx = sheetItems.length + 1;
+
+      const sortedDbProducts = [...baseAgg.allDbProducts].sort((a, b) => b.kgs - a.kgs || b.monto - a.monto);
+      for (const dbProd of sortedDbProducts) {
+        const idStr = String(dbProd.id_articulo || '').trim();
+        if (!idStr || seenProductCodes.has(idStr)) continue;
+        seenProductCodes.add(idStr);
+
+        const octMap = baseAgg.octBySkuSeller.get(idStr);
+        const histMap = baseAgg.histBySkuSeller.get(idStr);
+        const bySeller: Record<string, SellerSkuMetrics> = {};
+
+        let totalCuotaKg = 0;
+        let totalVentaKg = 0;
+        let totalCajas = 0;
+        let totalMonto = 0;
+        let totalClientesCount = 0;
+        let totalHistKg = 0;
+        let totalHistCajas = 0;
+        let totalHistMonto = 0;
+
+        for (const s of OFFICIAL_SKU_SELLERS) {
+          const sName = s.name;
+          const octSeller = octMap?.get(sName);
+          const histSeller = histMap?.get(sName);
+
+          const octKg = octSeller ? Math.round(octSeller.kgs * 100) / 100 : 0;
+          const octCj = octSeller ? Math.round(octSeller.cajas * 100) / 100 : 0;
+          const octMto = octSeller ? Math.round(octSeller.monto * 100) / 100 : 0;
+          const octCli = octSeller ? octSeller.clients.size : 0;
+
+          const hKg = histSeller ? histSeller.kgs : 0;
+          const hCj = histSeller ? histSeller.cajas : 0;
+          const hMto = histSeller ? histSeller.monto : 0;
+          const activeMonths = histSeller ? histSeller.monthsCount : 6;
+
+          // Reference monthly target based on historical rhythm when not in the 49 sheet rows
+          const refCuotaKg =
+            hKg > 0
+              ? Math.round((hKg / Math.max(1, activeMonths)) * 100) / 100
+              : octKg > 0
+              ? Math.round(octKg * 1.15 * 100) / 100
+              : 0;
+
+          bySeller[sName] = {
+            cuotaKg: refCuotaKg,
+            ventaKg: octKg,
+            cajas: octCj,
+            monto: octMto,
+            clientesCount: octCli,
+            histKg: hKg,
+            histCajas: hCj,
+            histMonto: hMto,
+          };
+
+          totalCuotaKg += refCuotaKg;
+          totalVentaKg += octKg;
+          totalCajas += octCj;
+          totalMonto += octMto;
+          totalClientesCount += octCli;
+          totalHistKg += hKg;
+          totalHistCajas += hCj;
+          totalHistMonto += hMto;
+        }
+
+        // If global historical kgs from pareto_products_complete is higher than seller-mapped subset, preserve global historical reference
+        if (dbProd.kgs > totalHistKg) {
+          totalHistKg = Math.round(dbProd.kgs * 100) / 100;
+        }
+        if (dbProd.cajas > totalHistCajas) {
+          totalHistCajas = Math.round(dbProd.cajas * 100) / 100;
+        }
+        if (dbProd.monto > totalHistMonto) {
+          totalHistMonto = Math.round(dbProd.monto * 100) / 100;
+        }
+        if (totalCuotaKg === 0 && totalHistKg > 0) {
+          totalCuotaKg = Math.round((totalHistKg / 8) * 100) / 100;
+        }
+
+        catalogItems.push({
+          id: `DB-SKU-${idStr}`,
+          cod: idStr,
+          rawCod: idStr,
+          articulo: dbProd.articulo,
+          categoria: classifySkuCategory(idStr, dbProd.articulo),
+          isMacroRubro: false,
+          isOfficialQuotaRow: false,
+          sheetOrder: orderIdx++,
+          totalCuotaKg: Math.round(totalCuotaKg * 100) / 100,
+          totalVentaKg: Math.round(totalVentaKg * 100) / 100,
+          totalCajas: Math.round(totalCajas * 100) / 100,
+          totalMonto: Math.round(totalMonto * 100) / 100,
+          totalClientesCount,
+          totalHistKg: Math.round(totalHistKg * 100) / 100,
+          totalHistCajas: Math.round(totalHistCajas * 100) / 100,
+          totalHistMonto: Math.round(totalHistMonto * 100) / 100,
+          bySeller,
+        });
+      }
+
+      const allItems = [...sheetItems, ...catalogItems];
+      const payload = {
+        lastSync: new Date().toISOString(),
+        totalItemsCount: allItems.length,
+        officialQuotaCount: sheetItems.length,
+        databaseCatalogCount: catalogItems.length,
+        sellers: OFFICIAL_SKU_SELLERS,
+        items: allItems,
+      };
+
+      skuVolumeResponseCache = { payload, timestamp: now };
+      res.json(payload);
+    } catch (err: any) {
+      console.error('Error serving /api/cuotas/sku-volume:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
 
   // ==========================================
   // PARETO: CLIENTES COMPRADORES POR PRODUCTO

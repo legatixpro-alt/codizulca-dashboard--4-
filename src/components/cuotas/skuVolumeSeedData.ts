@@ -71,3 +71,339 @@ export function resolveSheetDisplayCode(rawCod: string, rawArticulo: string): st
   if (a.includes('CREMAS')) return 'CREMAS';
   return a.split(' ')[0] || 'RUBRO';
 }
+
+export interface SellerSkuMetrics {
+  cuotaKg: number;
+  ventaKg: number;
+  cajas: number;
+  monto: number;
+  clientesCount: number;
+  histKg: number;
+  histCajas: number;
+  histMonto: number;
+}
+
+export interface SkuVolumeItem {
+  id: string;
+  cod: string;
+  rawCod: string;
+  articulo: string;
+  categoria: string;
+  isMacroRubro: boolean;
+  isOfficialQuotaRow: boolean;
+  sheetOrder: number;
+  totalCuotaKg: number;
+  totalVentaKg: number;
+  totalCajas: number;
+  totalMonto: number;
+  totalClientesCount: number;
+  totalHistKg: number;
+  totalHistCajas: number;
+  totalHistMonto: number;
+  bySeller: Record<string, SellerSkuMetrics>;
+}
+
+export const OFFICIAL_SKU_SELLERS: Array<{ name: string; supervisor: string; zone: string }> = [
+  { name: 'CARLOS FUENMAYOR', supervisor: 'NELSON FINOL', zone: 'Zulia / Maracaibo' },
+  { name: 'EDUARDO PIÑA', supervisor: 'NELSON FINOL', zone: 'Zulia / Maracaibo' },
+  { name: 'J PABLO ARAUJO', supervisor: 'NELSON FINOL', zone: 'Costa Oriental (COL)' },
+  { name: 'J PABLO ARAUJO - CAB/OJE', supervisor: 'NELSON FINOL', zone: 'Cabimas / Ojeda' },
+  { name: 'JOSE G. GONZALEZ', supervisor: 'NELSON FINOL', zone: 'Zulia / San Francisco' },
+  { name: 'MARIA BRICEÑO', supervisor: 'NELSON FINOL', zone: 'Zulia / Maracaibo' },
+  { name: 'MARIANA CHACIN', supervisor: 'NELSON FINOL', zone: 'Cuentas Clave 1' },
+  { name: 'SAIRU VALLES', supervisor: 'NELSON FINOL', zone: 'Cuentas Clave 2' },
+  { name: 'MARYERY GARCIA', supervisor: 'NELSON FINOL', zone: 'Costa Oriental (COL)' },
+  { name: 'PEDRO ABREU', supervisor: 'NELSON FINOL', zone: 'Zulia / Sur' },
+  { name: 'SARAH REYES', supervisor: 'NELSON FINOL', zone: 'Zulia / Maracaibo' },
+  { name: 'YOLEIDA LUGO', supervisor: 'NELSON FINOL', zone: 'Zulia / Maracaibo' },
+  { name: 'ADEL JARABA', supervisor: 'JOHNATAN SOTO', zone: 'Zulia / Norte' },
+  { name: 'ANGELICA MORENO', supervisor: 'JOHNATAN SOTO', zone: 'Zulia / Oeste' },
+  { name: 'HERNAN PAZ', supervisor: 'JOHNATAN SOTO', zone: 'Zulia / Perijá' },
+  { name: 'MIKELANGELO DIAZ', supervisor: 'JOHNATAN SOTO', zone: 'Villa del Rosario / Perijá' },
+  { name: 'JUAN HERNANDEZ', supervisor: 'JOHNATAN SOTO', zone: 'Food Service / Zulia' },
+  { name: 'OSWALDO CHURION', supervisor: 'JOHNATAN SOTO', zone: 'Zulia / Maracaibo' },
+  { name: 'ALI PEREZ', supervisor: 'ALI PEREZ', zone: 'Falcón / Paraguaná' },
+  { name: 'ELISA SOLER', supervisor: 'ALI PEREZ', zone: 'Falcón / Punto Fijo' },
+  { name: 'LEONARDO RIOS', supervisor: 'ALI PEREZ', zone: 'Falcón / Paraguaná' },
+  { name: 'LUIS GUANIPA', supervisor: 'ALI PEREZ', zone: 'Falcón / Punto Fijo' },
+  { name: 'OSCAR ORTIZ', supervisor: 'ALI PEREZ', zone: 'Falcón / Coro & La Costa' },
+];
+
+export function normalizeSkuSellerName(raw: string): string {
+  if (!raw) return '';
+  let s = raw
+    .toUpperCase()
+    .replace(/\s+CUOTA(\s+KG)?$/i, '')
+    .replace(/\s+VENTA(\s+KG)?$/i, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/MARÍA\b/g, 'MARIA')
+    .replace(/BRICENO\b/g, 'BRICEÑO')
+    .replace(/BRICEO\b/g, 'BRICEÑO')
+    .replace(/PINA\b/g, 'PIÑA')
+    .replace(/PIA\b/g, 'PIÑA')
+    .replace(/CHACÍN\b/g, 'CHACIN')
+    .replace(/PÉREZ\b/g, 'PEREZ')
+    .replace(/ALÍ\b/g, 'ALI')
+    .replace(/HERNÁNDEZ\b/g, 'HERNANDEZ')
+    .replace(/HERNÁN\b/g, 'HERNAN')
+    .replace(/GONZÁLEZ\b/g, 'GONZALEZ')
+    .replace(/GARCÍA\b/g, 'GARCIA')
+    .replace(/RÍOS\b/g, 'RIOS')
+    .replace(/ANGÉLICA\b/g, 'ANGELICA')
+    .replace(/JOSÉ\b/g, 'JOSE');
+
+  if (s.includes('CUENTAS CLAVE 1') || s.includes('MARIANA CHACIN')) return 'MARIANA CHACIN';
+  if (s.includes('CUENTAS CLAVE 2') || s.includes('SAIRU VALLES')) return 'SAIRU VALLES';
+  if (s.includes('FOOD SERVICE SENIOR') || s === 'JUAN HERNANDEZ') return 'JUAN HERNANDEZ';
+  if (
+    s.includes('MIKELANGELO DIAZ') ||
+    s.includes('JOHNATAN SOTO VILLA') ||
+    s === 'JOHNATAN SOTO - VILLA DEL ROS'
+  ) {
+    return 'MIKELANGELO DIAZ';
+  }
+  if (s.includes('OSCAR ORTIZ')) return 'OSCAR ORTIZ';
+  return s;
+}
+
+export function classifySkuCategory(cod: string, articulo: string): string {
+  const c = (cod || '').toUpperCase().trim();
+  const a = (articulo || '').toUpperCase().trim();
+  if (
+    c === 'POLLO' ||
+    c === 'HUEVOS' ||
+    c === 'FILET' ||
+    c === 'ALAS' ||
+    a.includes('POLLO') ||
+    a.includes('MUSLO') ||
+    a.includes('PECHUGA') ||
+    a.includes('ALAS') ||
+    a.includes('HUEVO') ||
+    a.includes('MOLLEJA') ||
+    a.includes('HIGADO') ||
+    a.includes('NUGGET') ||
+    a.includes('GALLINA') ||
+    a.includes('PAVO')
+  ) {
+    // Si es mortadela o jamón de pollo/pavo, clasificar en CHARCUTERÍA
+    if (a.includes('MORT') || a.includes('JAMON') || a.includes('SALCHICHA') || a.includes('FIAMBRE')) {
+      return 'CHARCUTERÍA';
+    }
+    return 'AVÍCOLA & HUEVOS';
+  }
+  if (
+    a.includes('MORT') ||
+    a.includes('JAMON') ||
+    a.includes('SALCHICHA') ||
+    a.includes('ESPALDA') ||
+    a.includes('ESPAL.') ||
+    a.includes('ESPAL ') ||
+    a.includes('TOCINETA') ||
+    a.includes('CHORIZO') ||
+    a.includes('SALAMI') ||
+    a.includes('PEPERONI') ||
+    a.includes('FIAMBRE') ||
+    a.includes('BOLOGNA')
+  ) {
+    return 'CHARCUTERÍA';
+  }
+  if (
+    c === 'AZUCAR' ||
+    c === 'ARROZ' ||
+    c === 'ACEITE' ||
+    c === 'PATATAS' ||
+    c === 'JUGOS' ||
+    a.includes('AZUCAR') ||
+    a.includes('AZÚCAR') ||
+    a.includes('ARROZ') ||
+    a.includes('ACEITE') ||
+    a.includes('PATATA') ||
+    a.includes('PAPA') ||
+    a.includes('JUGO') ||
+    a.includes('NECTAR') ||
+    a.includes('HARINA') ||
+    a.includes('PASTA') ||
+    a.includes('CAFE') ||
+    a.includes('GRANO') ||
+    a.includes('SALSA') ||
+    a.includes('MAYONESA') ||
+    a.includes('MARGARINA') ||
+    a.includes('ATUN') ||
+    a.includes('SARDINA')
+  ) {
+    return 'VÍVERES & ALIMENTOS';
+  }
+  if (
+    c === 'LECHE UTH' ||
+    c === 'LECHE POLVO' ||
+    c === 'QUESOS' ||
+    c === 'CREMAS' ||
+    a.includes('LECHE') ||
+    a.includes('QUESO') ||
+    a.includes('MANTEQUILLA') ||
+    a.includes('CREMA') ||
+    a.includes('SUERO') ||
+    a.includes('YOGURT') ||
+    a.includes('LACTEO')
+  ) {
+    return 'LÁCTEOS & DERIVADOS';
+  }
+  if (
+    a.includes('CHULETA') ||
+    a.includes('TOCINO') ||
+    a.includes('CERDO') ||
+    a.includes('COSTILLA') ||
+    a.includes('CARNE') ||
+    a.includes('RES') ||
+    a.includes('PERNIL')
+  ) {
+    return 'CÁRNICOS & CERDO';
+  }
+  return 'INSTITUCIONAL & OTROS';
+}
+
+export function resolveMacroRubroKeyForArticle(articulo: string): string | null {
+  const a = (articulo || '').toUpperCase().trim();
+  if (a.includes('AZUCAR') || a.includes('AZÚCAR')) return 'AZUCAR';
+  if (a.includes('HUEVO')) return 'HUEVOS';
+  if (a.includes('ARROZ')) return 'ARROZ';
+  if (a.includes('PATATA') || a.includes('PAPA FRITA')) return 'PATATAS';
+  if (a.includes('ACEITE')) return 'ACEITE';
+  if (a.includes('FILET') || a.includes('PECHUGA S/HUESO')) return 'FILET';
+  if (a.includes('LECHE') && (a.includes('POLVO') || a.includes('400G') || a.includes('900G') || a.includes('1KG'))) return 'LECHE POLVO';
+  if (a.includes('LECHE') && (a.includes('LIQUIDA') || a.includes('UHT') || a.includes('UTH') || a.includes('1L') || a.includes('LITRO'))) return 'LECHE UTH';
+  if (a.includes('ALAS ')) return 'ALAS';
+  if (a.includes('QUESO')) return 'QUESOS';
+  if (a.includes('JUGO') || a.includes('NECTAR')) return 'JUGOS';
+  if (a.includes('CREMA DE LECHE') || a.includes('CREMAS DE LECHE')) return 'CREMAS';
+  if (a.includes('POLLO BENEFICIADO') || a.includes('POLLO ENTERO') || a.includes('POLLO CONGELADO')) return 'POLLO';
+  return null;
+}
+
+function parseSheetNum(val: any): number {
+  if (val === null || val === undefined) return 0;
+  const s = String(val).replace(/,/g, '').replace(/%/g, '').trim();
+  if (!s || s === '-' || s === '#DIV/0!') return 0;
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+
+// Parse CSV line respecting quotes
+function splitCsvLine(line: string): string[] {
+  const result: string[] = [];
+  let cur = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        cur += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (ch === ',' && !inQuotes) {
+      result.push(cur);
+      cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  result.push(cur);
+  return result;
+}
+
+export function parseCuotasVolumenCsv(csvText: string): SkuVolumeItem[] {
+  const rawLines = (csvText || CUOTAS_VOLUMEN_CSV_SEED)
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+  if (rawLines.length < 2) return [];
+
+  const header = splitCsvLine(rawLines[0]);
+  // Only columns 2..85 are individual sellers; columns 86, 89, 92 are supervisor totals (ALI PEREZ, NELSON FINOL, JOHNATAN SOTO)
+  const sellerColTriplets: Array<{ colIndex: number; sellerName: string }> = [];
+  const maxSellerCol = Math.min(header.length, 86);
+  for (let c = 2; c < maxSellerCol; c += 3) {
+    const rawHeaderName = header[c] || '';
+    const normSeller = normalizeSkuSellerName(rawHeaderName);
+    if (normSeller) {
+      sellerColTriplets.push({ colIndex: c, sellerName: normSeller });
+    }
+  }
+
+  const items: SkuVolumeItem[] = [];
+  for (let r = 1; r < rawLines.length; r++) {
+    const row = splitCsvLine(rawLines[r]);
+    const rawCod = (row[0] || '').trim();
+    const rawArticulo = (row[1] || '').trim();
+    if (!rawArticulo) continue;
+
+    const displayCod = resolveSheetDisplayCode(rawCod, rawArticulo);
+    const isMacroRubro = !rawCod;
+    const categoria = classifySkuCategory(displayCod, rawArticulo);
+
+    const bySeller: Record<string, SellerSkuMetrics> = {};
+    for (const s of OFFICIAL_SKU_SELLERS) {
+      bySeller[s.name] = {
+        cuotaKg: 0,
+        ventaKg: 0,
+        cajas: 0,
+        monto: 0,
+        clientesCount: 0,
+        histKg: 0,
+        histCajas: 0,
+        histMonto: 0,
+      };
+    }
+
+    let totalCuotaKg = 0;
+    let totalVentaKg = 0;
+
+    for (const { colIndex, sellerName } of sellerColTriplets) {
+      const cuota = parseSheetNum(row[colIndex]);
+      const venta = parseSheetNum(row[colIndex + 1]);
+      totalCuotaKg += cuota;
+      totalVentaKg += venta;
+
+      if (!bySeller[sellerName]) {
+        bySeller[sellerName] = {
+          cuotaKg: 0,
+          ventaKg: 0,
+          cajas: 0,
+          monto: 0,
+          clientesCount: 0,
+          histKg: 0,
+          histCajas: 0,
+          histMonto: 0,
+        };
+      }
+      bySeller[sellerName].cuotaKg = Math.round((bySeller[sellerName].cuotaKg + cuota) * 100) / 100;
+      bySeller[sellerName].ventaKg = Math.round((bySeller[sellerName].ventaKg + venta) * 100) / 100;
+    }
+
+    items.push({
+      id: rawCod ? `SKU-${rawCod}` : `RUBRO-${displayCod}`,
+      cod: displayCod,
+      rawCod,
+      articulo: rawArticulo,
+      categoria,
+      isMacroRubro,
+      isOfficialQuotaRow: true,
+      sheetOrder: r,
+      totalCuotaKg: Math.round(totalCuotaKg * 100) / 100,
+      totalVentaKg: Math.round(totalVentaKg * 100) / 100,
+      totalCajas: 0,
+      totalMonto: 0,
+      totalClientesCount: 0,
+      totalHistKg: 0,
+      totalHistCajas: 0,
+      totalHistMonto: 0,
+      bySeller,
+    });
+  }
+
+  return items;
+}
+

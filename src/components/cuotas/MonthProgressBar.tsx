@@ -1,7 +1,7 @@
 import React from 'react';
 import { Calendar, Share2, ShieldCheck, FileText } from 'lucide-react';
 
-export type MainTab = 'activacion' | 'volumen' | 'pareto';
+export type MainTab = 'activacion' | 'volumen' | 'volumen_sku' | 'pareto';
 export type ViewLevel = 'vendedor' | 'supervisores' | 'gerente';
 
 interface MonthProgressBarProps {
@@ -82,7 +82,7 @@ export const MonthProgressBar: React.FC<MonthProgressBarProps> = ({
           <button
             type="button"
             onClick={() => onTabChange('volumen')}
-            className={`px-3.5 sm:px-4 py-1.5 rounded-md font-bold transition-all ${
+            className={`px-3.5 sm:px-4 py-1.5 rounded-md font-bold transition-all cursor-pointer ${
               activeTab === 'volumen'
                 ? 'bg-red-600 text-white shadow-md'
                 : 'text-zinc-400 hover:text-white'
@@ -92,8 +92,19 @@ export const MonthProgressBar: React.FC<MonthProgressBarProps> = ({
           </button>
           <button
             type="button"
+            onClick={() => onTabChange('volumen_sku')}
+            className={`px-3.5 sm:px-4 py-1.5 rounded-md font-bold transition-all cursor-pointer ${
+              activeTab === 'volumen_sku'
+                ? 'bg-red-600 text-white shadow-md'
+                : 'text-zinc-400 hover:text-white'
+            }`}
+          >
+            Volumen SKU
+          </button>
+          <button
+            type="button"
             onClick={() => onTabChange('pareto')}
-            className={`px-3.5 sm:px-4 py-1.5 rounded-md font-bold transition-all ${
+            className={`px-3.5 sm:px-4 py-1.5 rounded-md font-bold transition-all cursor-pointer ${
               activeTab === 'pareto'
                 ? 'bg-red-600 text-white shadow-md'
                 : 'text-zinc-400 hover:text-white'

@@ -3,6 +3,7 @@ import Papa from 'papaparse';
 import { MonthProgressBar, MainTab, ViewLevel } from '../components/cuotas/MonthProgressBar';
 import { RubrosActivationTable } from '../components/cuotas/RubrosActivationTable';
 import { MonthlyVolumeHistoryTable } from '../components/cuotas/MonthlyVolumeHistoryTable';
+import { SkuVolumeSubmodule } from '../components/cuotas/SkuVolumeSubmodule';
 import { ParetoSubmodule } from '../components/cuotas/ParetoSubmodule';
 import { ShareCuotasModal } from '../components/cuotas/ShareCuotasModal';
 import { INITIAL_SELLERS_ACTIVATION, SellerActivationRow } from '../components/cuotas/cuotasData';
@@ -146,6 +147,8 @@ export const Cuotas: React.FC = () => {
       {activeView === 'gerente' ? (
         activeTab === 'pareto' ? (
           <ParetoSubmodule />
+        ) : activeTab === 'volumen_sku' ? (
+          <SkuVolumeSubmodule />
         ) : (
           <RegionalManagerAuditSubmodule
             activeTab={activeTab}
@@ -169,8 +172,12 @@ export const Cuotas: React.FC = () => {
           {activeTab === 'volumen' && (
             <MonthlyVolumeHistoryTable
               viewLevel={activeView}
+              onOpenSkuVolume={() => setActiveTab('volumen_sku')}
             />
           )}
+
+          {/* SUBMÓDULO VOLUMEN POR SKU (TODOS LOS PRODUCTOS + DIAGNÓSTICO POR VENDEDOR) */}
+          {activeTab === 'volumen_sku' && <SkuVolumeSubmodule />}
 
           {/* PESTAÑA PARETO (OPCIÓN 1: DIMENSIONES CONMUTABLES 80/20) */}
           {activeTab === 'pareto' && <ParetoSubmodule />}

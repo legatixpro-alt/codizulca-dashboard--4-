@@ -56,6 +56,7 @@ export interface SellerMonthItem {
 
 interface MonthlyVolumeHistoryTableProps {
   viewLevel: ViewLevel;
+  onOpenSkuVolume?: () => void;
 }
 
 const MONTH_ORDER = [
@@ -92,6 +93,7 @@ type MetricType = 'cajas' | 'monto' | 'kgs';
 
 export const MonthlyVolumeHistoryTable: React.FC<MonthlyVolumeHistoryTableProps> = ({
   viewLevel,
+  onOpenSkuVolume,
 }) => {
   const [data, setData] = useState<{
     ano: number;
@@ -996,7 +998,17 @@ export const MonthlyVolumeHistoryTable: React.FC<MonthlyVolumeHistoryTableProps>
         </div>
 
         {/* Supabase status and Sync button */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {onOpenSkuVolume && (
+            <button
+              type="button"
+              onClick={onOpenSkuVolume}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-black shadow-md transition-all cursor-pointer"
+            >
+              <Package className="w-3.5 h-3.5" />
+              <span>Ver Volumen por SKU (Todos los Productos)</span>
+            </button>
+          )}
           <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 border border-white/10 text-xs text-zinc-300">
             <Database className="w-3.5 h-3.5 text-emerald-400" />
             <span className="font-mono">{data?.totalSourceRows?.toLocaleString() || '280,000'}</span>
