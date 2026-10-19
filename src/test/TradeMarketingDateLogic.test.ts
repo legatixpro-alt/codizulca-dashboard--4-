@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { getWeekBounds, parseDateDMY, getWeekInfo } from '../pages/TradeMarketing';
+import { matchVendedorName, normalizeDateToDMY } from '../lib/degustacionesService';
 
 describe('TradeMarketing - Date & Sunday Cutoff Logic Test Suite', () => {
   // =========================================================================
@@ -44,6 +45,34 @@ describe('TradeMarketing - Date & Sunday Cutoff Logic Test Suite', () => {
       expect(parsed.getFullYear()).toBe(2026);
       expect(parsed.getMonth()).toBe(9); // Octubre
       expect(parsed.getDate()).toBe(15);
+    });
+
+    it('debe parsear fechas en formato ISO YYYY-MM-DD enviadas por la App de Vendedores', () => {
+      const parsed = parseDateDMY('2026-10-17');
+      expect(parsed.getFullYear()).toBe(2026);
+      expect(parsed.getMonth()).toBe(9);
+      expect(parsed.getDate()).toBe(17);
+
+      const info = getWeekInfo('2026-10-17');
+      expect(info.weekNumber).toBe(3);
+      expect(info.weekLabel).toBe('Semana 3');
+    });
+
+    it('debe normalizar cualquier formato de fecha a DD/MM/YYYY con normalizeDateToDMY', () => {
+      expect(normalizeDateToDMY('2026-10-17')).toBe('17/10/2026');
+      expect(normalizeDateToDMY('2026-10-08T15:20:00Z')).toBe('08/10/2026');
+      expect(normalizeDateToDMY('8/10/2026')).toBe('08/10/2026');
+      expect(normalizeDateToDMY('17-10-2026')).toBe('17/10/2026');
+    });
+
+    it('debe emparejar nombres de vendedores con o sin acentos (matchVendedorName)', () => {
+      expect(matchVendedorName('MARIANA CHACÍN', 'MARIANA CHACIN')).toBe(true);
+      expect(matchVendedorName('MARÍA BRICEÑO', 'MARIA BRICEÑO')).toBe(true);
+      expect(matchVendedorName('HERNÁN PAZ', 'HERNAN PAZ')).toBe(true);
+      expect(matchVendedorName('OSWALDO CHURIÓN', 'OSWALDO CHURION')).toBe(true);
+      expect(matchVendedorName('JUAN HERNÁNDEZ', 'JUAN HERNANDEZ')).toBe(true);
+      expect(matchVendedorName('SAIRÚ VALLES', 'SAIRU VALLES')).toBe(true);
+      expect(matchVendedorName('CARLOS FUENMAYOR', 'MARIANA CHACIN')).toBe(false);
     });
 
     it('debe clasificar correctamente las 5 semanas de Octubre con getWeekInfo', () => {

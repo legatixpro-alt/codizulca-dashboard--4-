@@ -20,12 +20,11 @@ import {
   UserCheck
 } from 'lucide-react';
 import { campoService, PROMOTERS_LIST } from '../../lib/campoService';
-import { staffService } from '../../lib/staffService';
-import { CambiarPerfilModal } from '../mobile/CambiarPerfilModal';
+import { matchPromoterName } from '../../lib/degustacionesService';
+import { trazabilidadService } from '../../lib/trazabilidadService';
 import { FueraDeHorarioScreen } from '../mobile/FueraDeHorarioScreen';
 
 export const CampoLayout: React.FC = () => {
-  const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -34,7 +33,6 @@ export const CampoLayout: React.FC = () => {
 
   // Estados del Layout
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
-  const [isModalProfileOpen, setIsModalProfileOpen] = useState<boolean>(false);
   const [activePromoter, setActivePromoter] = useState(() => campoService.getActivePromoter());
   const [pendingQueueCount, setPendingQueueCount] = useState<number>(() => campoService.getQueue().length);
   const [isFlushingQueue, setIsFlushingQueue] = useState<boolean>(false);
@@ -51,12 +49,15 @@ export const CampoLayout: React.FC = () => {
       return;
     }
 
+    let currentProfile = campoService.getActivePromoter();
+    const emailParam = searchParams.get('email');
     const userParam = searchParams.get('user') || searchParams.get('promoter');
     const roleParam = searchParams.get('role');
 
-    if (userParam || roleParam) {
+    if (emailParam || userParam || roleParam) {
       const found = PROMOTERS_LIST.find((p) => {
-        if (userParam && p.name.toLowerCase().includes(userParam.toLowerCase())) return true;
+        if (emailParam && p.email.trim().toLowerCase() === emailParam.trim().toLowerCase()) return true;
+        if (userParam && (p.email.trim().toLowerCase() === userParam.trim().toLowerCase() || matchPromoterName(p.name, userParam))) return true;
         if (roleParam?.toLowerCase() === 'merchandising' && p.role === 'Promotor Merchandising') return true;
         return false;
       });
@@ -64,8 +65,18 @@ export const CampoLayout: React.FC = () => {
       if (found) {
         campoService.setActivePromoter(found);
         setActivePromoter(found);
+        currentProfile = found;
       }
     }
+
+    // Sincronizar automáticamente la coordenada GPS y dirección física real de la promotora conectada
+    trazabilidadService.syncCurrentUserGpsLocation({
+      name: currentProfile.name,
+      email: currentProfile.email,
+      role: currentProfile.role,
+      photoUrl: currentProfile.photoUrl,
+      isMobilePortal: true
+    }).catch(() => {});
   }, [searchParams, navigate]);
 
   // 2. Monitoreo de Conectividad & Sincronización Automática
@@ -219,10 +230,10 @@ export const CampoLayout: React.FC = () => {
             </div>
 
             {/* Chip de Usuario Activo con Foto */}
-            <button
-              onClick={() => setIsModalProfileOpen(true)}
+            <NavLink
+              to="/portal/perfil"
               className="flex items-center gap-1.5 px-2 py-1 rounded-xl bg-[#171717] hover:bg-neutral-800 border border-neutral-800 text-white text-xs font-bold transition-all active:scale-[0.98] cursor-pointer"
-              title="Ver / Cambiar Perfil"
+              title="Ver Mi Perfil Personal"
             >
               <div className="w-5 h-5 rounded-md overflow-hidden bg-red-600 text-white flex items-center justify-center text-[10px] font-black shrink-0">
                 {activePromoter.photoUrl ? (
@@ -234,7 +245,7 @@ export const CampoLayout: React.FC = () => {
               <span className="text-[11px] max-w-[85px] truncate font-medium">
                 {activePromoter.name.split(' ')[0]}
               </span>
-            </button>
+            </NavLink>
 
             {/* Botón Salir / Logout */}
             <button
@@ -353,14 +364,6 @@ export const CampoLayout: React.FC = () => {
       <main className="flex-1 w-full max-w-[512px] mx-auto p-3 sm:p-4">
         <Outlet context={{ activePromoter, isOnline, pendingQueueCount }} />
       </main>
-
-      {/* Modal Universal Cambiar Perfil */}
-      <CambiarPerfilModal
-        isOpen={isModalProfileOpen}
-        onClose={() => setIsModalProfileOpen(false)}
-        currentPromoter={activePromoter}
-        onSelectPromoter={(p) => setActivePromoter(p)}
-      />
     </div>
   );
 };

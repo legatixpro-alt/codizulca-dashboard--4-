@@ -70,7 +70,15 @@ import { ENRICHED_CLIENTS } from '../data/clientsWithLocation';
 import { checkinsService, CheckInRecord, CheckInType } from '../lib/checkinsService';
 import { merchandisingService, MerchandisingReport } from '../lib/merchandisingService';
 import { staffService, StaffMember } from '../lib/staffService';
-import { degustacionesService, DegustacionItem, matchPromoterName } from '../lib/degustacionesService';
+import {
+  degustacionesService,
+  DegustacionItem,
+  matchPromoterName,
+  matchPromoterAssignment,
+  resolvePromoterIdentity,
+  matchVendedorName,
+  normalizeDateToDMY
+} from '../lib/degustacionesService';
 
 interface InformeItem {
   id: string;
@@ -285,7 +293,7 @@ interface MerchandisingItem {
 }
 
 // Función dinámica para calcular los límites exactos de la semana en curso (Lunes 00:00:00 a Domingo 23:59:59)
-export const getWeekBounds = (referenceDate: Date = new Date(2026, 9, 21)): { weekStart: Date; weekEnd: Date } => {
+export const getWeekBounds = (referenceDate: Date = new Date()): { weekStart: Date; weekEnd: Date } => {
   const d = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), referenceDate.getDate());
   const day = d.getDay(); // 0 = Domingo, 1 = Lunes, ..., 6 = Sábado
   const diffToMonday = (day === 0 ? -6 : 1) - day;
@@ -302,12 +310,15 @@ export const getWeekBounds = (referenceDate: Date = new Date(2026, 9, 21)): { we
 };
 
 export const parseDateDMY = (dateStr: string): Date => {
-  const parts = dateStr.split('/');
+  const normalized = normalizeDateToDMY(dateStr);
+  const parts = normalized.split('/');
   if (parts.length === 3) {
     const day = parseInt(parts[0], 10);
     const month = parseInt(parts[1], 10) - 1;
     const year = parseInt(parts[2], 10);
-    return new Date(year, month, day);
+    if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+      return new Date(year, month, day);
+    }
   }
   return new Date();
 };
@@ -318,24 +329,27 @@ const MONTH_NAMES = [
 ];
 
 export const getWeekInfo = (dateStr: string): { weekNumber: number; weekLabel: string; rangeLabel: string } => {
-  const parts = dateStr.split('/');
+  const normalized = normalizeDateToDMY(dateStr);
+  const parts = normalized.split('/');
   if (parts.length === 3) {
     const day = parseInt(parts[0], 10);
     const monthIndex = parseInt(parts[1], 10) - 1;
     const year = parseInt(parts[2], 10);
-    const mName = MONTH_NAMES[monthIndex] || 'Oct';
-    
-    if (day <= 4) {
-      return { weekNumber: 1, weekLabel: 'Semana 1', rangeLabel: `01 ${mName} - 04 ${mName} ${year}` };
-    } else if (day <= 11) {
-      return { weekNumber: 2, weekLabel: 'Semana 2', rangeLabel: `05 ${mName} - 11 ${mName} ${year}` };
-    } else if (day <= 18) {
-      return { weekNumber: 3, weekLabel: 'Semana 3', rangeLabel: `12 ${mName} - 18 ${mName} ${year}` };
-    } else if (day <= 25) {
-      return { weekNumber: 4, weekLabel: 'Semana 4', rangeLabel: `19 ${mName} - 25 ${mName} ${year}` };
-    } else {
-      const lastDay = new Date(year, monthIndex + 1, 0).getDate();
-      return { weekNumber: 5, weekLabel: 'Semana 5', rangeLabel: `26 ${mName} - ${lastDay} ${mName} ${year}` };
+    if (!isNaN(day) && !isNaN(monthIndex) && !isNaN(year)) {
+      const mName = MONTH_NAMES[monthIndex] || 'Oct';
+      
+      if (day <= 4) {
+        return { weekNumber: 1, weekLabel: 'Semana 1', rangeLabel: `01 ${mName} - 04 ${mName} ${year}` };
+      } else if (day <= 11) {
+        return { weekNumber: 2, weekLabel: 'Semana 2', rangeLabel: `05 ${mName} - 11 ${mName} ${year}` };
+      } else if (day <= 18) {
+        return { weekNumber: 3, weekLabel: 'Semana 3', rangeLabel: `12 ${mName} - 18 ${mName} ${year}` };
+      } else if (day <= 25) {
+        return { weekNumber: 4, weekLabel: 'Semana 4', rangeLabel: `19 ${mName} - 25 ${mName} ${year}` };
+      } else {
+        const lastDay = new Date(year, monthIndex + 1, 0).getDate();
+        return { weekNumber: 5, weekLabel: 'Semana 5', rangeLabel: `26 ${mName} - ${lastDay} ${mName} ${year}` };
+      }
     }
   }
   return { weekNumber: 3, weekLabel: 'Semana 3', rangeLabel: '12 Oct - 18 Oct 2026' };
@@ -401,39 +415,56 @@ export const TradeMarketing: React.FC = () => {
   const [promoterFilter, setPromoterFilter] = useState<string>('todos');
   const [vendedorFilter, setVendedorFilter] = useState<string>('todos');
 
-  // Vendedores oficiales de la Fuerza de Ventas + los que han enviado solicitudes de degustación desde su app
+  // Vendedores oficiales de la Fuerza de Ventas + los que han enviado solicitudes de degustación desde su app (sin duplicados por acento)
   const uniqueVendedores = useMemo(() => {
-    const s = new Set<string>([
-      'MARIA BRICEÑO',
-      'MARIANA CHACIN',
-      'JOHNATAN SOTO',
-      'HERNAN PAZ',
-      'OSWALDO CHURION',
+    const cleanKey = (s: string) =>
+      (s || '')
+        .trim()
+        .toUpperCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\s+/g, ' ');
+
+    const canonicalMap = new Map<string, string>();
+    const officialSellers = [
+      'MARÍA BRICEÑO',
+      'MARIANA CHACÍN',
+      'HERNÁN PAZ',
+      'OSWALDO CHURIÓN',
       'CARLOS FUENMAYOR',
       'SARAH REYES',
       'J PABLO ARAUJO - CAB/OJE',
       'JOSE G. GONZALEZ',
       'ANGELICA MORENO',
       'ADEL JARABA',
-      'JUAN HERNANDEZ',
+      'JUAN HERNÁNDEZ',
       'YOLEIDA LUGO',
-      'SAIRU VALLES',
+      'SAIRÚ VALLES',
       'ELISA SOLER',
-      'ALI PEREZ',
       'J PABLO ARAUJO',
       'EDUARDO PIÑA',
-      'JOHNATAN SOTO VILLA DEL ROS',
       'LEONARDO RIOS',
       'MARYERY GARCIA',
       'LUIS GUANIPA',
       'PEDRO ABREU',
       'OSCAR ORTIZ',
-      'MIKELANGELO DIAZ',
-    ]);
-    degustaciones.forEach((d) => {
-      if (d.vendedor) s.add(d.vendedor);
+      'MIKELANGELO DIAZ'
+    ];
+
+    officialSellers.forEach((v) => {
+      canonicalMap.set(cleanKey(v), v);
     });
-    return Array.from(s);
+
+    degustaciones.forEach((d) => {
+      if (d.vendedor) {
+        const k = cleanKey(d.vendedor);
+        if (k && !canonicalMap.has(k)) {
+          canonicalMap.set(k, d.vendedor.trim());
+        }
+      }
+    });
+
+    return Array.from(canonicalMap.values());
   }, [degustaciones]);
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
   const [isCredentialsModalOpen, setIsCredentialsModalOpen] = useState<boolean>(false);
@@ -932,10 +963,49 @@ export const TradeMarketing: React.FC = () => {
     window.open('/portal/login', '_blank');
   };
 
+  // Estado de notificación cuando se acepta y asigna una degustación a una promotora
+  const [assignmentToast, setAssignmentToast] = useState<string | null>(null);
+
+  // Asignar / aceptar degustación directamente desde la fila del cronograma a la ruta de la promotora
+  const handleQuickAssignPromoter = async (row: DegustacionItem, selectedPromoterName: string) => {
+    const isUnassigned = !selectedPromoterName || selectedPromoterName.toUpperCase().includes('POR ASIGNAR');
+    const matchedStaff = !isUnassigned
+      ? personal.find((pers) => matchPromoterName(pers.name, selectedPromoterName)) ||
+        resolvePromoterIdentity(selectedPromoterName)
+      : null;
+
+    const updatedItem: DegustacionItem = {
+      ...row,
+      promoter: isUnassigned ? 'POR ASIGNAR (Trade Marketing)' : (matchedStaff ? matchedStaff.name : selectedPromoterName),
+      promoterEmail: isUnassigned ? '' : (matchedStaff?.email || ''),
+      promoterId: isUnassigned ? '' : (matchedStaff?.id || ''),
+      promoterRole: isUnassigned ? 'Impulsadora' : (matchedStaff ? matchedStaff.role : row.promoterRole),
+      status: row.status === 'cancelled' && !isUnassigned ? 'scheduled' : row.status
+    };
+
+    await degustacionesService.updateDegustacion(updatedItem);
+
+    if (isUnassigned) {
+      setAssignmentToast(`⏳ Degustación en ${row.client} marcada como Pendiente por Asignar.`);
+    } else {
+      const emailInfo = updatedItem.promoterEmail ? ` (${updatedItem.promoterEmail})` : '';
+      setAssignmentToast(
+        `✅ Degustación aceptada y asignada a la Ruta de ${updatedItem.promoter}${emailInfo}`
+      );
+    }
+    setTimeout(() => setAssignmentToast(null), 5000);
+  };
+
   // Guardar nueva actividad
   const handleCreateActivity = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newActivity.activity.trim() || !newActivity.client.trim()) return;
+
+    const isUnassigned = !newActivity.promoter || newActivity.promoter.toUpperCase().includes('POR ASIGNAR');
+    const matchedStaff = !isUnassigned
+      ? personal.find((pers) => matchPromoterName(pers.name, newActivity.promoter)) ||
+        resolvePromoterIdentity(newActivity.promoter)
+      : null;
 
     const newItem: DegustacionItem = {
       id: `DEG-VEND-${Date.now().toString().slice(-6)}`,
@@ -943,8 +1013,10 @@ export const TradeMarketing: React.FC = () => {
       time: newActivity.time,
       activity: newActivity.activity,
       product: newActivity.product,
-      promoter: newActivity.promoter,
-      promoterRole: newActivity.promoterRole,
+      promoter: isUnassigned ? 'POR ASIGNAR (Trade Marketing)' : (matchedStaff ? matchedStaff.name : newActivity.promoter),
+      promoterEmail: isUnassigned ? '' : (matchedStaff?.email || ''),
+      promoterId: isUnassigned ? '' : (matchedStaff?.id || ''),
+      promoterRole: isUnassigned ? 'Impulsadora' : (matchedStaff ? matchedStaff.role : newActivity.promoterRole),
       client: newActivity.client,
       zone: newActivity.zone,
       vendedor: newActivity.vendedor || 'MARIANA CHACÍN',
@@ -958,6 +1030,12 @@ export const TradeMarketing: React.FC = () => {
 
     degustacionesService.addDegustacion(newItem);
     setIsModalOpen(false);
+    if (!isUnassigned) {
+      setAssignmentToast(
+        `✅ Degustación agendada y asignada a la Ruta de ${newItem.promoter}${newItem.promoterEmail ? ` (${newItem.promoterEmail})` : ''}`
+      );
+      setTimeout(() => setAssignmentToast(null), 5000);
+    }
     setNewActivity({
       activity: '',
       product: 'Mortadela Tapara Especial 1 Kg',
@@ -983,8 +1061,28 @@ export const TradeMarketing: React.FC = () => {
     e.preventDefault();
     if (!editingActivity) return;
 
-    degustacionesService.updateDegustacion(editingActivity);
+    const isUnassigned = !editingActivity.promoter || editingActivity.promoter.toUpperCase().includes('POR ASIGNAR');
+    const matchedStaff = !isUnassigned
+      ? personal.find((pers) => matchPromoterName(pers.name, editingActivity.promoter)) ||
+        resolvePromoterIdentity(editingActivity.promoter, editingActivity.promoterEmail)
+      : null;
+
+    const enriched: DegustacionItem = {
+      ...editingActivity,
+      promoter: isUnassigned ? 'POR ASIGNAR (Trade Marketing)' : (matchedStaff ? matchedStaff.name : editingActivity.promoter),
+      promoterEmail: isUnassigned ? '' : (matchedStaff?.email || editingActivity.promoterEmail || ''),
+      promoterId: isUnassigned ? '' : (matchedStaff?.id || editingActivity.promoterId || ''),
+      promoterRole: isUnassigned ? 'Impulsadora' : (matchedStaff ? matchedStaff.role : editingActivity.promoterRole)
+    };
+
+    degustacionesService.updateDegustacion(enriched);
     setEditingActivity(null);
+    if (!isUnassigned) {
+      setAssignmentToast(
+        `✅ Degustación actualizada y sincronizada en la Ruta de ${enriched.promoter}${enriched.promoterEmail ? ` (${enriched.promoterEmail})` : ''}`
+      );
+      setTimeout(() => setAssignmentToast(null), 5000);
+    }
   };
 
   // Confirmar eliminación de actividad
@@ -997,15 +1095,30 @@ export const TradeMarketing: React.FC = () => {
   // =========================================================================
   // SEPARACIÓN AUTOMÁTICA: CRONOGRAMA ACTUAL vs HISTORIAL (CORTE DE DOMINGO)
   // =========================================================================
-  const { weekStart, weekEnd } = useMemo(() => getWeekBounds(), []);
+  const { weekStart, weekEnd } = useMemo(() => {
+    const nowBounds = getWeekBounds(new Date());
+    const hasCurrentOrUpcoming = degustaciones.some((item) => {
+      const d = parseDateDMY(item.date);
+      return d >= nowBounds.weekStart;
+    });
+    if (hasCurrentOrUpcoming || degustaciones.length === 0) {
+      return nowBounds;
+    }
+    // Si aún no han enviado solicitudes para la nueva semana calendario, anclar a la última semana activa con solicitudes de vendedores
+    const sortedDates = degustaciones
+      .map((item) => parseDateDMY(item.date))
+      .filter((d) => !isNaN(d.getTime()))
+      .sort((a, b) => b.getTime() - a.getTime());
+    return sortedDates.length > 0 ? getWeekBounds(sortedDates[0]) : nowBounds;
+  }, [degustaciones]);
 
-  // Degustaciones de la semana en curso (Lunes a Domingo de la semana actual)
+  // Degustaciones de la semana en curso y próximas agendadas (Lunes de la semana actual en adelante)
   const currentWeekDegustaciones = useMemo(() => {
     return degustaciones.filter((item) => {
       const d = parseDateDMY(item.date);
-      return d >= weekStart && d <= weekEnd;
+      return d >= weekStart;
     });
-  }, [degustaciones, weekStart, weekEnd]);
+  }, [degustaciones, weekStart]);
 
   // Degustaciones archivadas de fechas anteriores (Semana pasada hacia atrás)
   const historicalDegustaciones = useMemo(() => {
@@ -1081,10 +1194,10 @@ export const TradeMarketing: React.FC = () => {
         statusFilter === 'todos' || item.status === statusFilter;
 
       const matchesPromoter =
-        promoterFilter === 'todos' || item.promoter === promoterFilter;
+        promoterFilter === 'todos' || matchPromoterName(item.promoter, promoterFilter);
 
       const matchesVendedor =
-        vendedorFilter === 'todos' || item.vendedor === vendedorFilter;
+        vendedorFilter === 'todos' || matchVendedorName(item.vendedor, vendedorFilter);
 
       return matchesSearch && matchesStatus && matchesPromoter && matchesVendedor;
     });
@@ -1112,10 +1225,10 @@ export const TradeMarketing: React.FC = () => {
             statusFilter === 'todos' || item.status === statusFilter;
 
           const matchesPromoter =
-            promoterFilter === 'todos' || item.promoter === promoterFilter;
+            promoterFilter === 'todos' || matchPromoterName(item.promoter, promoterFilter);
 
           const matchesVendedor =
-            vendedorFilter === 'todos' || item.vendedor === vendedorFilter;
+            vendedorFilter === 'todos' || matchVendedorName(item.vendedor, vendedorFilter);
 
           return matchesSearch && matchesStatus && matchesPromoter && matchesVendedor;
         });
@@ -1816,7 +1929,7 @@ export const TradeMarketing: React.FC = () => {
                 type="button"
                 onClick={async () => {
                   try {
-                    const refreshed = await degustacionesService.getDegustacionesAsync();
+                    const refreshed = await degustacionesService.getDegustacionesAsync(true);
                     setDegustaciones(refreshed);
                   } catch (e) {}
                 }}
@@ -1834,6 +1947,23 @@ export const TradeMarketing: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* Notificación de Aceptación y Sincronización con App de Promotoras (/portal/ruta) */}
+          {assignmentToast && (
+            <div className="bg-emerald-950/90 border border-emerald-500/50 text-emerald-200 px-4 py-3 rounded-2xl shadow-xl flex items-center justify-between text-xs animate-in fade-in slide-in-from-top-2">
+              <div className="flex items-center gap-2.5 font-bold">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>{assignmentToast}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAssignmentToast(null)}
+                className="text-emerald-300 hover:text-white font-bold ml-3 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+          )}
 
           {/* VISTA A: CRONOGRAMA ACTUAL (Semana en curso) */}
           {degustacionSubtab === 'actual' && (
@@ -1860,7 +1990,7 @@ export const TradeMarketing: React.FC = () => {
                       <th className="p-4 border-r border-white/10 min-w-[130px]">Fecha / Horario</th>
                       <th className="p-4 border-r border-white/10 min-w-[200px]">Actividad & Producto</th>
                       <th className="p-4 border-r border-white/10 min-w-[160px]">Vendedor Solicitante</th>
-                      <th className="p-4 border-r border-white/10 min-w-[170px]">Promotora Asignada</th>
+                      <th className="p-4 border-r border-white/10 min-w-[240px]">Promotora Asignada (Ruta App)</th>
                       <th className="p-4 border-r border-white/10 min-w-[190px]">Cliente PDV & Zona</th>
                       <th className="p-4 border-r border-white/10 text-center min-w-[110px]">Estado</th>
                       <th className="p-4 border-r border-white/10 text-right min-w-[120px]">Muestras (Avance)</th>
@@ -1884,7 +2014,7 @@ export const TradeMarketing: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={async () => {
-                                  const refreshed = await degustacionesService.getDegustacionesAsync();
+                                  const refreshed = await degustacionesService.getDegustacionesAsync(true);
                                   setDegustaciones(refreshed);
                                 }}
                                 className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white border border-white/10 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-sm"
@@ -1941,16 +2071,63 @@ export const TradeMarketing: React.FC = () => {
                               </span>
                             </td>
 
-                            {/* Promotora Asignada */}
+                            {/* Promotora Asignada (Selector directo para Aceptar y Asignar en /portal/ruta) */}
                             <td className="p-4 border-r border-white/10">
-                              <div className="font-bold text-zinc-200">{row.promoter || 'Por Asignar'}</div>
-                              <span className={`inline-block px-1.5 py-0.5 text-[9px] font-black rounded uppercase tracking-wider mt-0.5 ${
-                                row.promoterRole === 'Promotor Merchandising'
-                                  ? 'bg-red-950/80 text-red-400 border border-red-500/30'
-                                  : 'bg-zinc-800 text-zinc-300 border border-white/5'
-                              }`}>
-                                {row.promoterRole}
-                              </span>
+                              {(() => {
+                                const isAssigned = Boolean(row.promoter && !row.promoter.toUpperCase().includes('POR ASIGNAR'));
+                                const resolvedInfo = isAssigned ? resolvePromoterIdentity(row.promoter, row.promoterEmail) : null;
+                                const assignedEmail = row.promoterEmail || resolvedInfo?.email || '';
+                                const selectValue = isAssigned
+                                  ? (personal.find((p) => matchPromoterName(p.name, row.promoter))?.name || row.promoter)
+                                  : 'POR ASIGNAR (Trade Marketing)';
+
+                                return (
+                                  <div className="space-y-1.5">
+                                    <select
+                                      value={selectValue}
+                                      onChange={(e) => handleQuickAssignPromoter(row, e.target.value)}
+                                      className={`w-full rounded-xl px-2.5 py-1.5 text-[11px] font-bold focus:outline-none cursor-pointer transition-colors ${
+                                        isAssigned
+                                          ? 'bg-emerald-950/60 border border-emerald-500/40 text-emerald-200 focus:border-emerald-400'
+                                          : 'bg-amber-950/40 border border-amber-500/40 text-amber-200 focus:border-amber-400'
+                                      }`}
+                                      title="Aceptar solicitud y asignar promotora a su módulo de Ruta (/portal/ruta)"
+                                    >
+                                      <option value="POR ASIGNAR (Trade Marketing)">⏳ POR ASIGNAR (Seleccionar Promotora)</option>
+                                      {personal.map((p) => (
+                                        <option key={p.id} value={p.name}>
+                                          ✓ {p.name} ({p.role})
+                                        </option>
+                                      ))}
+                                    </select>
+
+                                    <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                                      <span className={`inline-block px-1.5 py-0.5 text-[9px] font-black rounded uppercase tracking-wider ${
+                                        !isAssigned
+                                          ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
+                                          : row.promoterRole === 'Promotor Merchandising'
+                                          ? 'bg-red-950/80 text-red-400 border border-red-500/30'
+                                          : 'bg-emerald-950/80 text-emerald-300 border border-emerald-500/30'
+                                      }`}>
+                                        {isAssigned ? `✓ Ruta: ${row.promoterRole}` : 'Pendiente Asignar'}
+                                      </span>
+
+                                      {isAssigned && assignedEmail && (
+                                        <a
+                                          href={`/portal/login?email=${encodeURIComponent(assignedEmail)}`}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-[10px] font-mono text-zinc-400 hover:text-emerald-400 flex items-center gap-1 truncate max-w-[155px]"
+                                          title={`Abrir App de Ruta de ${row.promoter} (${assignedEmail})`}
+                                        >
+                                          <Mail className="w-2.5 h-2.5 text-emerald-400 shrink-0" />
+                                          <span className="truncate">{assignedEmail}</span>
+                                        </a>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })()}
                             </td>
 
                             {/* Cliente PDV & Zona */}
@@ -2114,7 +2291,7 @@ export const TradeMarketing: React.FC = () => {
                             <th className="p-3.5 border-r border-white/5 min-w-[120px]">Fecha / Horario</th>
                             <th className="p-3.5 border-r border-white/5 min-w-[220px]">Actividad & Producto</th>
                             <th className="p-3.5 border-r border-white/5 min-w-[160px]">Vendedor Solicitante</th>
-                            <th className="p-3.5 border-r border-white/5 min-w-[180px]">Responsable</th>
+                            <th className="p-3.5 border-r border-white/5 min-w-[230px]">Promotora Asignada (Ruta App)</th>
                             <th className="p-3.5 border-r border-white/5 min-w-[200px]">Cliente PDV & Zona</th>
                             <th className="p-3.5 border-r border-white/5 text-center min-w-[110px]">Estado</th>
                             <th className="p-3.5 border-r border-white/5 text-right min-w-[130px]">Muestras (Entregadas)</th>
@@ -2153,12 +2330,43 @@ export const TradeMarketing: React.FC = () => {
                                 </span>
                               </td>
 
-                              {/* Responsable */}
+                              {/* Promotora Asignada (Historial) */}
                               <td className="p-3.5 border-r border-white/5">
-                                <div className="font-bold text-zinc-200">{row.promoter}</div>
-                                <span className="inline-block px-1.5 py-0.5 text-[9px] font-black rounded uppercase tracking-wider mt-0.5 bg-zinc-800 text-zinc-300">
-                                  {row.promoterRole}
-                                </span>
+                                {(() => {
+                                  const isAssigned = Boolean(row.promoter && !row.promoter.toUpperCase().includes('POR ASIGNAR'));
+                                  const resolvedInfo = isAssigned ? resolvePromoterIdentity(row.promoter, row.promoterEmail) : null;
+                                  const assignedEmail = row.promoterEmail || resolvedInfo?.email || '';
+                                  const selectValue = isAssigned
+                                    ? (personal.find((p) => matchPromoterName(p.name, row.promoter))?.name || row.promoter)
+                                    : 'POR ASIGNAR (Trade Marketing)';
+
+                                  return (
+                                    <div className="space-y-1">
+                                      <select
+                                        value={selectValue}
+                                        onChange={(e) => handleQuickAssignPromoter(row, e.target.value)}
+                                        className={`w-full rounded-xl px-2 py-1 text-[11px] font-bold focus:outline-none cursor-pointer transition-colors ${
+                                          isAssigned
+                                            ? 'bg-emerald-950/60 border border-emerald-500/40 text-emerald-200 focus:border-emerald-400'
+                                            : 'bg-amber-950/40 border border-amber-500/40 text-amber-200 focus:border-amber-400'
+                                        }`}
+                                      >
+                                        <option value="POR ASIGNAR (Trade Marketing)">⏳ POR ASIGNAR (Seleccionar Promotora)</option>
+                                        {personal.map((p) => (
+                                          <option key={p.id} value={p.name}>
+                                            ✓ {p.name} ({p.role})
+                                          </option>
+                                        ))}
+                                      </select>
+                                      {isAssigned && assignedEmail && (
+                                        <div className="text-[10px] font-mono text-zinc-400 flex items-center gap-1 truncate">
+                                          <Mail className="w-2.5 h-2.5 text-emerald-400 shrink-0" />
+                                          <span className="truncate">{assignedEmail}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })()}
                               </td>
 
                               {/* Cliente PDV & Zona */}
@@ -5047,7 +5255,9 @@ export const TradeMarketing: React.FC = () => {
                           const portalUrl = `${window.location.origin}/portal/login?email=${encodeURIComponent(p.email)}`;
                           const isMerch = p.category === 'merchandising';
                           const isPassRevealed = revealedPasswords[p.id];
-                          const pDegustacionesSemana = currentWeekDegustaciones.filter((d) => matchPromoterName(d.promoter, p.name));
+                          const pDegustacionesSemana = currentWeekDegustaciones.filter((d) =>
+                            matchPromoterAssignment(d, p, p.email)
+                          );
 
                           return (
                             <div
@@ -5776,7 +5986,7 @@ export const TradeMarketing: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-zinc-400 font-bold mb-1 text-xs">Promotora Asignada</label>
+                  <label className="block text-zinc-400 font-bold mb-1 text-xs">Promotora Asignada (Ruta App)</label>
                   <select
                     value={newActivity.promoter}
                     onChange={(e) => {
@@ -5792,7 +6002,7 @@ export const TradeMarketing: React.FC = () => {
                     <option value="POR ASIGNAR (Trade Marketing)">-- POR ASIGNAR (Trade Marketing) --</option>
                     {personal.map((p) => (
                       <option key={p.id} value={p.name}>
-                        {p.name} ({p.role})
+                        {p.name} — {p.email} ({p.role})
                       </option>
                     ))}
                   </select>
@@ -6028,7 +6238,7 @@ export const TradeMarketing: React.FC = () => {
               {/* 3. Promotora y Rol */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-zinc-400 font-bold mb-1">Promotora Asignada</label>
+                  <label className="block text-zinc-400 font-bold mb-1">Promotora Asignada (Ruta App)</label>
                   <select
                     value={editingActivity.promoter}
                     onChange={(e) => {
@@ -6036,6 +6246,8 @@ export const TradeMarketing: React.FC = () => {
                       setEditingActivity({
                         ...editingActivity,
                         promoter: e.target.value,
+                        promoterEmail: p ? p.email : '',
+                        promoterId: p ? p.id : '',
                         promoterRole: p ? p.role : editingActivity.promoterRole
                       });
                     }}
@@ -6044,7 +6256,7 @@ export const TradeMarketing: React.FC = () => {
                     <option value="POR ASIGNAR (Trade Marketing)">-- POR ASIGNAR (Trade Marketing) --</option>
                     {personal.map((p) => (
                       <option key={p.id} value={p.name}>
-                        {p.name} ({p.role})
+                        {p.name} — {p.email} ({p.role})
                       </option>
                     ))}
                   </select>

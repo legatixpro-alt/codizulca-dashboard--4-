@@ -19,6 +19,13 @@ import {
   campoService
 } from '../../lib/campoService';
 import { checkinsService } from '../../lib/checkinsService';
+import {
+  trazabilidadService,
+  formatCoordinatesDMS,
+  reverseGeocodeCoordinates,
+  fetchClientNetworkInfo,
+  detectRealBrowserAndOs
+} from '../../lib/trazabilidadService';
 
 export const CampoAsistencia: React.FC<{ activePromoterName?: string }> = ({
   activePromoterName
@@ -240,6 +247,7 @@ export const CampoAsistencia: React.FC<{ activePromoterName?: string }> = ({
       };
 
       // Guardar también en el servicio existente checkinsService para sincronización total
+      const activeProfile = campoService.getActivePromoter();
       await checkinsService.createCheckIn({
         date: new Date().toISOString(),
         promoter: promoterName,
@@ -253,6 +261,51 @@ export const CampoAsistencia: React.FC<{ activePromoterName?: string }> = ({
         },
         creatorId: 'USR-' + promoterName.replace(/\s+/g, '-').toLowerCase()
       });
+
+      // Registrar en Trazabilidad con coordenadas GPS reales y dirección física exacta
+      (async () => {
+        try {
+          const [netInfo, geo] = await Promise.all([
+            fetchClientNetworkInfo(),
+            reverseGeocodeCoordinates(gpsLocation.lat, gpsLocation.lng)
+          ]);
+          const { browser, os, deviceType, connectionType } = detectRealBrowserAndOs();
+          const connLabel = netInfo.isp ? `${connectionType} (${netInfo.isp})` : connectionType;
+          const exactAddress = geo?.address || `${gpsLocation.lat.toFixed(6)}°, ${gpsLocation.lng.toFixed(6)}°`;
+          const resolvedCity = geo?.locationCity || netInfo.locationCity || 'Ubicación GPS Verificada';
+
+          await trazabilidadService.logEvent({
+            user: {
+              name: promoterName,
+              email: activeProfile.email,
+              role: activeProfile.role,
+              photoUrl: activeProfile.photoUrl
+            },
+            action: {
+              type: 'checkin',
+              label: `Check-in Asistencia PDV (${checkInType})`,
+              details: `${storeName} • Dirección GPS: ${exactAddress}`,
+              status: 'success',
+              module: 'Control de Asistencia'
+            },
+            device: {
+              ip: netInfo.ip,
+              browser,
+              os,
+              deviceType,
+              connection: connLabel,
+              locationCity: resolvedCity,
+              address: exactAddress,
+              gpsVerified: true,
+              coordinates: formatCoordinatesDMS(gpsLocation.lat, gpsLocation.lng, 6),
+              lat: gpsLocation.lat,
+              lng: gpsLocation.lng,
+              accuracy: gpsLocation.accuracy || 10,
+              locationSource: 'gps'
+            }
+          });
+        } catch {}
+      })();
 
       if (!navigator.onLine) {
         campoService.enqueue('checkin', payload);

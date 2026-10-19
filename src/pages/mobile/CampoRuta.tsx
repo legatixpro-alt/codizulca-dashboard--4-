@@ -21,12 +21,14 @@ import {
   Info,
   Layers,
   ArrowUpRight,
-  Plus
+  Plus,
+  RefreshCw,
+  Mail
 } from 'lucide-react';
 import {
   degustacionesService,
   DegustacionItem,
-  matchPromoterName
+  matchPromoterAssignment
 } from '../../lib/degustacionesService';
 import { campoService, PromoterProfile } from '../../lib/campoService';
 import { STORAGE_KEY_ACTIVE_STORE } from '../../lib/checkinsService';
@@ -49,12 +51,34 @@ export const CampoRuta: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState<string>('todos');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [actionSuccessMsg, setActionSuccessMsg] = useState<string | null>(null);
+  const [isSyncingRoute, setIsSyncingRoute] = useState<boolean>(false);
 
   // Modal de detalles de degustación
   const [selectedDegustacion, setSelectedDegustacion] = useState<DegustacionItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
-  // Suscripción en tiempo real a cambios de la Coordinadora de Trade Marketing
+  // Suscripción en tiempo real a cambios de la Coordinadora de Trade Marketing y API de Vendedores
+  const syncRouteFromServer = async (force: boolean = false) => {
+    setIsSyncingRoute(true);
+    try {
+      const items = await degustacionesService.getDegustacionesAsync(force);
+      if (Array.isArray(items) && items.length > 0) {
+        setAllDegustaciones(items);
+      }
+    } finally {
+      setIsSyncingRoute(false);
+    }
+  };
+
+  useEffect(() => {
+    syncRouteFromServer(true);
+    const onFocus = () => {
+      syncRouteFromServer(false);
+    };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [activePromoter.id, activePromoter.email]);
+
   useEffect(() => {
     const unsubscribe = degustacionesService.subscribe((updatedItems) => {
       setAllDegustaciones(updatedItems);
@@ -67,10 +91,12 @@ export const CampoRuta: React.FC = () => {
     return () => unsubscribe();
   }, [selectedDegustacion]);
 
-  // Degustaciones que corresponden exclusivamente a la promotora activa (información personal y privada)
+  // Degustaciones que corresponden exclusivamente a la promotora activa (validación exacta por correo electrónico + nombre + ID)
   const myDegustaciones = useMemo(() => {
-    return allDegustaciones.filter((item) => matchPromoterName(item.promoter, activePromoter.name));
-  }, [allDegustaciones, activePromoter.name]);
+    return allDegustaciones.filter((item) =>
+      matchPromoterAssignment(item, activePromoter, activePromoter.email)
+    );
+  }, [allDegustaciones, activePromoter]);
 
   // Filtrado de la lista personal según estado y búsqueda
   const displayedDegustaciones = useMemo(() => {
@@ -184,24 +210,34 @@ export const CampoRuta: React.FC = () => {
       {/* ========================================================================= */}
       <div className="bg-[#121212] border border-white/10 rounded-2xl p-3.5 shadow-md">
         <div className="flex items-center justify-between gap-2">
-          <div>
-            <div className="flex items-center gap-2">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="px-2 py-0.5 rounded bg-red-600 text-white font-black text-[9px] uppercase tracking-wider">
                 Ruta & Degustaciones
               </span>
-              <span className="text-[10px] text-zinc-400 font-mono flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Sincronizado
-              </span>
+              <button
+                type="button"
+                onClick={() => syncRouteFromServer(true)}
+                disabled={isSyncingRoute}
+                className="text-[10px] text-emerald-400 hover:text-emerald-300 font-mono flex items-center gap-1 bg-emerald-950/50 border border-emerald-500/30 px-2 py-0.5 rounded-lg cursor-pointer transition-colors"
+                title="Sincronizar degustaciones aceptadas por Trade Marketing"
+              >
+                <RefreshCw className={`w-2.5 h-2.5 ${isSyncingRoute ? 'animate-spin' : ''}`} />
+                <span>{isSyncingRoute ? 'Sincronizando...' : 'Sincronizado'}</span>
+              </button>
             </div>
-            <h2 className="text-sm font-black text-white mt-1">
-              Cronograma de Actividades
+            <h2 className="text-sm font-black text-white mt-1 truncate">
+              {activePromoter.name}
             </h2>
+            <p className="text-[10px] text-zinc-400 font-mono flex items-center gap-1 truncate mt-0.5">
+              <Mail className="w-3 h-3 text-red-500 shrink-0" />
+              <span className="truncate">{activePromoter.email}</span>
+            </p>
           </div>
 
           {/* Mini Chip Perfil */}
-          <div className="flex items-center gap-1.5 bg-[#1a1a1a] border border-white/5 px-2.5 py-1 rounded-xl text-right">
-            <div className="w-6 h-6 rounded-lg overflow-hidden bg-red-600 text-white flex items-center justify-center text-[10px] font-black shrink-0">
+          <div className="flex items-center gap-1.5 bg-[#1a1a1a] border border-white/5 px-2.5 py-1.5 rounded-xl text-right shrink-0">
+            <div className="w-7 h-7 rounded-lg overflow-hidden bg-red-600 text-white flex items-center justify-center text-[11px] font-black shrink-0">
               {activePromoter.photoUrl ? (
                 <img src={activePromoter.photoUrl} alt={activePromoter.name} className="w-full h-full object-cover" />
               ) : (
@@ -209,7 +245,7 @@ export const CampoRuta: React.FC = () => {
               )}
             </div>
             <div className="text-left">
-              <span className="text-[9px] text-zinc-400 block leading-tight">Promotora</span>
+              <span className="text-[9px] text-zinc-400 block leading-tight">{activePromoter.role}</span>
               <span className="font-bold text-white text-[11px] leading-none block truncate max-w-[90px]">
                 {activePromoter.name.split(' ')[0]}
               </span>

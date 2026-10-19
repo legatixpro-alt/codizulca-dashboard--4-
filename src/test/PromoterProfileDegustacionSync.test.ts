@@ -1,14 +1,27 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   degustacionesService,
   matchPromoterName,
+  matchPromoterAssignment,
+  resolvePromoterIdentity,
+  OFFICIAL_PROMOTER_DIRECTORY,
   DegustacionItem
 } from '../lib/degustacionesService';
+import { PROMOTERS_LIST } from '../lib/campoService';
 
 describe('Promoter Profile & Cronograma Actual Synchronization Suite', () => {
   beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true })
+    }));
     localStorage.clear();
     degustacionesService.resetToDefaults();
+  });
+
+  afterEach(() => {
+    localStorage.clear();
+    vi.restoreAllMocks();
   });
 
   describe('1. matchPromoterName Normalization & Precision Matching', () => {
@@ -38,6 +51,12 @@ describe('Promoter Profile & Cronograma Actual Synchronization Suite', () => {
       expect(matchPromoterName('MARIANA CHACIN', 'MARIA ALMARZA')).toBe(false);
       // ANA ECHEVERRIA vs MARIANA CHACIN
       expect(matchPromoterName('ANA ECHEVERRIA', 'MARIANA CHACIN')).toBe(false);
+      // MARIA ALMARZA vs MARIANGEL VALDIVIESO vs MARIANYEL ARANDA
+      expect(matchPromoterName('Maria de los Ángeles Almarza Arnedo', 'MARIANGEL VALDIVIESO')).toBe(false);
+      expect(matchPromoterName('Maria de los Ángeles Almarza Arnedo', 'MARIANYEL ARANDA')).toBe(false);
+      expect(matchPromoterName('MARIANGEL VALDIVIESO', 'MARIANYEL ARANDA')).toBe(false);
+      // ANGELICA SANCHEZ (promotora) vs ANGELICA MORENO (vendedor)
+      expect(matchPromoterName('ANGELICA SANCHEZ', 'ANGELICA MORENO')).toBe(false);
     });
   });
 
@@ -71,16 +90,18 @@ describe('Promoter Profile & Cronograma Actual Synchronization Suite', () => {
 
       degustacionesService.addDegustacion(newDegustacion);
 
-      const promoterTastings = degustacionesService.getDegustacionesForPromoter('CARELIZ REYES');
+      const promoterTastings = degustacionesService.getDegustacionesForPromoter('CARELIZ REYES', 'REYESCARELIZ3@GMAIL.COM');
       expect(promoterTastings.length).toBeGreaterThanOrEqual(1);
       const found = promoterTastings.find((d) => d.id === 'DEG-TEST-SYNC-001');
       expect(found).toBeDefined();
       expect(found?.client).toBe('SUPERMARKET FIORELLA EXPRESS, C.A.');
       expect(found?.product).toBe('JAMÓN SUPERIOR');
       expect(found?.vendedor).toBe('MARIANA CHACÍN');
+      expect(found?.promoterEmail?.toLowerCase()).toBe('reyescareliz3@gmail.com');
+      expect(found?.promoterId).toBe('STF-006');
 
       // Also verifies getActiveDegustacionForPromoter
-      const active = degustacionesService.getActiveDegustacionForPromoter('Careliz Reyes');
+      const active = degustacionesService.getActiveDegustacionForPromoter('Careliz Reyes', 'reyescareliz3@gmail.com');
       expect(active).not.toBeNull();
       expect(active?.id).toBe('DEG-TEST-SYNC-001');
     });
@@ -125,7 +146,7 @@ describe('Promoter Profile & Cronograma Actual Synchronization Suite', () => {
       degustacionesService.addDegustacion(schedItem);
       degustacionesService.addDegustacion(inProgItem);
 
-      const active = degustacionesService.getActiveDegustacionForPromoter('Nicole Godoy');
+      const active = degustacionesService.getActiveDegustacionForPromoter('Nicole Godoy', 'godoyaraujonicole@gmail.com');
       expect(active?.id).toBe('DEG-PROG-02');
       expect(active?.status).toBe('in_progress');
     });
@@ -150,8 +171,8 @@ describe('Promoter Profile & Cronograma Actual Synchronization Suite', () => {
       };
 
       degustacionesService.addDegustacion(initialItem);
-      expect(degustacionesService.getDegustacionesForPromoter('FERNANDA LEON').some((d) => d.id === 'DEG-REASSIGN-01')).toBe(true);
-      expect(degustacionesService.getDegustacionesForPromoter('NISMARY DERIZAN').some((d) => d.id === 'DEG-REASSIGN-01')).toBe(false);
+      expect(degustacionesService.getDegustacionesForPromoter('FERNANDA LEON', 'fer171205@gmail.com').some((d) => d.id === 'DEG-REASSIGN-01')).toBe(true);
+      expect(degustacionesService.getDegustacionesForPromoter('NISMARY DERIZAN', 'Nismariderizan3@gmail.com').some((d) => d.id === 'DEG-REASSIGN-01')).toBe(false);
 
       // Coordinador reasigna la degustación a NISMARY DERIZAN
       degustacionesService.updateDegustacion({
@@ -160,9 +181,9 @@ describe('Promoter Profile & Cronograma Actual Synchronization Suite', () => {
       });
 
       // Fernanda ya no la tiene en su perfil
-      expect(degustacionesService.getDegustacionesForPromoter('FERNANDA LEON').some((d) => d.id === 'DEG-REASSIGN-01')).toBe(false);
+      expect(degustacionesService.getDegustacionesForPromoter('FERNANDA LEON', 'fer171205@gmail.com').some((d) => d.id === 'DEG-REASSIGN-01')).toBe(false);
       // Nismary ahora la tiene en su perfil
-      expect(degustacionesService.getDegustacionesForPromoter('NISMARY DERIZAN').some((d) => d.id === 'DEG-REASSIGN-01')).toBe(true);
+      expect(degustacionesService.getDegustacionesForPromoter('NISMARY DERIZAN', 'Nismariderizan3@gmail.com').some((d) => d.id === 'DEG-REASSIGN-01')).toBe(true);
     });
 
     it('notifies subscribers via Event when schedule changes occur', () => {
@@ -191,4 +212,57 @@ describe('Promoter Profile & Cronograma Actual Synchronization Suite', () => {
       unsubscribe();
     });
   });
+
+  describe('3. Exact 24-Promoter Email & Name Route Isolation (/portal/login -> /portal/ruta)', () => {
+    it('synchronizes all 24 official promoters between PROMOTERS_LIST and OFFICIAL_PROMOTER_DIRECTORY', () => {
+      expect(PROMOTERS_LIST.length).toBe(24);
+      expect(OFFICIAL_PROMOTER_DIRECTORY.length).toBe(24);
+
+      for (const p of PROMOTERS_LIST) {
+        const resolvedByName = resolvePromoterIdentity(p.name);
+        const resolvedByEmail = resolvePromoterIdentity(p.email);
+        expect(resolvedByName).not.toBeNull();
+        expect(resolvedByEmail).not.toBeNull();
+        expect(resolvedByName?.id).toBe(p.id);
+        expect(resolvedByEmail?.id).toBe(p.id);
+        expect(resolvedByName?.email.toLowerCase()).toBe(p.email.toLowerCase());
+      }
+    });
+
+    it('assigns accepted degustaciones strictly to the selected promoter and NEVER to any of the other 23 promoters', () => {
+      // Para cada una de las 24 promotoras, aceptamos una degustación de los vendedores y verificamos aislamiento 1 a 1
+      for (const assignedPromoter of PROMOTERS_LIST) {
+        const testDegId = `DEG-EXACT-${assignedPromoter.id}`;
+        const item: DegustacionItem = {
+          id: testDegId,
+          date: '18/10/2026',
+          time: '09:00 AM - 01:00 PM',
+          activity: `Degustación MORTADELA - Asignada a ${assignedPromoter.name}`,
+          product: 'MORTADELA',
+          promoter: assignedPromoter.name,
+          promoterEmail: assignedPromoter.email,
+          promoterId: assignedPromoter.id,
+          promoterRole: assignedPromoter.role,
+          client: 'ALKOSTO DONDE COMPRAR ES GANAR, C.A.',
+          zone: assignedPromoter.zone,
+          vendedor: 'MARIANA CHACÍN',
+          source: 'vendedor_app',
+          status: 'scheduled',
+          delivered: 0,
+          target: 150,
+          acceptanceRate: 0
+        };
+
+        for (const candidatePromoter of PROMOTERS_LIST) {
+          const isMatch = matchPromoterAssignment(item, candidatePromoter, candidatePromoter.email);
+          if (candidatePromoter.id === assignedPromoter.id) {
+            expect(isMatch).toBe(true);
+          } else {
+            expect(isMatch).toBe(false);
+          }
+        }
+      }
+    });
+  });
 });
+

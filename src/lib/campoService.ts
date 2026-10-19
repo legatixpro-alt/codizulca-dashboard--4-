@@ -273,14 +273,17 @@ export const campoService = {
       allStaff = [];
     }
 
-    // 2. Buscar por correo
+    // 2. Buscar por correo exacto
     let matchStaff = allStaff.find(s => s.email && s.email.trim().toLowerCase() === cleanEmail);
     let matchPromoter = PROMOTERS_LIST.find(p => p.email && p.email.trim().toLowerCase() === cleanEmail);
 
-    // Fallback: búsqueda por nombre si ingresaron nombre de usuario
+    // Fallback: búsqueda por nombre completo exacto si ingresaron nombre de usuario
     if (!matchStaff && !matchPromoter) {
-      matchStaff = allStaff.find(s => s.name.toLowerCase().includes(cleanEmail) || cleanEmail.includes(s.name.toLowerCase()));
-      matchPromoter = PROMOTERS_LIST.find(p => p.name.toLowerCase().includes(cleanEmail) || cleanEmail.includes(p.name.toLowerCase()));
+      const normalize = (str: string) =>
+        (str || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ');
+      const normInput = normalize(emailInput);
+      matchStaff = allStaff.find(s => normalize(s.name) === normInput);
+      matchPromoter = PROMOTERS_LIST.find(p => normalize(p.name) === normInput);
     }
 
     if (!matchStaff && !matchPromoter) {

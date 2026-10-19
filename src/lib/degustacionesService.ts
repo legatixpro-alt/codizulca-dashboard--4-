@@ -11,6 +11,8 @@ export interface DegustacionItem {
   activity: string;   // Nombre de la actividad
   product: string;    // SKU / Producto a degustar
   promoter: string;   // Promotora asignada por Trade Marketing
+  promoterEmail?: string; // Correo electrónico exacto de la promotora asignada (/portal/login)
+  promoterId?: string;    // ID oficial de la promotora (STF-001..STF-027)
   promoterRole: 'Promotora' | 'Impulsadora' | 'Promotor Merchandising';
   client: string;     // Nombre del Punto de Venta (PDV) / Cliente
   zone: string;       // Zona comercial o ruta
@@ -751,25 +753,182 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
 ];
 
 /**
- * Comparador robusto de nombres de promotoras (insensible a mayúsculas, acentos, espacios y stopwords)
+ * Directorio Oficial de las 24 Promotoras e Impulsadoras de Campo (/portal/login)
+ * Garantiza correspondencia exacta 1 a 1 por ID, Nombre y Correo Electrónico.
  */
-export function matchPromoterName(nameA: string, nameB: string): boolean {
-  const clean = (s: string) =>
-    (s || '')
-      .trim()
-      .toUpperCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '');
+export interface OfficialPromoterEntry {
+  id: string;
+  name: string;
+  email: string;
+  role: 'Promotora' | 'Impulsadora' | 'Promotor Merchandising';
+}
 
-  const a = clean(nameA);
-  const b = clean(nameB);
+export const OFFICIAL_PROMOTER_DIRECTORY: OfficialPromoterEntry[] = [
+  // Plantilla Fija (13)
+  { id: 'STF-001', name: 'NICOLE GODOY', email: 'godoyaraujonicole@gmail.com', role: 'Impulsadora' },
+  { id: 'STF-002', name: 'FERNANDA LEON', email: 'fer171205@gmail.com', role: 'Impulsadora' },
+  { id: 'STF-003', name: 'NISMARY DERIZAN', email: 'Nismariderizan3@gmail.com', role: 'Impulsadora' },
+  { id: 'STF-004', name: 'DARIANNYS FERRER', email: 'dariannysferrer23@gmail.com', role: 'Impulsadora' },
+  { id: 'STF-005', name: 'CAMILA MORALES', email: 'Camimi2507@gmail.com', role: 'Impulsadora' },
+  { id: 'STF-006', name: 'CARELIZ REYES', email: 'REYESCARELIZ3@GMAIL.COM', role: 'Impulsadora' },
+  { id: 'STF-007', name: 'Maria de los Ángeles Almarza Arnedo', email: 'Mariaalmarza16@gmail.com', role: 'Impulsadora' },
+  { id: 'STF-008', name: 'SCARLETH PIÑA', email: 'scarmichell22@gmail.com', role: 'Impulsadora' },
+  { id: 'STF-010', name: 'ana echeverria', email: 'anavecheverriar@gmail.com', role: 'Impulsadora' },
+  { id: 'STF-011', name: 'OSMAIRY VILLASMIL', email: 'luzz010203@gmail.com', role: 'Promotora' },
+  { id: 'STF-012', name: 'TANIA CARDENAS', email: 'tataacardenas@gmail.com', role: 'Promotora' },
+  { id: 'STF-013', name: 'NAIRELIS ANTUNEZ', email: 'antuneznairelis@gmail.com', role: 'Impulsadora' },
+  { id: 'STF-014', name: 'JAIVELIN FEREIRA', email: 'jaivelinfereira20@gmail.com', role: 'Impulsadora' },
+  // Plantilla Eventual (9)
+  { id: 'STF-016', name: 'AHYRLET RUIZ', email: 'ruizahyrleth22@gmail.com', role: 'Impulsadora' },
+  { id: 'STF-017', name: 'VALERIA ACEVEDO', email: 'valevalentina0111@gmail.com', role: 'Promotora' },
+  { id: 'STF-018', name: 'CLAUDIA ALVAREZ', email: 'clausofidaza@gmail.com', role: 'Promotora' },
+  { id: 'STF-019', name: 'JELARY ACOSTA', email: 'jelaryacosta@gmail.com', role: 'Promotora' },
+  { id: 'STF-020', name: 'MARIANGEL VALDIVIESO', email: 'mariangelulacio3110@gmail.com', role: 'Promotora' },
+  { id: 'STF-021', name: 'ANGELICA SANCHEZ', email: 'angelicaquero13@gmail.com', role: 'Promotora' },
+  { id: 'STF-022', name: 'ENELIANGELA GONZALEZ', email: 'eneliejoseph@gmail.com', role: 'Promotora' },
+  { id: 'STF-024', name: 'MARIANYEL ARANDA', email: 'marianyelaranda@gmail.com', role: 'Promotora' },
+  { id: 'STF-025', name: 'JULIANNYS GIL', email: 'juliannys.gil.crespo@gmail.com', role: 'Promotora' },
+  // Mercaderistas (2)
+  { id: 'STF-026', name: 'JOSE BARROSO', email: 'joseabraham.barroso@gmail.com', role: 'Promotor Merchandising' },
+  { id: 'STF-027', name: 'ZIORELI GRANGGER', email: 'Ziorelis.grangger@codizulca.com', role: 'Promotor Merchandising' }
+];
+
+function cleanPromoterText(s: string): string {
+  return (s || '')
+    .trim()
+    .toUpperCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ');
+}
+
+function getAllKnownPromoters(): OfficialPromoterEntry[] {
+  const map = new Map<string, OfficialPromoterEntry>();
+  for (const p of OFFICIAL_PROMOTER_DIRECTORY) {
+    map.set(p.id, p);
+  }
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const raw = localStorage.getItem('codizulca_trade_staff_v3');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          for (const s of parsed) {
+            if (s && s.id && s.name && s.email) {
+              map.set(s.id, {
+                id: s.id,
+                name: s.name,
+                email: s.email,
+                role: s.role || 'Promotora'
+              });
+            }
+          }
+        }
+      }
+    }
+  } catch (e) {}
+  return Array.from(map.values());
+}
+
+/**
+ * Resuelve la identidad oficial de una promotora a partir de su nombre o correo electrónico.
+ * Evita colisiones entre nombres parecidos (ej. Maria Almarza vs Marianyel Aranda vs Mariangel Valdivieso).
+ */
+export function resolvePromoterIdentity(
+  nameOrEmail?: string,
+  emailHint?: string
+): OfficialPromoterEntry | null {
+  const roster = getAllKnownPromoters();
+
+  // 1. Búsqueda prioritaria por correo electrónico exacto
+  const candidateEmails = [emailHint, nameOrEmail]
+    .filter((v): v is string => Boolean(v && v.includes('@')))
+    .map((v) => v.trim().toLowerCase());
+
+  for (const email of candidateEmails) {
+    const byEmail = roster.find((p) => p.email.trim().toLowerCase() === email);
+    if (byEmail) return byEmail;
+  }
+
+  if (!nameOrEmail) return null;
+  const cleanedInput = cleanPromoterText(nameOrEmail);
+  if (!cleanedInput || cleanedInput.includes('POR ASIGNAR') || cleanedInput.includes('SIN ASIGNAR')) {
+    return null;
+  }
+
+  // 2. Búsqueda por coincidencia exacta de nombre completo normalizado
+  const exactByName = roster.find((p) => cleanPromoterText(p.name) === cleanedInput);
+  if (exactByName) return exactByName;
+
+  // 3. Búsqueda por tokens significativos (requiere que coincida de forma única con una sola promotora)
+  const stopWords = new Set(['DE', 'DEL', 'LOS', 'LAS', 'LA', 'Y', 'EL']);
+  const inputTokens = cleanedInput.split(/\s+/).filter((w) => w.length > 2 && !stopWords.has(w));
+  if (inputTokens.length >= 2) {
+    const tokenMatches = roster.filter((p) => {
+      const pTokens = cleanPromoterText(p.name)
+        .split(/\s+/)
+        .filter((w) => w.length > 2 && !stopWords.has(w));
+      const [shorter, longer] =
+        inputTokens.length <= pTokens.length ? [inputTokens, pTokens] : [pTokens, inputTokens];
+      return shorter.length >= 2 && shorter.every((t) => longer.includes(t));
+    });
+    if (tokenMatches.length === 1) {
+      return tokenMatches[0];
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Comparador exacto y seguro de promotoras por nombre o correo electrónico.
+ * Si ambos valores resuelven a promotoras del catálogo oficial, exige que sean la misma promotora (mismo ID/correo).
+ */
+export function matchPromoterName(nameOrEmailA: string, nameOrEmailB: string): boolean {
+  const rawA = (nameOrEmailA || '').trim();
+  const rawB = (nameOrEmailB || '').trim();
+  if (!rawA || !rawB) return false;
+
+  const a = cleanPromoterText(rawA);
+  const b = cleanPromoterText(rawB);
 
   if (!a || !b) return false;
-  if (a.includes('POR ASIGNAR') || b.includes('POR ASIGNAR')) return false;
-  if (a === b) return true;
-  if (a.includes(b) || b.includes(a)) return true;
+  if (
+    a.includes('POR ASIGNAR') ||
+    b.includes('POR ASIGNAR') ||
+    a.includes('SIN ASIGNAR') ||
+    b.includes('SIN ASIGNAR')
+  ) {
+    return false;
+  }
 
-  // Comparación por tokens significativos (eliminando preposiciones y artículos comunes)
+  // Si ambos son correos electrónicos, comparar correo exacto
+  if (rawA.includes('@') && rawB.includes('@')) {
+    return rawA.toLowerCase() === rawB.toLowerCase();
+  }
+
+  // Resolver contra el directorio oficial de 24 promotoras
+  const resolvedA = resolvePromoterIdentity(rawA);
+  const resolvedB = resolvePromoterIdentity(rawB);
+
+  if (resolvedA && resolvedB) {
+    return (
+      resolvedA.id === resolvedB.id ||
+      resolvedA.email.trim().toLowerCase() === resolvedB.email.trim().toLowerCase()
+    );
+  }
+
+  // Si uno resolvió al directorio oficial y el otro es un correo electrónico distinto, no coinciden
+  if (resolvedA && rawB.includes('@')) {
+    return resolvedA.email.trim().toLowerCase() === rawB.toLowerCase();
+  }
+  if (resolvedB && rawA.includes('@')) {
+    return resolvedB.email.trim().toLowerCase() === rawA.toLowerCase();
+  }
+
+  // Si uno resolvió al directorio oficial pero el otro es un nombre parcial de otra persona, verificar tokens estrictos
+  if (a === b) return true;
+
   const stopWords = new Set(['DE', 'DEL', 'LOS', 'LAS', 'LA', 'Y', 'EL']);
   const tokensA = a.split(/\s+/).filter((w) => w.length > 2 && !stopWords.has(w));
   const tokensB = b.split(/\s+/).filter((w) => w.length > 2 && !stopWords.has(w));
@@ -777,21 +936,156 @@ export function matchPromoterName(nameA: string, nameB: string): boolean {
   if (tokensA.length === 0 || tokensB.length === 0) return false;
 
   const [shorter, longer] = tokensA.length <= tokensB.length ? [tokensA, tokensB] : [tokensB, tokensA];
+  // Exigir al menos 2 tokens (nombre + apellido) para evitar falsos positivos por primer nombre común (ej. "MARIA" o "ANGELICA")
+  if (shorter.length < 2) {
+    return tokensA.length === 1 && tokensB.length === 1 && tokensA[0] === tokensB[0];
+  }
   return shorter.every((token) => longer.includes(token));
+}
+
+/**
+ * Valida de forma exacta si una degustación aceptada/asignada en Trade Marketing le corresponde
+ * a la promotora autenticada en /portal/login (/portal/ruta), verificando correo electrónico, ID y nombre.
+ */
+export function matchPromoterAssignment(
+  item: Pick<DegustacionItem, 'promoter' | 'promoterEmail' | 'promoterId' | 'status'>,
+  promoterNameOrProfile: string | { id?: string; name: string; email?: string },
+  promoterEmail?: string
+): boolean {
+  if (!item || !item.promoter) return false;
+  if (item.status === 'cancelled') return false;
+
+  const cleanedItemPromoter = cleanPromoterText(item.promoter);
+  if (
+    !cleanedItemPromoter ||
+    cleanedItemPromoter.includes('POR ASIGNAR') ||
+    cleanedItemPromoter.includes('SIN ASIGNAR')
+  ) {
+    return false;
+  }
+
+  const targetName =
+    typeof promoterNameOrProfile === 'string'
+      ? promoterNameOrProfile
+      : promoterNameOrProfile?.name || '';
+  const targetEmail =
+    promoterEmail ||
+    (typeof promoterNameOrProfile === 'object' ? promoterNameOrProfile?.email : undefined) ||
+    (typeof promoterNameOrProfile === 'string' && promoterNameOrProfile.includes('@')
+      ? promoterNameOrProfile
+      : undefined);
+  const targetId =
+    typeof promoterNameOrProfile === 'object' ? promoterNameOrProfile?.id : undefined;
+
+  const itemIdentity = resolvePromoterIdentity(item.promoter, item.promoterEmail);
+  const targetIdentity = resolvePromoterIdentity(targetName, targetEmail);
+
+  const effectiveItemEmail = (item.promoterEmail || itemIdentity?.email || '').trim().toLowerCase();
+  const effectiveTargetEmail = (targetEmail || targetIdentity?.email || '').trim().toLowerCase();
+
+  // 1. Si ambos tienen correo electrónico conocido, el correo es la llave única e inequívoca
+  if (effectiveItemEmail && effectiveTargetEmail) {
+    return effectiveItemEmail === effectiveTargetEmail;
+  }
+
+  // 2. Si ambos tienen ID oficial de personal (STF-xxx), comparar ID exacto
+  const effectiveItemId = item.promoterId || itemIdentity?.id;
+  const effectiveTargetId = targetId || targetIdentity?.id;
+  if (effectiveItemId && effectiveTargetId) {
+    return effectiveItemId === effectiveTargetId;
+  }
+
+  // 3. Comparación estricta de nombre completo
+  return matchPromoterName(item.promoter, targetName);
+}
+
+/**
+ * Enriquecedor automático de datos de promotora al guardar o actualizar una degustación
+ */
+export function enrichPromoterFields(item: DegustacionItem): DegustacionItem {
+  if (!item.promoter || cleanPromoterText(item.promoter).includes('POR ASIGNAR')) {
+    return {
+      ...item,
+      promoter: 'POR ASIGNAR (Trade Marketing)',
+      promoterEmail: '',
+      promoterId: ''
+    };
+  }
+  const resolved = resolvePromoterIdentity(item.promoter, item.promoterEmail);
+  if (resolved) {
+    return {
+      ...item,
+      promoter: resolved.name,
+      promoterEmail: item.promoterEmail || resolved.email,
+      promoterId: item.promoterId || resolved.id,
+      promoterRole: item.promoterRole || resolved.role
+    };
+  }
+  return item;
+}
+
+/**
+ * Comparador robusto de nombres de vendedores (insensible a mayúsculas, acentos y espacios)
+ */
+export function matchVendedorName(nameA: string, nameB: string): boolean {
+  const clean = (s: string) =>
+    (s || '')
+      .trim()
+      .toUpperCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, ' ');
+
+  const a = clean(nameA);
+  const b = clean(nameB);
+  if (!a || !b) return false;
+  if (a === b) return true;
+  return a.includes(b) || b.includes(a);
+}
+
+/**
+ * Normaliza cualquier fecha (YYYY-MM-DD, ISO o D/M/YYYY) al formato estándar DD/MM/YYYY
+ */
+export function normalizeDateToDMY(rawDate: string): string {
+  if (!rawDate) return '';
+  const trimmed = String(rawDate).trim();
+  const datePart = trimmed.split('T')[0].trim();
+
+  // Formato YYYY-MM-DD
+  if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(datePart)) {
+    const [yyyy, mm, dd] = datePart.split('-');
+    return `${dd.padStart(2, '0')}/${mm.padStart(2, '0')}/${yyyy}`;
+  }
+
+  // Formato DD/MM/YYYY o D/M/YYYY
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(datePart)) {
+    const [dd, mm, yyyy] = datePart.split('/');
+    return `${dd.padStart(2, '0')}/${mm.padStart(2, '0')}/${yyyy}`;
+  }
+
+  // Formato DD-MM-YYYY
+  if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(datePart)) {
+    const [dd, mm, yyyy] = datePart.split('-');
+    return `${dd.padStart(2, '0')}/${mm.padStart(2, '0')}/${yyyy}`;
+  }
+
+  return trimmed;
 }
 
 export const degustacionesService = {
   /**
    * Obtiene la lista completa de degustaciones sincronizada con el backend y localStorage
    */
-  async getDegustacionesAsync(): Promise<DegustacionItem[]> {
+  async getDegustacionesAsync(forceSync: boolean = false): Promise<DegustacionItem[]> {
     try {
-      const res = await fetch('/api/degustaciones');
+      const endpoint = forceSync ? '/api/degustaciones?sync=true' : '/api/degustaciones';
+      const res = await fetch(endpoint);
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data)) {
-          this.saveDegustaciones(data);
-          return data;
+        if (Array.isArray(data) && data.length > 0) {
+          const enriched = data.map((d: DegustacionItem) => enrichPromoterFields(d));
+          this.saveDegustaciones(enriched);
+          return enriched;
         }
       }
     } catch (e) {
@@ -825,7 +1119,7 @@ export const degustacionesService = {
                 p.promoter === 'Ana Silva'
               );
               if (!hasFictitious) {
-                return validItems;
+                return validItems.map((item: DegustacionItem) => enrichPromoterFields(item));
               }
             }
         }
@@ -844,11 +1138,12 @@ export const degustacionesService = {
    */
   saveDegustaciones(items: DegustacionItem[]): void {
     try {
+      const enrichedItems = items.map((item) => enrichPromoterFields(item));
       if (typeof window !== 'undefined' && window.localStorage) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(enrichedItems));
       }
       if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent(EVENT_NAME, { detail: { items } }));
+        window.dispatchEvent(new CustomEvent(EVENT_NAME, { detail: { items: enrichedItems } }));
       }
     } catch (e) {
       console.error('[degustacionesService] Error guardando degustaciones:', e);
@@ -867,8 +1162,14 @@ export const degustacionesService = {
    * Agrega una nueva solicitud de degustación enviada por un vendedor o coordinadora
    */
   async addDegustacion(item: DegustacionItem): Promise<void> {
+    const normalizedItem: DegustacionItem = enrichPromoterFields({
+      ...item,
+      date: normalizeDateToDMY(item.date),
+      source: item.source || 'vendedor_app',
+      vendedor: (item.vendedor || 'VENDEDOR COMERCIAL').trim()
+    });
     const current = this.getDegustaciones();
-    const updated = [item, ...current];
+    const updated = [normalizedItem, ...current.filter((c) => c.id !== normalizedItem.id)];
     this.saveDegustaciones(updated);
 
     try {
@@ -876,7 +1177,7 @@ export const degustacionesService = {
         await fetch(`${window.location.origin}/api/degustaciones`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(item)
+          body: JSON.stringify(normalizedItem)
         });
       }
     } catch (e) {
@@ -885,21 +1186,25 @@ export const degustacionesService = {
   },
 
   /**
-   * Actualiza una degustación existente
+   * Actualiza una degustación existente (ej. cuando Trade Marketing acepta y asigna una promotora)
    */
   async updateDegustacion(updatedItem: DegustacionItem): Promise<void> {
+    const normalizedItem: DegustacionItem = enrichPromoterFields({
+      ...updatedItem,
+      date: normalizeDateToDMY(updatedItem.date)
+    });
     const current = this.getDegustaciones();
     const updated = current.map((item) =>
-      item.id === updatedItem.id ? updatedItem : item
+      item.id === normalizedItem.id ? normalizedItem : item
     );
     this.saveDegustaciones(updated);
 
     try {
       if (typeof window !== 'undefined' && window.location?.origin?.startsWith('http')) {
-        await fetch(`${window.location.origin}/api/degustaciones/${encodeURIComponent(updatedItem.id)}`, {
+        await fetch(`${window.location.origin}/api/degustaciones/${encodeURIComponent(normalizedItem.id)}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updatedItem)
+          body: JSON.stringify(normalizedItem)
         });
       }
     } catch (e) {
@@ -927,18 +1232,18 @@ export const degustacionesService = {
   },
 
   /**
-   * Obtiene degustaciones filtradas por promotora (insensible a acentos, mayúsculas, espacios y stopwords)
+   * Obtiene degustaciones filtradas de forma exacta para una promotora (por nombre y/o correo electrónico)
    */
-  getDegustacionesForPromoter(promoterName: string): DegustacionItem[] {
+  getDegustacionesForPromoter(promoterName: string, promoterEmail?: string): DegustacionItem[] {
     const all = this.getDegustaciones();
-    return all.filter((item) => matchPromoterName(item.promoter, promoterName));
+    return all.filter((item) => matchPromoterAssignment(item, promoterName, promoterEmail));
   },
 
   /**
    * Obtiene la degustación activa en curso o próxima programada para el perfil de una promotora
    */
-  getActiveDegustacionForPromoter(promoterName: string): DegustacionItem | null {
-    const list = this.getDegustacionesForPromoter(promoterName);
+  getActiveDegustacionForPromoter(promoterName: string, promoterEmail?: string): DegustacionItem | null {
+    const list = this.getDegustacionesForPromoter(promoterName, promoterEmail);
     if (list.length === 0) return null;
 
     // Prioridad 1: Actividad en curso

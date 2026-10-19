@@ -33,14 +33,23 @@ import {
   Columns
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import { trazabilidadService, TrazabilidadItem, validateAndOptimizeCoordinates } from '../lib/trazabilidadService';
+import {
+  trazabilidadService,
+  TrazabilidadItem,
+  parseCoordinates,
+  reverseGeocodeCoordinates
+} from '../lib/trazabilidadService';
+import { useAuth } from '../lib/auth';
 import { UserEarthMapModal } from '../components/trazabilidad/UserEarthMapModal';
 import { UsersLiveEarthMap } from '../components/trazabilidad/UsersLiveEarthMap';
 
 export const Trazabilidad: React.FC = () => {
+  const { user } = useAuth();
   const [logs, setLogs] = useState<TrazabilidadItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  const [isSyncingGps, setIsSyncingGps] = useState<boolean>(false);
+  const [gpsBannerMessage, setGpsBannerMessage] = useState<{ type: 'success' | 'warning'; text: string } | null>(null);
 
   // Estados de Filtros (Exactos a la Imagen 2)
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -61,28 +70,125 @@ export const Trazabilidad: React.FC = () => {
   // Modal Google Earth Satelital al Tildar Usuario
   const [selectedUserForEarthModal, setSelectedUserForEarthModal] = useState<TrazabilidadItem | null>(null);
 
-  // Carga inicial y suscripción en tiempo real
+  // Enriquecer registros que tengan coordenadas reales pero aún no tengan dirección exacta
+  const enrichLogsWithRealAddresses = async (items: TrazabilidadItem[]) => {
+    for (const item of items) {
+      if (item.device.coordinates && !item.device.address) {
+        const parsed = parseCoordinates(item.device.coordinates);
+        if (parsed) {
+          const geo = await reverseGeocodeCoordinates(parsed.lat, parsed.lng);
+          if (geo && geo.address) {
+            await trazabilidadService.updateEvent(item.id, {
+              device: {
+                ...item.device,
+                address: geo.address,
+                locationCity: geo.locationCity || item.device.locationCity,
+                lat: parsed.lat,
+                lng: parsed.lng
+              }
+            });
+          }
+        }
+      }
+    }
+  };
+
+  // Carga inicial, sincronización GPS real de la sesión actual y suscripción en tiempo real
   useEffect(() => {
+    let mounted = true;
     setIsLoading(true);
-    trazabilidadService.getAll().then((data) => {
+
+    trazabilidadService.getAll().then(async (data) => {
+      if (!mounted) return;
       setLogs(data);
       setIsLoading(false);
+
+      // Resolver direcciones reales faltantes
+      enrichLogsWithRealAddresses(data);
+
+      // Si hay un usuario autenticado y no tiene un registro con GPS verificado hoy, sincronizar su conexión real
+      const activeEmail = user?.email || 'admin@codi.com';
+      const activeName = activeEmail.toLowerCase().includes('admin')
+        ? 'Admin General'
+        : activeEmail.split('@')[0].toUpperCase();
+      const hasVerifiedSession = data.some(
+        (l) => l.user.email.toLowerCase() === activeEmail.toLowerCase() && l.device.gpsVerified && l.device.address
+      );
+
+      if (!hasVerifiedSession || data.length === 0) {
+        const syncRes = await trazabilidadService.syncCurrentUserGpsLocation({
+          name: activeName,
+          email: activeEmail,
+          role: 'Administrador',
+          isMobilePortal: false
+        });
+        if (!syncRes.success && data.length === 0) {
+          // Si el navegador aún no otorgó permiso GPS, registrar la conexión real por red/IP
+          await trazabilidadService.logConnection(
+            {
+              name: activeName,
+              email: activeEmail,
+              role: 'Administrador'
+            },
+            false
+          );
+        }
+      }
     });
 
     const unsubscribe = trazabilidadService.subscribe((updatedLogs) => {
-      setLogs(updatedLogs);
+      if (mounted) {
+        setLogs(updatedLogs);
+      }
     });
 
-    return () => unsubscribe();
-  }, []);
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
+  }, [user?.email]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
       const data = await trazabilidadService.getAll();
       setLogs(data);
+      await enrichLogsWithRealAddresses(data);
     } finally {
       setTimeout(() => setIsRefreshing(false), 500);
+    }
+  };
+
+  const handleSyncMyRealGps = async () => {
+    setIsSyncingGps(true);
+    setGpsBannerMessage(null);
+    try {
+      const activeEmail = user?.email || 'admin@codi.com';
+      const activeName = activeEmail.toLowerCase().includes('admin')
+        ? 'Admin General'
+        : activeEmail.split('@')[0].toUpperCase();
+
+      const res = await trazabilidadService.syncCurrentUserGpsLocation({
+        name: activeName,
+        email: activeEmail,
+        role: 'Administrador',
+        isMobilePortal: false
+      });
+
+      if (res.success && res.item) {
+        setGpsBannerMessage({
+          type: 'success',
+          text: `GPS Real Verificado (±${res.item.device.accuracy || 10}m): ${res.item.device.address || res.item.device.locationCity} (${res.item.device.coordinates})`
+        });
+      } else {
+        setGpsBannerMessage({
+          type: 'warning',
+          text: res.error || 'No se pudo obtener la ubicación GPS del navegador. Verifica los permisos de ubicación.'
+        });
+      }
+    } finally {
+      setIsSyncingGps(false);
+      setTimeout(() => setGpsBannerMessage(null), 9000);
     }
   };
 
@@ -111,7 +217,7 @@ export const Trazabilidad: React.FC = () => {
   const filteredLogs = useMemo(() => {
     return logs
       .filter((item) => {
-        // 1. Filtro por Búsqueda (nombre, usuario/correo o acción)
+        // 1. Filtro por Búsqueda (nombre, usuario/correo, acción o dirección GPS)
         const matchSearch =
           searchTerm.trim() === '' ||
           item.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -119,7 +225,8 @@ export const Trazabilidad: React.FC = () => {
           item.action.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
           (item.action.details && item.action.details.toLowerCase().includes(searchTerm.toLowerCase())) ||
           item.device.ip.includes(searchTerm) ||
-          item.device.locationCity.toLowerCase().includes(searchTerm.toLowerCase());
+          item.device.locationCity.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (item.device.address && item.device.address.toLowerCase().includes(searchTerm.toLowerCase()));
 
         // 2. Filtro por Fecha (dd/mm/aaaa)
         let matchDate = true;
@@ -185,9 +292,11 @@ export const Trazabilidad: React.FC = () => {
       'Dispositivo': `${item.device.deviceType} (${item.device.os})`,
       'Navegador': item.device.browser,
       'Tipo de Conexión': item.device.connection,
-      'Ubicación / Ciudad': item.device.locationCity,
-      'GPS Verificado': item.device.gpsVerified ? 'SÍ' : 'NO',
-      'Coordenadas': item.device.coordinates || 'N/A'
+      'Ciudad / Estado': item.device.locationCity,
+      'Dirección Física Exacta (GPS)': item.device.address || item.device.locationCity,
+      'GPS Verificado': item.device.gpsVerified ? 'SÍ (Sensor GPS Real)' : 'NO (Red/IP)',
+      'Precisión GPS': item.device.accuracy ? `±${item.device.accuracy}m` : 'N/A',
+      'Coordenadas': item.device.coordinates || 'Sin coordenadas'
     }));
 
     const ws = XLSX.utils.json_to_sheet(exportData);
@@ -219,7 +328,7 @@ export const Trazabilidad: React.FC = () => {
                 </span>
               </div>
               <p className="text-xs text-zinc-400">
-                Supervisión en tiempo real de quién se conecta, identidades activas, dispositivos y geolocalización IP.
+                Supervisión en tiempo real de conexiones, dispositivos, IP real y dirección exacta verificada por GPS.
               </p>
             </div>
           </div>
@@ -273,6 +382,17 @@ export const Trazabilidad: React.FC = () => {
 
           <button
             type="button"
+            onClick={handleSyncMyRealGps}
+            disabled={isSyncingGps}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-blue-950/80 hover:bg-blue-900 border border-blue-500/40 text-blue-200 text-xs font-bold transition-all cursor-pointer shadow-md"
+            title="Capturar ubicación GPS real y dirección física exacta de este dispositivo"
+          >
+            <LocateFixed className={`w-3.5 h-3.5 text-blue-400 ${isSyncingGps ? 'animate-spin' : ''}`} />
+            <span>{isSyncingGps ? 'Obteniendo GPS Real...' : 'Sincronizar Mi GPS Actual'}</span>
+          </button>
+
+          <button
+            type="button"
             onClick={handleRefresh}
             disabled={isRefreshing}
             className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-zinc-200 text-xs font-bold transition-all cursor-pointer shadow-md"
@@ -293,6 +413,29 @@ export const Trazabilidad: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Banner de confirmación de sincronización GPS real */}
+      {gpsBannerMessage && (
+        <div
+          className={`p-3.5 rounded-2xl border text-xs font-medium flex items-center justify-between gap-3 animate-in fade-in duration-200 ${
+            gpsBannerMessage.type === 'success'
+              ? 'bg-emerald-950/70 border-emerald-500/50 text-emerald-200'
+              : 'bg-amber-950/70 border-amber-500/50 text-amber-200'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <LocateFixed className="w-4 h-4 shrink-0" />
+            <span>{gpsBannerMessage.text}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setGpsBannerMessage(null)}
+            className="text-zinc-400 hover:text-white cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Mini Tarjetas de Métricas de Conexión */}
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
@@ -740,22 +883,30 @@ export const Trazabilidad: React.FC = () => {
                         </div>
                       </td>
 
-                      {/* 4. DETALLE DE DISPOSITIVO / CONEXIÓN (EXACTO A LA IMAGEN CON ACCESO A GOOGLE EARTH) */}
+                      {/* 4. DETALLE DE DISPOSITIVO / CONEXIÓN (CON DIRECCIÓN GPS REAL Y ACCESO A GOOGLE EARTH) */}
                       <td className="p-4 align-top">
                         <div className="space-y-1.5 text-xs">
-                          {/* IP y Ciudad */}
+                          {/* IP y Ciudad Real */}
                           <div className="flex items-center gap-2 flex-wrap font-mono">
                             <span className="font-bold text-white bg-black/40 px-2 py-0.5 rounded border border-white/5 text-[11px]">
                               🌐 {item.device.ip}
                             </span>
-                            <span className="text-zinc-400 flex items-center gap-1 text-[11px]">
+                            <span className="text-zinc-300 flex items-center gap-1 text-[11px] font-semibold">
                               <MapPin className="w-3 h-3 text-red-500 shrink-0" />
                               <span>{item.device.locationCity}</span>
                             </span>
                           </div>
 
+                          {/* Dirección Física Exacta resuelta desde el GPS Real */}
+                          {item.device.address && (
+                            <div className="text-[11px] text-emerald-300/95 bg-emerald-950/30 border border-emerald-500/20 rounded-lg px-2.5 py-1 leading-snug max-w-md">
+                              <span className="font-bold text-emerald-400">📍 Dirección GPS: </span>
+                              <span>{item.device.address}</span>
+                            </div>
+                          )}
+
                           {/* Dispositivo y Sistema Operativo */}
-                          <div className="flex items-center gap-2 text-[11px] text-zinc-400 pt-0.5">
+                          <div className="flex items-center gap-2 text-[11px] text-zinc-400 pt-0.5 flex-wrap">
                             <span className="flex items-center gap-1 text-zinc-300 font-medium">
                               {isMobile ? (
                                 <Smartphone className="w-3.5 h-3.5 text-amber-400 shrink-0" />
@@ -765,37 +916,56 @@ export const Trazabilidad: React.FC = () => {
                               <span>{item.device.os}</span>
                             </span>
                             <span className="text-zinc-600">•</span>
-                            <span className="truncate max-w-[150px]">{item.device.browser}</span>
+                            <span className="truncate max-w-[160px]">{item.device.browser}</span>
                             <span className="text-zinc-600">•</span>
                             <span className="text-emerald-400 font-mono text-[10px]">{item.device.connection}</span>
                           </div>
 
-                          {/* Coordenadas GPS Verificadas con Botón Directo para Abrir en Google Earth */}
-                          {item.device.coordinates && (() => {
-                            const opt = validateAndOptimizeCoordinates(item.device.coordinates, item.device.locationCity);
-                            const displayCoord = opt.corrected ? `${opt.lat.toFixed(4)}° N, ${opt.lng.toFixed(4)}° W` : item.device.coordinates;
-
-                            return (
-                              <div className="pt-1 flex items-center gap-2 flex-wrap">
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedUserForEarthModal(item);
-                                  }}
-                                  className="group/gps inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-300 hover:text-white transition-all cursor-pointer shadow-sm text-[10px] font-mono"
-                                  title={`Tildar y ver en Google Earth • ${opt.sectorName}`}
+                          {/* Coordenadas GPS Reales con Botón Directo para Abrir en Google Earth */}
+                          {item.device.coordinates ? (
+                            <div className="pt-1 flex items-center gap-2 flex-wrap">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedUserForEarthModal(item);
+                                }}
+                                className={`group/gps inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border transition-all cursor-pointer shadow-sm text-[10px] font-mono ${
+                                  item.device.gpsVerified
+                                    ? 'bg-emerald-950/80 hover:bg-emerald-900 border-emerald-500/40 text-emerald-300 hover:text-white'
+                                    : 'bg-blue-950/70 hover:bg-blue-900 border-blue-500/40 text-blue-300 hover:text-white'
+                                }`}
+                                title={`Abrir en Google Earth • ${item.device.address || item.device.locationCity}`}
+                              >
+                                <Globe2
+                                  className={`w-3.5 h-3.5 group-hover/gps:scale-110 group-hover/gps:text-white transition-transform ${
+                                    item.device.gpsVerified ? 'text-emerald-400 animate-pulse' : 'text-blue-400'
+                                  }`}
+                                />
+                                <span className="font-bold">
+                                  {item.device.gpsVerified
+                                    ? `GPS Verificado${item.device.accuracy ? ` (±${item.device.accuracy}m)` : ''}:`
+                                    : 'Ubicación Red/IP:'}
+                                </span>
+                                <span>{item.device.coordinates}</span>
+                                <span
+                                  className={`text-[9px] px-1 py-0.2 rounded border ${
+                                    item.device.gpsVerified
+                                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                                      : 'bg-blue-500/20 text-blue-300 border-blue-500/30'
+                                  }`}
                                 >
-                                  <Globe2 className="w-3.5 h-3.5 text-emerald-400 group-hover/gps:scale-110 group-hover/gps:text-white transition-transform animate-pulse" />
-                                  <span className="font-bold">GPS Verificado:</span>
-                                  <span>{displayCoord}</span>
-                                  <span className="text-[9px] bg-emerald-500/20 text-emerald-300 px-1 py-0.2 rounded border border-emerald-500/30">
-                                    Google Earth ↗
-                                  </span>
-                                </button>
-                              </div>
-                            );
-                          })()}
+                                  Google Earth ↗
+                                </span>
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="pt-1 flex items-center gap-2">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-zinc-900 border border-white/10 text-zinc-400 text-[10px] font-mono">
+                                Sin permiso GPS en navegador • Haz clic en &quot;Sincronizar Mi GPS Actual&quot;
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -891,7 +1061,7 @@ export const Trazabilidad: React.FC = () => {
               {/* Sección 3: Dispositivo, Red & Ubicación */}
               <div className="p-4 rounded-2xl bg-[#17181c] border border-white/5 space-y-2.5 font-mono">
                 <h4 className="text-[11px] font-black uppercase text-zinc-400 tracking-wider font-sans">
-                  Detalle de Red, Dispositivo & Ubicación
+                  Detalle de Red, Dispositivo & Ubicación GPS Real
                 </h4>
                 <div className="grid grid-cols-2 gap-2 text-[11px]">
                   <div className="p-2 rounded-lg bg-black/30 border border-white/5">
@@ -910,12 +1080,18 @@ export const Trazabilidad: React.FC = () => {
                     <span className="text-zinc-500 block text-[10px]">Navegador Web</span>
                     <strong className="text-zinc-200 truncate block">{selectedLog.device.browser}</strong>
                   </div>
-                  <div className="col-span-2 p-2 rounded-lg bg-black/30 border border-white/5">
-                    <span className="text-zinc-500 block text-[10px]">Ubicación Geográfica</span>
-                    <div className="flex items-center justify-between text-zinc-200">
-                      <span>📍 {selectedLog.device.locationCity}</span>
+                  <div className="col-span-2 p-2.5 rounded-lg bg-black/30 border border-white/5 space-y-1">
+                    <span className="text-zinc-500 block text-[10px]">Dirección Física Exacta (GPS)</span>
+                    <div className="text-emerald-300 font-bold">
+                      📍 {selectedLog.device.address || selectedLog.device.locationCity}
+                    </div>
+                    <div className="flex items-center justify-between text-zinc-400 text-[10px] pt-1 border-t border-white/5">
+                      <span>Ciudad/Estado: {selectedLog.device.locationCity}</span>
                       {selectedLog.device.coordinates && (
-                        <span className="text-zinc-500 text-[10px]">({selectedLog.device.coordinates})</span>
+                        <span className="text-white font-bold">
+                          {selectedLog.device.coordinates}
+                          {selectedLog.device.accuracy ? ` (±${selectedLog.device.accuracy}m)` : ''}
+                        </span>
                       )}
                     </div>
                   </div>

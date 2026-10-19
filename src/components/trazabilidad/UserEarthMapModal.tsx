@@ -21,7 +21,12 @@ import {
   LocateFixed
 } from 'lucide-react';
 import L from 'leaflet';
-import { TrazabilidadItem, parseCoordinates, validateAndOptimizeCoordinates } from '../../lib/trazabilidadService';
+import {
+  TrazabilidadItem,
+  parseCoordinates,
+  reverseGeocodeCoordinates,
+  trazabilidadService
+} from '../../lib/trazabilidadService';
 
 interface UserEarthMapModalProps {
   log: TrazabilidadItem | null;
@@ -70,20 +75,49 @@ export const UserEarthMapModal: React.FC<UserEarthMapModalProps> = ({ log, isOpe
   const [copiedCoords, setCopiedCoords] = useState(false);
   const [isPinging, setIsPinging] = useState(false);
   const [zoomLevel, setZoomLevel] = useState<number>(18);
+  const [resolvedAddress, setResolvedAddress] = useState<string>('');
 
-  // Validación y Optimización Submétrica en Tierra Firme (Garantiza 0% de ubicaciones en agua)
-  const locationCheck = log
-    ? validateAndOptimizeCoordinates(log.device.coordinates, log.device.locationCity)
-    : { lat: 10.6542, lng: -71.6241, corrected: false, sectorName: 'Codizulca Central', reason: '' };
+  const parsedCoords = log
+    ? typeof log.device.lat === 'number' && typeof log.device.lng === 'number'
+      ? { lat: log.device.lat, lng: log.device.lng }
+      : parseCoordinates(log.device.coordinates)
+    : null;
 
-  const lat = locationCheck.lat;
-  const lng = locationCheck.lng;
-  const isCorrected = locationCheck.corrected;
-  const sectorName = locationCheck.sectorName;
+  const lat = parsedCoords ? parsedCoords.lat : 0;
+  const lng = parsedCoords ? parsedCoords.lng : 0;
+  const hasRealCoordinates = Boolean(parsedCoords);
+  const sectorName =
+    resolvedAddress ||
+    log?.device.address ||
+    log?.device.locationCity ||
+    (hasRealCoordinates ? `${lat.toFixed(6)}°, ${lng.toFixed(6)}°` : 'Sin coordenadas GPS');
+
+  // Resolver dirección física exacta desde el GPS mediante geocodificación inversa si aún no está guardada
+  useEffect(() => {
+    if (!isOpen || !log) return;
+    setResolvedAddress(log.device.address || '');
+
+    if (hasRealCoordinates && !log.device.address) {
+      reverseGeocodeCoordinates(lat, lng).then((geo) => {
+        if (geo && geo.address) {
+          setResolvedAddress(geo.address);
+          trazabilidadService.updateEvent(log.id, {
+            device: {
+              ...log.device,
+              address: geo.address,
+              locationCity: geo.locationCity || log.device.locationCity,
+              lat,
+              lng
+            }
+          });
+        }
+      });
+    }
+  }, [isOpen, log, hasRealCoordinates, lat, lng]);
 
   // Initialize or re-render map when modal opens or log changes
   useEffect(() => {
-    if (!isOpen || !log) return;
+    if (!isOpen || !log || !hasRealCoordinates) return;
 
     const timer = setTimeout(() => {
       if (!mapContainerRef.current) return;
@@ -153,24 +187,15 @@ export const UserEarthMapModal: React.FC<UserEarthMapModalProps> = ({ log, isOpe
 
       const marker = L.marker([lat, lng], { icon: userIcon }).addTo(map);
 
-      // Geofence / Precision range circle (35 meters)
+      // Precision range circle based on real GPS accuracy
+      const accRadius = Math.max(15, Math.min(200, log.device.accuracy || 25));
       L.circle([lat, lng], {
-        radius: 35,
+        radius: accRadius,
         color: beaconColor,
         fillColor: beaconColor,
         fillOpacity: 0.18,
         weight: 2,
         dashArray: '4, 4'
-      }).addTo(map);
-
-      // Outer safety perimeter (80 meters)
-      L.circle([lat, lng], {
-        radius: 80,
-        color: beaconColor,
-        fillColor: 'transparent',
-        weight: 1,
-        dashArray: '2, 6',
-        opacity: 0.4
       }).addTo(map);
 
       // Interactive Popup
@@ -192,7 +217,7 @@ export const UserEarthMapModal: React.FC<UserEarthMapModalProps> = ({ log, isOpe
             📍 ${sectorName}
           </div>
           <div style="font-size: 10px; font-family: monospace; color: #444; margin-top: 2px;">
-            ${lat.toFixed(4)}°, ${lng.toFixed(4)}° • Tierra Firme Validada
+            ${lat.toFixed(6)}°, ${lng.toFixed(6)}° • ${log.device.gpsVerified ? `GPS Verificado (±${log.device.accuracy || 10}m)` : 'Ubicación Red/IP'}
           </div>
         </div>
       `).openPopup();
@@ -205,7 +230,7 @@ export const UserEarthMapModal: React.FC<UserEarthMapModalProps> = ({ log, isOpe
         mapInstanceRef.current = null;
       }
     };
-  }, [isOpen, log, activeLayer, lat, lng, sectorName]);
+  }, [isOpen, log, activeLayer, lat, lng, sectorName, hasRealCoordinates]);
 
   // Handle Layer switch dynamically
   const handleChangeLayer = (layerKey: MapLayerType) => {
@@ -228,7 +253,7 @@ export const UserEarthMapModal: React.FC<UserEarthMapModalProps> = ({ log, isOpe
 
   // Recenter map
   const handleRecenter = () => {
-    if (!mapInstanceRef.current) return;
+    if (!mapInstanceRef.current || !hasRealCoordinates) return;
     mapInstanceRef.current.flyTo([lat, lng], 18, { duration: 1.2 });
   };
 
@@ -240,13 +265,28 @@ export const UserEarthMapModal: React.FC<UserEarthMapModalProps> = ({ log, isOpe
     setTimeout(() => setCopiedCoords(false), 2000);
   };
 
-  // Simulate instant GPS ping refresh
-  const handleSimulatePing = () => {
+  // Refrescar dirección o posición GPS real
+  const handleSimulatePing = async () => {
+    if (!log) return;
     setIsPinging(true);
-    setTimeout(() => {
-      setIsPinging(false);
+    try {
+      if (hasRealCoordinates) {
+        const geo = await reverseGeocodeCoordinates(lat, lng);
+        if (geo && geo.address) {
+          setResolvedAddress(geo.address);
+          await trazabilidadService.updateEvent(log.id, {
+            device: {
+              ...log.device,
+              address: geo.address,
+              locationCity: geo.locationCity || log.device.locationCity
+            }
+          });
+        }
+      }
       handleRecenter();
-    }, 600);
+    } finally {
+      setIsPinging(false);
+    }
   };
 
   if (!isOpen || !log) return null;
@@ -499,24 +539,28 @@ export const UserEarthMapModal: React.FC<UserEarthMapModalProps> = ({ log, isOpe
             <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-1.5">
               <span className="text-[10px] font-black uppercase text-zinc-400 tracking-wider font-sans flex items-center gap-1.5">
                 <Radio className="w-3 h-3 text-emerald-400 animate-pulse" />
-                TELEMETRÍA GPS DE CAMPO
+                TELEMETRÍA GPS DE CONEXIÓN
               </span>
-              <span className="text-[10px] text-emerald-400 font-bold">PRECISIÓN: ±3m</span>
+              <span className="text-[10px] text-emerald-400 font-bold">
+                {log.device.gpsVerified
+                  ? `PRECISIÓN: ±${log.device.accuracy || 10}m`
+                  : 'ORIGEN: RED / IP'}
+              </span>
             </div>
 
             <div className="grid grid-cols-2 gap-2 text-[11px] pt-1">
               <div className="col-span-2 p-1.5 rounded-lg bg-emerald-950/40 border border-emerald-500/30">
                 <span className="text-[9px] text-emerald-400 block font-sans font-black uppercase">
-                  PUNTO DE VENTA / CORREDOR COMERCIAL
+                  DIRECCIÓN FÍSICA EXACTA (GEOCODIFICACIÓN INVERSA)
                 </span>
-                <span className="text-white font-bold block text-[11px]">{sectorName}</span>
+                <span className="text-white font-bold block text-[11px] leading-snug">{sectorName}</span>
               </div>
               <div>
-                <span className="text-[10px] text-zinc-500 block">COORDENADAS</span>
-                <span className="text-white font-bold">{lat.toFixed(4)}°, {lng.toFixed(4)}°</span>
+                <span className="text-[10px] text-zinc-500 block">COORDENADAS EXACTAS</span>
+                <span className="text-white font-bold">{lat.toFixed(6)}°, {lng.toFixed(6)}°</span>
               </div>
               <div>
-                <span className="text-[10px] text-zinc-500 block">CIUDAD / SECTOR</span>
+                <span className="text-[10px] text-zinc-500 block">CIUDAD / ESTADO</span>
                 <span className="text-zinc-200 truncate block">{log.device.locationCity}</span>
               </div>
               <div>

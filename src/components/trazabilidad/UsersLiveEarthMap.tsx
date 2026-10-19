@@ -68,20 +68,24 @@ export const UsersLiveEarthMap: React.FC<UsersLiveEarthMapProps> = ({ logs, onSe
   const [searchFilter, setSearchFilter] = useState<string>('');
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
 
-  // Filter items that have coordinates and deduplicate by latest action per user with land optimization
+  // Filter items that have real coordinates and deduplicate by latest action per user
   const mappedUsers = useMemo(() => {
     const userMap = new Map<string, { log: TrazabilidadItem; lat: number; lng: number; sectorName: string }>();
 
     for (const item of logs) {
-      const coords = validateAndOptimizeCoordinates(item.device.coordinates, item.device.locationCity);
-      if (coords) {
+      const coords = validateAndOptimizeCoordinates(
+        item.device.coordinates,
+        item.device.locationCity,
+        item.device.address
+      );
+      if (coords.hasCoordinates) {
         // Only keep the most recent event for each user
         if (!userMap.has(item.user.email)) {
           userMap.set(item.user.email, {
             log: item,
             lat: coords.lat,
             lng: coords.lng,
-            sectorName: coords.sectorName
+            sectorName: item.device.address || coords.sectorName
           });
         }
       }
@@ -99,6 +103,7 @@ export const UsersLiveEarthMap: React.FC<UsersLiveEarthMapProps> = ({ logs, onSe
         u.log.user.name.toLowerCase().includes(term) ||
         u.log.user.email.toLowerCase().includes(term) ||
         u.log.device.locationCity.toLowerCase().includes(term) ||
+        (u.log.device.address && u.log.device.address.toLowerCase().includes(term)) ||
         u.log.user.role.toLowerCase().includes(term)
     );
   }, [mappedUsers, searchFilter]);

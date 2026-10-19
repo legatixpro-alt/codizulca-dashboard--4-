@@ -3683,18 +3683,191 @@ Responde con un JSON estructurado con:
     }
   });
   const trazabilidadFilePath = import_path2.default.join(process.cwd(), "data_trazabilidad.json");
+  const FAKE_SEED_TRAZABILIDAD_IDS = /* @__PURE__ */ new Set([
+    "TRZ-2026-001",
+    "TRZ-2026-002",
+    "TRZ-2026-003",
+    "TRZ-2026-004",
+    "TRZ-2026-005",
+    "TRZ-2026-006",
+    "TRZ-2026-007",
+    "TRZ-2026-008",
+    "TRZ-2026-009",
+    "TRZ-2026-010",
+    "TRZ-2026-011",
+    "TRZ-2026-012"
+  ]);
+  const cleanTrazabilidadRecord = (rec) => {
+    if (!rec || !rec.id) return null;
+    if (FAKE_SEED_TRAZABILIDAD_IDS.has(String(rec.id))) return null;
+    if (rec.device) {
+      if (!rec.device.gpsVerified && rec.device.coordinates && String(rec.device.coordinates).includes("10.6542") && String(rec.device.coordinates).includes("-71.6241") && rec.device.locationSource !== "ip") {
+        const cleanedDevice = { ...rec.device };
+        delete cleanedDevice.coordinates;
+        delete cleanedDevice.lat;
+        delete cleanedDevice.lng;
+        return { ...rec, device: cleanedDevice };
+      }
+    }
+    return rec;
+  };
   let memoryTrazabilidad = [];
   try {
     if (import_fs2.default.existsSync(trazabilidadFilePath)) {
-      memoryTrazabilidad = JSON.parse(import_fs2.default.readFileSync(trazabilidadFilePath, "utf8"));
+      const rawTraz = JSON.parse(import_fs2.default.readFileSync(trazabilidadFilePath, "utf8"));
+      if (Array.isArray(rawTraz)) {
+        memoryTrazabilidad = rawTraz.map(cleanTrazabilidadRecord).filter(Boolean);
+        if (memoryTrazabilidad.length !== rawTraz.length) {
+          import_fs2.default.writeFileSync(trazabilidadFilePath, JSON.stringify(memoryTrazabilidad, null, 2), "utf8");
+        }
+      }
     }
   } catch (e) {
     console.warn("[Trazabilidad] Error leyendo archivo de trazabilidad:", e);
   }
+  const reverseGeoCache = /* @__PURE__ */ new Map();
+  app.get("/api/geo/reverse", async (req, res) => {
+    const lat = parseFloat(String(req.query.lat || ""));
+    const lng = parseFloat(String(req.query.lng || ""));
+    if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      return res.status(400).json({ error: "Coordenadas lat/lng inv\xE1lidas" });
+    }
+    const cacheKey = `${lat.toFixed(5)},${lng.toFixed(5)}`;
+    const cached = reverseGeoCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < 1e3 * 60 * 60 * 12) {
+      return res.json(cached);
+    }
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 6e3);
+      const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}&zoom=18&addressdetails=1&accept-language=es`;
+      const nomRes = await fetch(nominatimUrl, {
+        headers: {
+          "User-Agent": "CodizulcaFieldTrazabilidad/3.2 (soporte@codizulca.com)",
+          "Accept-Language": "es"
+        },
+        signal: controller.signal
+      });
+      clearTimeout(timeout);
+      if (nomRes.ok) {
+        const data = await nomRes.json();
+        const addr = data?.address || {};
+        const road = addr.road || addr.pedestrian || addr.footway || addr.street || addr.highway || "";
+        const houseNumber = addr.house_number ? ` #${addr.house_number}` : "";
+        const placeName = data?.name && data.name !== road ? data.name : addr.amenity || addr.shop || addr.building || addr.commercial || "";
+        const suburb = addr.neighbourhood || addr.suburb || addr.quarter || addr.residential || addr.city_district || "";
+        const municipality = addr.municipality || addr.county || "";
+        const city = addr.city || addr.town || addr.village || municipality || "";
+        const state = addr.state || "";
+        const streetParts = [
+          placeName,
+          road ? `${road}${houseNumber}` : "",
+          suburb,
+          municipality && municipality !== city ? municipality : ""
+        ].filter(Boolean);
+        const cityStateParts = [city, state].filter(Boolean);
+        const locationCity = cityStateParts.length > 0 ? cityStateParts.join(", ") : addr.country || "Ubicaci\xF3n GPS";
+        const exactAddress = streetParts.length > 0 ? `${streetParts.join(", ")}${locationCity ? ` \u2022 ${locationCity}` : ""}` : data?.display_name || locationCity;
+        const result = {
+          address: exactAddress,
+          sector: streetParts.slice(0, 2).join(", ") || suburb || city || "Ubicaci\xF3n GPS Verificada",
+          city: city || state || "",
+          state: state || "",
+          locationCity,
+          displayName: data?.display_name || exactAddress,
+          timestamp: Date.now()
+        };
+        reverseGeoCache.set(cacheKey, result);
+        return res.json(result);
+      }
+    } catch (err) {
+    }
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5e3);
+      const bdcUrl = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${encodeURIComponent(lat)}&longitude=${encodeURIComponent(lng)}&localityLanguage=es`;
+      const bdcRes = await fetch(bdcUrl, { signal: controller.signal });
+      clearTimeout(timeout);
+      if (bdcRes.ok) {
+        const data = await bdcRes.json();
+        const locality = data?.locality || "";
+        const city = data?.city || locality || "";
+        const state = data?.principalSubdivision || "";
+        const informative = Array.isArray(data?.localityInfo?.administrative) ? data.localityInfo.administrative.filter((x) => x?.name && (x.adminLevel >= 6 || x.order >= 5)).map((x) => x.name) : [];
+        const uniqueParts = Array.from(new Set([locality, ...informative, city, state].filter(Boolean)));
+        const locationCity = [city, state].filter(Boolean).join(", ") || data?.countryName || "Ubicaci\xF3n GPS";
+        const exactAddress = uniqueParts.join(", ") || locationCity;
+        const result = {
+          address: exactAddress,
+          sector: uniqueParts.slice(0, 2).join(", ") || locationCity,
+          city,
+          state,
+          locationCity,
+          displayName: exactAddress,
+          timestamp: Date.now()
+        };
+        reverseGeoCache.set(cacheKey, result);
+        return res.json(result);
+      }
+    } catch (err) {
+    }
+    return res.status(502).json({ error: "No se pudo resolver la geocodificaci\xF3n inversa en este momento" });
+  });
+  app.get("/api/geo/client-info", async (req, res) => {
+    try {
+      const forwarded = String(req.headers["x-forwarded-for"] || req.headers["cf-connecting-ip"] || req.headers["x-real-ip"] || "");
+      let rawIp = forwarded.split(",")[0].trim() || req.socket.remoteAddress || "";
+      if (rawIp.startsWith("::ffff:")) rawIp = rawIp.replace("::ffff:", "");
+      const isPrivateOrLocal = !rawIp || rawIp === "127.0.0.1" || rawIp === "::1" || rawIp.startsWith("10.") || rawIp.startsWith("192.168.") || /^172\.(1[6-9]|2\d|3[0-1])\./.test(rawIp);
+      const lookupTarget = isPrivateOrLocal ? "" : rawIp;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5e3);
+      const ipWhoRes = await fetch(`https://ipwho.is/${encodeURIComponent(lookupTarget)}?lang=es`, {
+        signal: controller.signal
+      });
+      clearTimeout(timeout);
+      if (ipWhoRes.ok) {
+        const ipData = await ipWhoRes.json();
+        if (ipData && ipData.success !== false) {
+          const city = ipData.city || "";
+          const region = ipData.region || "";
+          const locationCity = [city, region].filter(Boolean).join(", ") || ipData.country || "Red Verificada";
+          const isp = ipData.connection?.isp || ipData.connection?.org || "";
+          return res.json({
+            ip: ipData.ip || rawIp || "IP Verificada",
+            city,
+            region,
+            locationCity,
+            isp,
+            lat: typeof ipData.latitude === "number" ? ipData.latitude : void 0,
+            lng: typeof ipData.longitude === "number" ? ipData.longitude : void 0
+          });
+        }
+      }
+      return res.json({
+        ip: rawIp || "Red Local",
+        city: "",
+        region: "",
+        locationCity: "Conexi\xF3n Directa",
+        isp: ""
+      });
+    } catch (err) {
+      return res.json({
+        ip: "Red Activa",
+        city: "",
+        region: "",
+        locationCity: "Conexi\xF3n Directa",
+        isp: ""
+      });
+    }
+  });
   app.get("/api/trazabilidad", (req, res) => {
     try {
       if (import_fs2.default.existsSync(trazabilidadFilePath)) {
-        memoryTrazabilidad = JSON.parse(import_fs2.default.readFileSync(trazabilidadFilePath, "utf8"));
+        const disk = JSON.parse(import_fs2.default.readFileSync(trazabilidadFilePath, "utf8"));
+        if (Array.isArray(disk)) {
+          memoryTrazabilidad = disk.map(cleanTrazabilidadRecord).filter(Boolean);
+        }
       }
     } catch (e) {
     }
@@ -3702,7 +3875,7 @@ Responde con un JSON estructurado con:
   });
   app.post("/api/trazabilidad", (req, res) => {
     try {
-      const logItem = req.body;
+      const logItem = cleanTrazabilidadRecord(req.body);
       if (!logItem || !logItem.id) {
         return res.status(400).json({ error: "Datos de trazabilidad incompletos" });
       }
@@ -3715,6 +3888,52 @@ Responde con un JSON estructurado con:
       res.status(201).json(logItem);
     } catch (err) {
       res.status(500).json({ error: "Error al registrar trazabilidad", details: err?.message });
+    }
+  });
+  app.put("/api/trazabilidad/:id", (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body || {};
+      let updatedItem = null;
+      memoryTrazabilidad = memoryTrazabilidad.map((item) => {
+        if (item.id === id) {
+          updatedItem = {
+            ...item,
+            ...updates,
+            user: updates.user ? { ...item.user, ...updates.user } : item.user,
+            action: updates.action ? { ...item.action, ...updates.action } : item.action,
+            device: updates.device ? { ...item.device, ...updates.device } : item.device
+          };
+          return updatedItem;
+        }
+        return item;
+      });
+      if (!updatedItem && updates.id) {
+        updatedItem = cleanTrazabilidadRecord(updates);
+        if (updatedItem) {
+          memoryTrazabilidad = [updatedItem, ...memoryTrazabilidad];
+        }
+      }
+      try {
+        import_fs2.default.writeFileSync(trazabilidadFilePath, JSON.stringify(memoryTrazabilidad, null, 2), "utf8");
+      } catch (err) {
+      }
+      res.json(updatedItem || { success: true, id });
+    } catch (err) {
+      res.status(500).json({ error: "Error al actualizar trazabilidad", details: err?.message });
+    }
+  });
+  app.delete("/api/trazabilidad/:id", (req, res) => {
+    try {
+      const { id } = req.params;
+      memoryTrazabilidad = memoryTrazabilidad.filter((t) => t.id !== id);
+      try {
+        import_fs2.default.writeFileSync(trazabilidadFilePath, JSON.stringify(memoryTrazabilidad, null, 2), "utf8");
+      } catch (err) {
+      }
+      res.json({ success: true, id });
+    } catch (err) {
+      res.status(500).json({ error: "Error al eliminar registro de trazabilidad", details: err?.message });
     }
   });
   const campoScansPath = import_path2.default.join(process.cwd(), "data_shelf_scans.json");
@@ -3816,36 +4035,246 @@ Responde con un JSON estructurado con:
     }
   });
   const degustacionesPath = import_path2.default.join(process.cwd(), "data_degustaciones.json");
+  const TEST_DEGUSTACION_IDS = /* @__PURE__ */ new Set([
+    "DEG-EVENT-TEST",
+    "DEG-REASSIGN-01",
+    "DEG-PROG-02",
+    "DEG-SCHED-01",
+    "DEG-TEST-SYNC-001",
+    "TEST-DEG-001",
+    "OFFLINE-ITEM-1",
+    "NON-EXISTENT-999"
+  ]);
+  const isTestOrFakeDegustacion = (d) => {
+    if (!d || !d.id) return true;
+    const idStr = String(d.id);
+    if (TEST_DEGUSTACION_IDS.has(idStr) || idStr.includes("DEG-2026-W4-")) return true;
+    if (d.activity && String(d.activity).includes("Gran Impulso Mortadela Tapara")) return true;
+    return false;
+  };
+  const formatServerDateDMY = (rawDate) => {
+    if (!rawDate) return "";
+    const clean = String(rawDate).trim().split("T")[0].trim();
+    if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(clean)) {
+      const [yyyy, mm, dd] = clean.split("-");
+      return `${dd.padStart(2, "0")}/${mm.padStart(2, "0")}/${yyyy}`;
+    }
+    if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(clean)) {
+      const [dd, mm, yyyy] = clean.split("/");
+      return `${dd.padStart(2, "0")}/${mm.padStart(2, "0")}/${yyyy}`;
+    }
+    if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(clean)) {
+      const [dd, mm, yyyy] = clean.split("-");
+      return `${dd.padStart(2, "0")}/${mm.padStart(2, "0")}/${yyyy}`;
+    }
+    return clean;
+  };
   let memoryDegustaciones = [];
+  const deletedDegustacionIds = /* @__PURE__ */ new Set();
+  let lastSupabaseDegustacionSync = 0;
   try {
     if (import_fs2.default.existsSync(degustacionesPath)) {
-      memoryDegustaciones = JSON.parse(import_fs2.default.readFileSync(degustacionesPath, "utf8"));
+      const rawDisk = JSON.parse(import_fs2.default.readFileSync(degustacionesPath, "utf8"));
+      if (Array.isArray(rawDisk)) {
+        const cleaned = rawDisk.filter((d) => !isTestOrFakeDegustacion(d));
+        memoryDegustaciones = cleaned;
+        if (cleaned.length !== rawDisk.length) {
+          import_fs2.default.writeFileSync(degustacionesPath, JSON.stringify(cleaned, null, 2), "utf8");
+        }
+      }
     }
   } catch (e) {
     console.warn("[Degustaciones] Error leyendo data_degustaciones.json:", e);
   }
-  app.get("/api/degustaciones", (req, res) => {
+  const syncVendorTastingsFromSupabase = async (forceRefresh = false) => {
+    const now = Date.now();
+    if (!forceRefresh && now - lastSupabaseDegustacionSync < 3e4 && memoryDegustaciones.length > 0) {
+      return memoryDegustaciones;
+    }
+    const supabaseUrl = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "https://uterioexpfweghxfbvoa.supabase.co/rest/v1/").replace(/\/?$/, "/");
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0ZXJpb2V4cGZ3ZWdoeGZidm9hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5NTg3ODYsImV4cCI6MjEwMzUzNDc4Nn0.bZnN4vrXUDlcoIaI7l39O-bU4GQp05SvJdio_cn6niI";
     try {
-      if (import_fs2.default.existsSync(degustacionesPath)) {
-        memoryDegustaciones = JSON.parse(import_fs2.default.readFileSync(degustacionesPath, "utf8"));
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8e3);
+      const response = await fetch(`${supabaseUrl}surveys?select=*&order=date.desc&limit=1000`, {
+        headers: {
+          apikey: supabaseKey,
+          Authorization: `Bearer ${supabaseKey}`
+        },
+        signal: controller.signal
+      });
+      clearTimeout(timeout);
+      if (response.ok) {
+        const surveys = await response.json();
+        if (Array.isArray(surveys)) {
+          const remoteVendorTastings = [];
+          for (const s of surveys) {
+            try {
+              let c = null;
+              if (typeof s.comments === "string" && s.comments.startsWith("{")) {
+                c = JSON.parse(s.comments);
+              }
+              if (c && (c.degustacionId || c.vendedor || c.salesRep || c.source === "vendedor_app")) {
+                const formattedDate = formatServerDateDMY(c.date || s.date);
+                const vendorName = String(c.vendedor || c.salesRep || s.promoter || "VENDEDOR COMERCIAL").trim();
+                const storeName = String(s.store || c.client || c.cliente || c.store || "Punto de Venta").trim();
+                const productName = String(c.product || c.products || s.product || "MORTADELA").trim();
+                const rawId = String(c.degustacionId || c.id || s.id);
+                const id = rawId.startsWith("DEG-") ? rawId : `DEG-${rawId}`;
+                if (deletedDegustacionIds.has(id)) continue;
+                const target = Number(c.personas || c.personasEstimadas || c.target) || 150;
+                const time = c.time || c.shift || (c.turno === "TARDE" ? "02:00 PM - 07:00 PM" : "09:00 AM - 01:00 PM");
+                const contact = c.contactoPunto ? `${c.contactoPunto}${c.telefonoContacto ? ` (${c.telefonoContacto})` : ""}` : "";
+                const notes = c.notes || c.originalComments || `Solicitud enviada por ${vendorName} desde la app m\xF3vil.`;
+                let status = "scheduled";
+                const rawStatus = String(c.status || c.estado || "").toLowerCase();
+                if (rawStatus.includes("completad") || rawStatus.includes("realizad") || rawStatus === "completed") {
+                  status = "completed";
+                } else if (rawStatus.includes("curso") || rawStatus.includes("progreso") || rawStatus === "in_progress") {
+                  status = "in_progress";
+                } else if (rawStatus.includes("cancelad") || rawStatus.includes("rechazad") || rawStatus === "cancelled") {
+                  status = "cancelled";
+                }
+                remoteVendorTastings.push({
+                  id,
+                  date: formattedDate,
+                  time,
+                  activity: `Degustaci\xF3n ${productName} - Solicitada por ${vendorName}`,
+                  product: productName,
+                  promoter: c.promotoraAsignada || "POR ASIGNAR (Trade Marketing)",
+                  promoterEmail: c.promotoraEmail || "",
+                  promoterId: c.promotoraId || "",
+                  promoterRole: c.promoterRole || (c.promoterType === "Eventual" ? "Promotora" : "Impulsadora"),
+                  client: storeName,
+                  zone: c.ruta || "Ruta Comercial",
+                  vendedor: vendorName,
+                  source: "vendedor_app",
+                  status,
+                  delivered: status === "completed" ? target : 0,
+                  target,
+                  acceptanceRate: status === "completed" ? s.rating ? s.rating * 20 : 95 : 0,
+                  comments: contact ? `Contacto en tienda: ${contact}. ${notes}` : notes
+                });
+              }
+            } catch (err) {
+            }
+          }
+          if (remoteVendorTastings.length > 0) {
+            const localById = /* @__PURE__ */ new Map();
+            for (const loc of memoryDegustaciones) {
+              if (!isTestOrFakeDegustacion(loc) && !deletedDegustacionIds.has(loc.id)) {
+                localById.set(loc.id, loc);
+              }
+            }
+            const seenKey = /* @__PURE__ */ new Set();
+            const mergedList = [];
+            const remoteIds = new Set(remoteVendorTastings.map((r) => r.id));
+            for (const loc of memoryDegustaciones) {
+              if (!isTestOrFakeDegustacion(loc) && !deletedDegustacionIds.has(loc.id) && !remoteIds.has(loc.id)) {
+                const key = `${loc.date}-${loc.client}-${loc.product}-${loc.vendedor}`;
+                if (!seenKey.has(key)) {
+                  seenKey.add(key);
+                  mergedList.push(loc);
+                }
+              }
+            }
+            for (const rem of remoteVendorTastings) {
+              const key = `${rem.date}-${rem.client}-${rem.product}-${rem.vendedor}`;
+              if (seenKey.has(key)) continue;
+              seenKey.add(key);
+              const existingLocal = localById.get(rem.id);
+              if (existingLocal) {
+                const hasLocalPromoter = existingLocal.promoter && existingLocal.promoter !== "POR ASIGNAR (Trade Marketing)";
+                mergedList.push({
+                  ...rem,
+                  promoter: hasLocalPromoter ? existingLocal.promoter : rem.promoter,
+                  promoterEmail: hasLocalPromoter ? existingLocal.promoterEmail || rem.promoterEmail || "" : rem.promoterEmail || "",
+                  promoterId: hasLocalPromoter ? existingLocal.promoterId || rem.promoterId || "" : rem.promoterId || "",
+                  promoterRole: existingLocal.promoterRole || rem.promoterRole,
+                  status: existingLocal.status !== "scheduled" ? existingLocal.status : rem.status,
+                  delivered: existingLocal.delivered > 0 ? existingLocal.delivered : rem.delivered,
+                  acceptanceRate: existingLocal.acceptanceRate > 0 ? existingLocal.acceptanceRate : rem.acceptanceRate,
+                  comments: existingLocal.comments || rem.comments
+                });
+              } else {
+                mergedList.push(rem);
+              }
+            }
+            memoryDegustaciones = mergedList;
+            lastSupabaseDegustacionSync = now;
+            try {
+              import_fs2.default.writeFileSync(degustacionesPath, JSON.stringify(memoryDegustaciones, null, 2), "utf8");
+            } catch (e) {
+            }
+          }
+        }
       }
     } catch (e) {
     }
-    res.json(memoryDegustaciones);
-  });
-  app.post("/api/degustaciones", (req, res) => {
+    return memoryDegustaciones;
+  };
+  app.get("/api/degustaciones", async (req, res) => {
     try {
-      const item = req.body;
-      if (!item.date || !item.client) {
+      if (import_fs2.default.existsSync(degustacionesPath)) {
+        const diskData = JSON.parse(import_fs2.default.readFileSync(degustacionesPath, "utf8"));
+        if (Array.isArray(diskData)) {
+          memoryDegustaciones = diskData.filter((d) => !isTestOrFakeDegustacion(d) && !deletedDegustacionIds.has(d.id));
+        }
+      }
+      const forceSync = req.query.sync === "true";
+      const synced = await syncVendorTastingsFromSupabase(forceSync);
+      res.json(synced);
+    } catch (e) {
+      res.json(memoryDegustaciones);
+    }
+  });
+  app.post("/api/degustaciones", async (req, res) => {
+    try {
+      const item = req.body || {};
+      const rawDate = item.date || item.fecha;
+      const rawClient = item.client || item.cliente || item.store || item.pdv;
+      if (!rawDate || !rawClient) {
         return res.status(400).json({ error: "Fecha y Cliente son obligatorios" });
       }
+      const formattedDate = formatServerDateDMY(rawDate);
+      const clientName = String(rawClient).trim();
+      const vendorName = String(item.vendedor || item.salesRep || item.seller || "VENDEDOR COMERCIAL").trim();
+      const productName = String(item.product || item.producto || item.products || "MORTADELA").trim();
+      const timeRange = String(
+        item.time || item.hora || item.shift || (item.turno === "TARDE" ? "02:00 PM - 07:00 PM" : "09:00 AM - 01:00 PM")
+      ).trim();
+      const targetNum = Number(item.target || item.personas || item.personasEstimadas || 150) || 150;
+      const contactStr = item.contactoPunto ? `Contacto en tienda: ${item.contactoPunto}${item.telefonoContacto ? ` (${item.telefonoContacto})` : ""}. ` : "";
+      const rawNotes = item.comments || item.notas || item.notes || item.originalComments || "";
+      const fullComments = contactStr ? `${contactStr}${rawNotes || `Agendada por ${vendorName}. Personas: ${targetNum}.`}` : rawNotes;
+      const rawId = item.id || item.degustacionId || `DEG-VEND-${Date.now().toString().slice(-6)}`;
+      const recordId = String(rawId).startsWith("DEG-") || String(rawId).startsWith("TEST-") ? String(rawId) : `DEG-${rawId}`;
       const newRecord = {
         ...item,
-        id: item.id || `DEG-VEND-${Date.now().toString().slice(-6)}`,
+        id: recordId,
+        date: formattedDate,
+        time: timeRange,
+        activity: item.activity || `Degustaci\xF3n ${productName} - Solicitada por ${vendorName}`,
+        product: productName,
+        promoter: item.promoter || item.promotoraAsignada || "POR ASIGNAR (Trade Marketing)",
+        promoterEmail: item.promoterEmail || item.promotoraEmail || "",
+        promoterId: item.promoterId || item.promotoraId || "",
+        promoterRole: item.promoterRole || (item.promoterType === "Eventual" ? "Promotora" : "Impulsadora"),
+        client: clientName,
+        zone: item.zone || item.ruta || item.zona || "Ruta Comercial",
+        vendedor: vendorName,
         source: item.source || "vendedor_app",
         status: item.status || "scheduled",
+        delivered: Number(item.delivered) || 0,
+        target: targetNum,
+        acceptanceRate: Number(item.acceptanceRate) || 0,
+        comments: fullComments,
         created_at: (/* @__PURE__ */ new Date()).toISOString()
       };
+      if (isTestOrFakeDegustacion(newRecord)) {
+        return res.status(201).json(newRecord);
+      }
+      deletedDegustacionIds.delete(newRecord.id);
       memoryDegustaciones = [newRecord, ...memoryDegustaciones.filter((d) => d.id !== newRecord.id)];
       try {
         import_fs2.default.writeFileSync(degustacionesPath, JSON.stringify(memoryDegustaciones, null, 2), "utf8");
@@ -3856,15 +4285,64 @@ Responde con un JSON estructurado con:
       res.status(500).json({ error: "Error al registrar solicitud de degustaci\xF3n", details: err?.message });
     }
   });
-  app.put("/api/degustaciones/:id", (req, res) => {
+  app.put("/api/degustaciones/:id", async (req, res) => {
     try {
       const { id } = req.params;
-      const updates = req.body;
+      const updates = req.body || {};
+      if (updates.date) {
+        updates.date = formatServerDateDMY(updates.date);
+      }
+      if (TEST_DEGUSTACION_IDS.has(id)) {
+        return res.json({ success: true, id });
+      }
       memoryDegustaciones = memoryDegustaciones.map((d) => d.id === id ? { ...d, ...updates } : d);
       try {
         import_fs2.default.writeFileSync(degustacionesPath, JSON.stringify(memoryDegustaciones, null, 2), "utf8");
       } catch (err) {
       }
+      const rawDegId = id.replace(/^DEG-/, "");
+      (async () => {
+        try {
+          const searchUrl = `${SUPABASE_DEG_URL}/rest/v1/surveys?select=id,comments&comments=like.*${encodeURIComponent(rawDegId)}*`;
+          const getRes = await fetch(searchUrl, {
+            headers: {
+              apikey: SUPABASE_DEG_KEY,
+              Authorization: `Bearer ${SUPABASE_DEG_KEY}`
+            }
+          });
+          if (getRes.ok) {
+            const rows = await getRes.json();
+            if (Array.isArray(rows)) {
+              for (const row of rows) {
+                try {
+                  const parsed = JSON.parse(row.comments || "{}");
+                  if (parsed && (parsed.degustacionId === rawDegId || `DEG-${parsed.degustacionId}` === id)) {
+                    const updatedComments = {
+                      ...parsed,
+                      promotoraAsignada: updates.promoter && !String(updates.promoter).toUpperCase().includes("POR ASIGNAR") ? updates.promoter : "",
+                      promotoraEmail: updates.promoterEmail || "",
+                      promotoraId: updates.promoterId || "",
+                      promoterRole: updates.promoterRole || parsed.promoterRole,
+                      status: updates.status || parsed.status
+                    };
+                    await fetch(`${SUPABASE_DEG_URL}/rest/v1/surveys?id=eq.${row.id}`, {
+                      method: "PATCH",
+                      headers: {
+                        apikey: SUPABASE_DEG_KEY,
+                        Authorization: `Bearer ${SUPABASE_DEG_KEY}`,
+                        "Content-Type": "application/json"
+                      },
+                      body: JSON.stringify({ comments: JSON.stringify(updatedComments) })
+                    });
+                  }
+                } catch {
+                }
+              }
+            }
+          }
+        } catch {
+        }
+      })();
       res.json({ success: true, id });
     } catch (err) {
       res.status(500).json({ error: "Error al actualizar degustaci\xF3n", details: err?.message });
@@ -3873,6 +4351,7 @@ Responde con un JSON estructurado con:
   app.delete("/api/degustaciones/:id", (req, res) => {
     try {
       const { id } = req.params;
+      deletedDegustacionIds.add(id);
       memoryDegustaciones = memoryDegustaciones.filter((d) => d.id !== id);
       try {
         import_fs2.default.writeFileSync(degustacionesPath, JSON.stringify(memoryDegustaciones, null, 2), "utf8");

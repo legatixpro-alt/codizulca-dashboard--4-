@@ -74,28 +74,11 @@ const LoginContent: React.FC = () => {
       } else {
         setAuthError(error.message);
       }
-      trazabilidadService.logEvent({
-        user: {
-          name: loginEmail.split('@')[0] || 'Desconocido',
-          email: loginEmail,
-          role: 'Sin Asignar'
-        },
-        action: {
-          type: 'failed_login',
-          label: 'Intento de Acceso Rechazado',
-          details: 'Credenciales inválidas en Portal Gerencia',
-          status: 'warning',
-          module: 'Dashboard Gerencia'
-        },
-        device: {
-          ip: '190.202.45.88',
-          browser: 'Chrome 129.0',
-          os: 'Windows 11',
-          deviceType: 'Escritorio',
-          connection: 'Red Externa',
-          locationCity: 'Maracaibo, Zulia',
-          gpsVerified: false
-        }
+      trazabilidadService.logFailedLogin({
+        email: loginEmail,
+        role: 'Sin Asignar',
+        details: 'Credenciales inválidas en Portal Gerencia',
+        module: 'Dashboard Gerencia'
       });
     } else {
       trazabilidadService.logConnection({

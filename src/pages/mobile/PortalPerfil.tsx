@@ -31,31 +31,34 @@ export const PortalPerfil: React.FC = () => {
   const activePromoter = context?.activePromoter || campoService.getActivePromoter();
 
   const [activeDegustacion, setActiveDegustacion] = useState<DegustacionItem | null>(() =>
-    degustacionesService.getActiveDegustacionForPromoter(activePromoter.name)
+    degustacionesService.getActiveDegustacionForPromoter(activePromoter.name, activePromoter.email)
   );
   const [allPromoterDegustaciones, setAllPromoterDegustaciones] = useState<DegustacionItem[]>(() =>
-    degustacionesService.getDegustacionesForPromoter(activePromoter.name)
+    degustacionesService.getDegustacionesForPromoter(activePromoter.name, activePromoter.email)
   );
   const [totalDegustaciones, setTotalDegustaciones] = useState<number>(() =>
-    degustacionesService.getDegustacionesForPromoter(activePromoter.name).length
+    degustacionesService.getDegustacionesForPromoter(activePromoter.name, activePromoter.email).length
   );
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     const updateInfo = () => {
-      const list = degustacionesService.getDegustacionesForPromoter(activePromoter.name);
-      setActiveDegustacion(degustacionesService.getActiveDegustacionForPromoter(activePromoter.name));
+      const list = degustacionesService.getDegustacionesForPromoter(activePromoter.name, activePromoter.email);
+      setActiveDegustacion(degustacionesService.getActiveDegustacionForPromoter(activePromoter.name, activePromoter.email));
       setAllPromoterDegustaciones(list);
       setTotalDegustaciones(list.length);
     };
 
     updateInfo();
+    degustacionesService.getDegustacionesAsync(true).then(() => {
+      updateInfo();
+    });
     const unsubscribe = degustacionesService.subscribe(() => {
       updateInfo();
     });
 
     return () => unsubscribe();
-  }, [activePromoter.name]);
+  }, [activePromoter.name, activePromoter.email]);
 
   const handleLogout = () => {
     if (window.confirm(`¿Cerrar sesión de ${activePromoter.name}?`)) {
