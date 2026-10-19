@@ -95,8 +95,37 @@ export const merchandisingService = {
       }
     } catch {}
 
+    let localScans: any[] = [];
+    try {
+      const rawScans = localStorage.getItem('codizulca_shelf_scans');
+      if (rawScans) {
+        const parsed = JSON.parse(rawScans);
+        if (Array.isArray(parsed)) localScans = parsed;
+      }
+    } catch {}
+
+    let localMerch: MerchandisingReport[] = [];
+    try {
+      const rawMerch = localStorage.getItem(STORAGE_KEY);
+      if (rawMerch) {
+        const parsed = JSON.parse(rawMerch);
+        if (Array.isArray(parsed)) {
+          localMerch = parsed.filter((r: MerchandisingReport) =>
+            !r.id?.startsWith('MERCH-REP-00') &&
+            !r.store?.includes('Palos Grandes') &&
+            !r.photos?.some((p) => p.includes('unsplash'))
+          );
+        }
+      }
+    } catch {}
+
+    const allScansMap = new Map<string, any>();
+    [...serverScans, ...localScans].forEach((s) => {
+      if (s && s.id) allScansMap.set(s.id, s);
+    });
+
     // Combinar reportes de merchandising con escaneos de góndola IA
-    const scanReports: MerchandisingReport[] = serverScans.map((s) => ({
+    const scanReports: MerchandisingReport[] = Array.from(allScansMap.values()).map((s) => ({
       id: s.id || ('SCAN-' + Date.now().toString().slice(-6)),
       type: 'Merchandising',
       date: s.date ? s.date.split('T')[0] : new Date().toISOString().split('T')[0],
@@ -128,36 +157,18 @@ export const merchandisingService = {
     }));
 
     // Combinar y eliminar duplicados por ID
-    const combined = [...scanReports, ...serverMerch];
+    const combined = [...scanReports, ...serverMerch, ...localMerch];
     const uniqueMap = new Map<string, MerchandisingReport>();
     combined.forEach((item) => {
       if (item && item.id) uniqueMap.set(item.id, item);
     });
 
     if (uniqueMap.size > 0) {
-      const result = Array.from(uniqueMap.values());
+      const result = Array.from(uniqueMap.values()).sort(
+        (a, b) => new Date(b.created_at || b.date || 0).getTime() - new Date(a.created_at || a.date || 0).getTime()
+      );
       localStorage.setItem(STORAGE_KEY, JSON.stringify(result));
       return result;
-    }
-
-    const local = localStorage.getItem(STORAGE_KEY);
-    if (local) {
-      try {
-        const parsed = JSON.parse(local);
-        if (Array.isArray(parsed)) {
-          const cleaned = parsed.filter((r: MerchandisingReport) =>
-            !r.id.startsWith('MERCH-REP-00') &&
-            !r.store?.includes('Palos Grandes') &&
-            !r.photos?.some((p) => p.includes('unsplash'))
-          );
-          if (cleaned.length !== parsed.length) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(cleaned));
-          }
-          return cleaned;
-        }
-      } catch (e) {
-        console.warn('Error reading local merchandising reports:', e);
-      }
     }
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_MERCHANDISING_REPORTS));
@@ -186,6 +197,7 @@ export const merchandisingService = {
     }
 
     window.dispatchEvent(new Event('codizulca_merchandising_changed'));
+    window.dispatchEvent(new Event('codizulca_campo_data_updated'));
     return newRecord;
   },
 
@@ -195,23 +207,45 @@ export const merchandisingService = {
     } catch (e) {
       console.warn('Error deleting report on server:', e);
     }
+    try {
+      await fetch(`/api/shelf-scans/${id}`, { method: 'DELETE' });
+    } catch {}
 
-    const current = await this.getAll();
-    const filtered = current.filter(r => r.id !== id);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+    try {
+      const rawScans = localStorage.getItem('codizulca_shelf_scans');
+      if (rawScans) {
+        const parsed = JSON.parse(rawScans);
+        if (Array.isArray(parsed)) {
+          localStorage.setItem('codizulca_shelf_scans', JSON.stringify(parsed.filter((s: any) => s.id !== id)));
+        }
+      }
+    } catch {}
+
+    const rawMerch = localStorage.getItem(STORAGE_KEY);
+    if (rawMerch) {
+      try {
+        const parsed = JSON.parse(rawMerch);
+        if (Array.isArray(parsed)) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed.filter((r: MerchandisingReport) => r.id !== id)));
+        }
+      } catch {}
+    }
 
     window.dispatchEvent(new Event('codizulca_merchandising_changed'));
+    window.dispatchEvent(new Event('codizulca_campo_data_updated'));
     return true;
   },
 
   subscribe(callback: () => void): () => void {
     const handler = () => callback();
     window.addEventListener('codizulca_merchandising_changed', handler);
+    window.addEventListener('codizulca_campo_data_updated', handler);
     window.addEventListener('storage', (e) => {
-      if (e.key === STORAGE_KEY) callback();
+      if (e.key === STORAGE_KEY || e.key === 'codizulca_shelf_scans') callback();
     });
     return () => {
       window.removeEventListener('codizulca_merchandising_changed', handler);
+      window.removeEventListener('codizulca_campo_data_updated', handler);
     };
   }
 };

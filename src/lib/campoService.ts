@@ -450,11 +450,14 @@ export const campoService = {
   // Guardado de Escaneo Inteligente de Góndolas
   async saveShelfScan(scan: ShelfScanPayload): Promise<{ success: boolean; offline: boolean }> {
     const KEY = 'codizulca_shelf_scans';
-    const local = JSON.parse(localStorage.getItem(KEY) || '[]');
-    localStorage.setItem(KEY, JSON.stringify([scan, ...local]));
+    const local: ShelfScanPayload[] = JSON.parse(localStorage.getItem(KEY) || '[]');
+    const filtered = local.filter((s) => s.id !== scan.id);
+    localStorage.setItem(KEY, JSON.stringify([scan, ...filtered]));
 
     if (!navigator.onLine) {
       this.enqueue('shelf_scan', scan);
+      window.dispatchEvent(new Event('codizulca_campo_data_updated'));
+      window.dispatchEvent(new Event('codizulca_merchandising_changed'));
       return { success: true, offline: true };
     }
 
@@ -465,9 +468,13 @@ export const campoService = {
         body: JSON.stringify(scan)
       });
       if (!res.ok) throw new Error('Error al sincronizar con servidor');
+      window.dispatchEvent(new Event('codizulca_campo_data_updated'));
+      window.dispatchEvent(new Event('codizulca_merchandising_changed'));
       return { success: true, offline: false };
     } catch {
       this.enqueue('shelf_scan', scan);
+      window.dispatchEvent(new Event('codizulca_campo_data_updated'));
+      window.dispatchEvent(new Event('codizulca_merchandising_changed'));
       return { success: true, offline: true };
     }
   },
@@ -475,11 +482,13 @@ export const campoService = {
   // Guardado de Monitoreo de Precios
   async savePriceSurvey(survey: PriceSurveyPayload): Promise<{ success: boolean; offline: boolean }> {
     const KEY = 'codizulca_price_surveys';
-    const local = JSON.parse(localStorage.getItem(KEY) || '[]');
-    localStorage.setItem(KEY, JSON.stringify([survey, ...local]));
+    const local: PriceSurveyPayload[] = JSON.parse(localStorage.getItem(KEY) || '[]');
+    const filtered = local.filter((s) => s.id !== survey.id);
+    localStorage.setItem(KEY, JSON.stringify([survey, ...filtered]));
 
     if (!navigator.onLine) {
       this.enqueue('price_survey', survey);
+      window.dispatchEvent(new Event('codizulca_campo_data_updated'));
       return { success: true, offline: true };
     }
 
@@ -490,9 +499,11 @@ export const campoService = {
         body: JSON.stringify(survey)
       });
       if (!res.ok) throw new Error('Error al enviar precios');
+      window.dispatchEvent(new Event('codizulca_campo_data_updated'));
       return { success: true, offline: false };
     } catch {
       this.enqueue('price_survey', survey);
+      window.dispatchEvent(new Event('codizulca_campo_data_updated'));
       return { success: true, offline: true };
     }
   },
@@ -500,11 +511,13 @@ export const campoService = {
   // Guardado de Control de Inventario
   async saveInventoryLog(log: InventoryLogPayload): Promise<{ success: boolean; offline: boolean }> {
     const KEY = 'codizulca_inventory_logs';
-    const local = JSON.parse(localStorage.getItem(KEY) || '[]');
-    localStorage.setItem(KEY, JSON.stringify([log, ...local]));
+    const local: InventoryLogPayload[] = JSON.parse(localStorage.getItem(KEY) || '[]');
+    const filtered = local.filter((l) => l.id !== log.id);
+    localStorage.setItem(KEY, JSON.stringify([log, ...filtered]));
 
     if (!navigator.onLine) {
       this.enqueue('inventory_log', log);
+      window.dispatchEvent(new Event('codizulca_campo_data_updated'));
       return { success: true, offline: true };
     }
 
@@ -515,9 +528,11 @@ export const campoService = {
         body: JSON.stringify(log)
       });
       if (!res.ok) throw new Error('Error al enviar inventario');
+      window.dispatchEvent(new Event('codizulca_campo_data_updated'));
       return { success: true, offline: false };
     } catch {
       this.enqueue('inventory_log', log);
+      window.dispatchEvent(new Event('codizulca_campo_data_updated'));
       return { success: true, offline: true };
     }
   },
@@ -525,11 +540,13 @@ export const campoService = {
   // Guardado de Encuesta de Degustación
   async saveTastingSurvey(survey: TastingSurveyPayload): Promise<{ success: boolean; offline: boolean }> {
     const KEY = 'codizulca_tasting_surveys';
-    const local = JSON.parse(localStorage.getItem(KEY) || '[]');
-    localStorage.setItem(KEY, JSON.stringify([survey, ...local]));
+    const local: TastingSurveyPayload[] = JSON.parse(localStorage.getItem(KEY) || '[]');
+    const filtered = local.filter((s) => s.id !== survey.id);
+    localStorage.setItem(KEY, JSON.stringify([survey, ...filtered]));
 
     if (!navigator.onLine) {
       this.enqueue('tasting_survey', survey);
+      window.dispatchEvent(new Event('codizulca_campo_data_updated'));
       return { success: true, offline: true };
     }
 
@@ -540,11 +557,185 @@ export const campoService = {
         body: JSON.stringify(survey)
       });
       if (!res.ok) throw new Error('Error al enviar encuesta');
+      window.dispatchEvent(new Event('codizulca_campo_data_updated'));
       return { success: true, offline: false };
     } catch {
       this.enqueue('tasting_survey', survey);
+      window.dispatchEvent(new Event('codizulca_campo_data_updated'));
       return { success: true, offline: true };
     }
+  },
+
+  // Consultas sincronizadas para el módulo de Trade Marketing
+  async getShelfScans(): Promise<ShelfScanPayload[]> {
+    const KEY = 'codizulca_shelf_scans';
+    let serverList: ShelfScanPayload[] = [];
+    try {
+      const res = await fetch('/api/shelf-scans');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) serverList = data;
+      }
+    } catch {
+      // fallback to localStorage
+    }
+    let localList: ShelfScanPayload[] = [];
+    try {
+      localList = JSON.parse(localStorage.getItem(KEY) || '[]');
+    } catch {
+      localList = [];
+    }
+    const map = new Map<string, ShelfScanPayload>();
+    [...serverList, ...localList].forEach((item) => {
+      if (item && item.id) map.set(item.id, item);
+    });
+    const merged = Array.from(map.values()).sort(
+      (a, b) => new Date(b.created_at || b.date || 0).getTime() - new Date(a.created_at || a.date || 0).getTime()
+    );
+    localStorage.setItem(KEY, JSON.stringify(merged));
+    return merged;
+  },
+
+  async getPriceSurveys(): Promise<PriceSurveyPayload[]> {
+    const KEY = 'codizulca_price_surveys';
+    let serverList: PriceSurveyPayload[] = [];
+    try {
+      const res = await fetch('/api/price-surveys');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) serverList = data;
+      }
+    } catch {
+      // fallback to localStorage
+    }
+    let localList: PriceSurveyPayload[] = [];
+    try {
+      localList = JSON.parse(localStorage.getItem(KEY) || '[]');
+    } catch {
+      localList = [];
+    }
+    const map = new Map<string, PriceSurveyPayload>();
+    [...serverList, ...localList].forEach((item) => {
+      if (item && item.id) map.set(item.id, item);
+    });
+    const merged = Array.from(map.values()).sort(
+      (a, b) => new Date(b.created_at || b.date || 0).getTime() - new Date(a.created_at || a.date || 0).getTime()
+    );
+    localStorage.setItem(KEY, JSON.stringify(merged));
+    return merged;
+  },
+
+  async getInventoryLogs(): Promise<InventoryLogPayload[]> {
+    const KEY = 'codizulca_inventory_logs';
+    let serverList: InventoryLogPayload[] = [];
+    try {
+      const res = await fetch('/api/inventory-logs');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) serverList = data;
+      }
+    } catch {
+      // fallback to localStorage
+    }
+    let localList: InventoryLogPayload[] = [];
+    try {
+      localList = JSON.parse(localStorage.getItem(KEY) || '[]');
+    } catch {
+      localList = [];
+    }
+    const map = new Map<string, InventoryLogPayload>();
+    [...serverList, ...localList].forEach((item) => {
+      if (item && item.id) map.set(item.id, item);
+    });
+    const merged = Array.from(map.values()).sort(
+      (a, b) => new Date(b.created_at || b.date || 0).getTime() - new Date(a.created_at || a.date || 0).getTime()
+    );
+    localStorage.setItem(KEY, JSON.stringify(merged));
+    return merged;
+  },
+
+  async getTastingSurveys(): Promise<TastingSurveyPayload[]> {
+    const KEY = 'codizulca_tasting_surveys';
+    let serverList: TastingSurveyPayload[] = [];
+    try {
+      const res = await fetch('/api/tasting-surveys');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) serverList = data;
+      }
+    } catch {
+      // fallback to localStorage
+    }
+    let localList: TastingSurveyPayload[] = [];
+    try {
+      localList = JSON.parse(localStorage.getItem(KEY) || '[]');
+    } catch {
+      localList = [];
+    }
+    const map = new Map<string, TastingSurveyPayload>();
+    [...serverList, ...localList].forEach((item) => {
+      if (item && item.id) map.set(item.id, item);
+    });
+    const merged = Array.from(map.values()).sort(
+      (a, b) => new Date(b.created_at || b.date || 0).getTime() - new Date(a.created_at || a.date || 0).getTime()
+    );
+    localStorage.setItem(KEY, JSON.stringify(merged));
+    return merged;
+  },
+
+  async deletePriceSurvey(id: string): Promise<boolean> {
+    const KEY = 'codizulca_price_surveys';
+    try {
+      await fetch(`/api/price-surveys/${id}`, { method: 'DELETE' });
+    } catch {}
+    const local: PriceSurveyPayload[] = JSON.parse(localStorage.getItem(KEY) || '[]');
+    localStorage.setItem(KEY, JSON.stringify(local.filter((i) => i.id !== id)));
+    window.dispatchEvent(new Event('codizulca_campo_data_updated'));
+    return true;
+  },
+
+  async deleteInventoryLog(id: string): Promise<boolean> {
+    const KEY = 'codizulca_inventory_logs';
+    try {
+      await fetch(`/api/inventory-logs/${id}`, { method: 'DELETE' });
+    } catch {}
+    const local: InventoryLogPayload[] = JSON.parse(localStorage.getItem(KEY) || '[]');
+    localStorage.setItem(KEY, JSON.stringify(local.filter((i) => i.id !== id)));
+    window.dispatchEvent(new Event('codizulca_campo_data_updated'));
+    return true;
+  },
+
+  async deleteTastingSurvey(id: string): Promise<boolean> {
+    const KEY = 'codizulca_tasting_surveys';
+    try {
+      await fetch(`/api/tasting-surveys/${id}`, { method: 'DELETE' });
+    } catch {}
+    const local: TastingSurveyPayload[] = JSON.parse(localStorage.getItem(KEY) || '[]');
+    localStorage.setItem(KEY, JSON.stringify(local.filter((i) => i.id !== id)));
+    window.dispatchEvent(new Event('codizulca_campo_data_updated'));
+    return true;
+  },
+
+  subscribe(callback: () => void): () => void {
+    const handler = () => callback();
+    const storageHandler = (e: StorageEvent) => {
+      if (
+        e.key === 'codizulca_shelf_scans' ||
+        e.key === 'codizulca_price_surveys' ||
+        e.key === 'codizulca_inventory_logs' ||
+        e.key === 'codizulca_tasting_surveys'
+      ) {
+        callback();
+      }
+    };
+    window.addEventListener('codizulca_campo_data_updated', handler);
+    window.addEventListener('codizulca_sync_queue_updated', handler);
+    window.addEventListener('storage', storageHandler);
+    return () => {
+      window.removeEventListener('codizulca_campo_data_updated', handler);
+      window.removeEventListener('codizulca_sync_queue_updated', handler);
+      window.removeEventListener('storage', storageHandler);
+    };
   },
 
   // Generación de Informe de Recomendaciones IA para el Cliente

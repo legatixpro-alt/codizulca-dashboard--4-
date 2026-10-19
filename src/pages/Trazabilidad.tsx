@@ -44,7 +44,7 @@ import { UserEarthMapModal } from '../components/trazabilidad/UserEarthMapModal'
 import { UsersLiveEarthMap } from '../components/trazabilidad/UsersLiveEarthMap';
 
 export const Trazabilidad: React.FC = () => {
-  const { user } = useAuth();
+  const { user, corporateProfile, canAccessTrazabilidad } = useAuth();
   const [logs, setLogs] = useState<TrazabilidadItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
@@ -95,6 +95,11 @@ export const Trazabilidad: React.FC = () => {
 
   // Carga inicial, sincronización GPS real de la sesión actual y suscripción en tiempo real
   useEffect(() => {
+    if (!canAccessTrazabilidad) {
+      setIsLoading(false);
+      return;
+    }
+
     let mounted = true;
     setIsLoading(true);
 
@@ -107,10 +112,11 @@ export const Trazabilidad: React.FC = () => {
       enrichLogsWithRealAddresses(data);
 
       // Si hay un usuario autenticado y no tiene un registro con GPS verificado hoy, sincronizar su conexión real
-      const activeEmail = user?.email || 'admin@codi.com';
-      const activeName = activeEmail.toLowerCase().includes('admin')
-        ? 'Admin General'
-        : activeEmail.split('@')[0].toUpperCase();
+      const activeEmail = corporateProfile?.email || user?.email || 'admin@codi.com';
+      const activeName = corporateProfile?.name || (activeEmail.toLowerCase().includes('admin')
+        ? 'Administrador General'
+        : activeEmail.split('@')[0].toUpperCase());
+      const activeRole = corporateProfile?.roleLabel || 'Administrador General';
       const hasVerifiedSession = data.some(
         (l) => l.user.email.toLowerCase() === activeEmail.toLowerCase() && l.device.gpsVerified && l.device.address
       );
@@ -119,7 +125,7 @@ export const Trazabilidad: React.FC = () => {
         const syncRes = await trazabilidadService.syncCurrentUserGpsLocation({
           name: activeName,
           email: activeEmail,
-          role: 'Administrador',
+          role: activeRole,
           isMobilePortal: false
         });
         if (!syncRes.success && data.length === 0) {
@@ -128,7 +134,7 @@ export const Trazabilidad: React.FC = () => {
             {
               name: activeName,
               email: activeEmail,
-              role: 'Administrador'
+              role: activeRole
             },
             false
           );
@@ -305,6 +311,30 @@ export const Trazabilidad: React.FC = () => {
     XLSX.writeFile(wb, `Codizulca_Trazabilidad_${new Date().toISOString().slice(0, 10)}.xlsx`);
   };
 
+  if (!canAccessTrazabilidad) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[70vh] text-center px-6">
+        <div className="max-w-lg w-full bg-[#0d0d0d] border border-red-500/30 rounded-3xl p-8 shadow-2xl space-y-4">
+          <div className="w-16 h-16 rounded-2xl bg-red-950/80 border border-red-500/40 flex items-center justify-center text-red-500 mx-auto shadow-lg shadow-red-950/50">
+            <ShieldAlert className="w-8 h-8" />
+          </div>
+          <h2 className="text-xl font-black tracking-widest text-white uppercase">
+            ACCESO RESTRINGIDO A TRAZABILIDAD
+          </h2>
+          <p className="text-sm text-zinc-400 leading-relaxed">
+            Por políticas de seguridad corporativa de <strong className="text-white">CODIZULCA</strong>, el módulo de{' '}
+            <strong className="text-red-400">Trazabilidad & Auditoría GPS</strong> solo puede ser visualizado por los perfiles de{' '}
+            <strong className="text-emerald-400">Gerente Nacional</strong> y{' '}
+            <strong className="text-emerald-400">Administrador General</strong>.
+          </p>
+          <div className="bg-zinc-900/80 border border-white/10 rounded-xl p-3 text-xs text-zinc-400">
+            Tu perfil actual (<span className="text-white font-bold">{corporateProfile?.roleLabel || 'Usuario'}</span>) no cuenta con permisos para consultar este módulo.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5 animate-in fade-in-50 duration-500 font-sans text-zinc-100 max-w-[1700px] mx-auto pb-12">
       
@@ -325,6 +355,10 @@ export const Trazabilidad: React.FC = () => {
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-500/40 text-emerald-400 text-[10px] font-bold">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block" />
                   SISTEMA EN VIVO
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-950/80 border border-amber-500/40 text-amber-300 text-[10px] font-bold uppercase tracking-wider">
+                  <ShieldCheck className="w-3 h-3 text-amber-400" />
+                  Exclusivo: Gerente Nacional & Admin General
                 </span>
               </div>
               <p className="text-xs text-zinc-400">

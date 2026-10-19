@@ -10,8 +10,12 @@ import {
 import {
   CODIZULCA_PRODUCTS,
   campoService,
-  TastingSurveyPayload
+  TastingSurveyPayload,
+  PromoterProfile
 } from '../../lib/campoService';
+import { useOutletContext } from 'react-router-dom';
+import { STORAGE_KEY_ACTIVE_STORE } from '../../lib/checkinsService';
+import { degustacionesService } from '../../lib/degustacionesService';
 
 const AVAILABLE_PRODUCTS = [
   'Arroz 900gr',
@@ -21,18 +25,34 @@ const AVAILABLE_PRODUCTS = [
   'Tocineta Ahumada Especial 1kg',
   'Chuleta Ahumada de Cerdo',
   'Salchichón Tipo Milano',
-  'Queso Amarillo Paisa / Gouda'
+  'Queso Amarillo Paisa / Gouda',
+  ...CODIZULCA_PRODUCTS.map((p) => p.name)
 ];
 
 export const CampoEncuestas: React.FC<{ activePromoterName?: string }> = ({
   activePromoterName
 }) => {
+  const context = useOutletContext<{
+    activePromoter?: PromoterProfile;
+  }>();
+  const activePromoter = context?.activePromoter || campoService.getActivePromoter();
+
   // 1. Selector de Modelo: 'corta' o 'larga' (Exacto a las imágenes subidas)
   const [surveyType, setSurveyType] = useState<'corta' | 'larga'>('corta');
 
-  // Datos Generales
-  const [storeName, setStoreName] = useState<string>('Automercado Plaza');
-  const [selectedProduct, setSelectedProduct] = useState<string>('Arroz 900gr');
+  // Datos Generales sincronizados con la tienda activa de la promotora
+  const [storeName, setStoreName] = useState<string>(() => {
+    const savedStore = localStorage.getItem(STORAGE_KEY_ACTIVE_STORE);
+    if (savedStore && savedStore.trim()) return savedStore.trim();
+    if (
+      activePromoter?.assignedStore &&
+      !['VARIAS', 'VARIOS', 'TODAS', 'TODOS'].includes(activePromoter.assignedStore.toUpperCase())
+    ) {
+      return activePromoter.assignedStore;
+    }
+    return 'ALKOSTO DONDE COMPRAR ES GANAR, C.A.';
+  });
+  const [selectedProduct, setSelectedProduct] = useState<string>('Mortadela Tapara Especial 1kg');
 
   // === MODELO 1: ENCUESTA CORTA ===
   const [saborCalidadCorta, setSaborCalidadCorta] = useState<number>(5);
@@ -52,6 +72,36 @@ export const CampoEncuestas: React.FC<{ activePromoterName?: string }> = ({
   const [submittedSuccess, setSubmittedSuccess] = useState<boolean>(false);
   const [isOfflineSaved, setIsOfflineSaved] = useState<boolean>(false);
 
+  // Sincronizar progreso con la degustación asignada a la promotora en Trade Marketing
+  const syncProgressWithAssignedDegustacion = async (ratingOutOf5: number) => {
+    try {
+      const assigned = await degustacionesService.getForPromoter({
+        id: activePromoter?.id,
+        name: activePromoterName || activePromoter?.name,
+        email: activePromoter?.email
+      });
+      if (assigned.length > 0) {
+        const activeDeg = assigned.find((d) => d.status === 'in_progress') || assigned[0];
+        if (activeDeg) {
+          const prevDelivered = Number(activeDeg.delivered) || 0;
+          const prevRate = Number(activeDeg.acceptanceRate) || 90;
+          const newRateFromSurvey = Math.round((ratingOutOf5 / 5) * 100);
+          const nextDelivered = prevDelivered + 1;
+          const nextAcceptanceRate = prevDelivered > 0
+            ? Math.round((prevRate * prevDelivered + newRateFromSurvey) / nextDelivered)
+            : newRateFromSurvey;
+          await degustacionesService.update(activeDeg.id, {
+            delivered: nextDelivered,
+            acceptanceRate: nextAcceptanceRate,
+            status: activeDeg.status === 'scheduled' ? 'in_progress' : activeDeg.status
+          });
+        }
+      }
+    } catch {
+      // ignore if offline
+    }
+  };
+
   // Envío de Encuesta Corta
   const handleSubmitCorta = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,7 +116,7 @@ export const CampoEncuestas: React.FC<{ activePromoterName?: string }> = ({
         id: 'SURV-CORTA-' + Date.now().toString().slice(-6),
         date: new Date().toISOString(),
         store: storeName.trim(),
-        promoter: activePromoterName || campoService.getActivePromoter().name,
+        promoter: activePromoterName || activePromoter?.name || campoService.getActivePromoter().name,
         type: 'rapida',
         productName: selectedProduct,
         ratingOverall: saborCalidadCorta,
@@ -75,6 +125,7 @@ export const CampoEncuestas: React.FC<{ activePromoterName?: string }> = ({
       };
 
       const res = await campoService.saveTastingSurvey(payload);
+      await syncProgressWithAssignedDegustacion(saborCalidadCorta);
       setSubmittedSuccess(true);
       setIsOfflineSaved(res.offline);
     } finally {
@@ -96,7 +147,7 @@ export const CampoEncuestas: React.FC<{ activePromoterName?: string }> = ({
         id: 'SURV-LARGA-' + Date.now().toString().slice(-6),
         date: new Date().toISOString(),
         store: storeName.trim(),
-        promoter: activePromoterName || campoService.getActivePromoter().name,
+        promoter: activePromoterName || activePromoter?.name || campoService.getActivePromoter().name,
         type: 'extendida',
         productName: selectedProduct,
         ratingOverall: recomendacionLarga,
@@ -110,6 +161,7 @@ export const CampoEncuestas: React.FC<{ activePromoterName?: string }> = ({
       };
 
       const res = await campoService.saveTastingSurvey(payload);
+      await syncProgressWithAssignedDegustacion(recomendacionLarga);
       setSubmittedSuccess(true);
       setIsOfflineSaved(res.offline);
     } finally {

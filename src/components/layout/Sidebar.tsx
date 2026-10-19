@@ -19,7 +19,7 @@ import { cn } from '../../lib/utils';
 import { Badge } from '../ui/badge';
 
 export const Sidebar: React.FC = () => {
-  const { signOut } = useAuth();
+  const { signOut, canAccessTrazabilidad } = useAuth();
 
   const links = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Resumen Ejecutivo', exact: true },
@@ -30,7 +30,9 @@ export const Sidebar: React.FC = () => {
     { to: '/dashboard/productos', icon: Box, label: 'Catálogo de Productos' },
     { to: '/dashboard/trade', icon: MapPin, label: 'Trade Marketing (IA)' },
     { to: '/portal', icon: Smartphone, label: 'Portal Móvil PWA', badge: { text: 'OFFLINE', color: 'text-zinc-300', bg: 'bg-zinc-800/80 border-zinc-700' } },
-    { to: '/dashboard/trazabilidad', icon: Activity, label: 'Trazabilidad', badge: { text: 'EN VIVO', color: 'text-emerald-400', bg: 'bg-emerald-950/50 border-emerald-900/50' } },
+    ...(canAccessTrazabilidad
+      ? [{ to: '/dashboard/trazabilidad', icon: Activity, label: 'Trazabilidad', badge: { text: 'EN VIVO', color: 'text-emerald-400', bg: 'bg-emerald-950/50 border-emerald-900/50' } }]
+      : []),
   ];
 
   return (

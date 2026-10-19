@@ -3850,6 +3850,17 @@ Responde con un JSON estructurado con:
     }
   });
 
+  app.delete('/api/shelf-scans/:id', (req, res) => {
+    try {
+      const { id } = req.params;
+      memoryShelfScans = memoryShelfScans.filter(s => s.id !== id);
+      try { fs.writeFileSync(campoScansPath, JSON.stringify(memoryShelfScans, null, 2), 'utf8'); } catch (err) {}
+      res.json({ success: true, id });
+    } catch (err: any) {
+      res.status(500).json({ error: 'Error al eliminar escaneo', details: err?.message });
+    }
+  });
+
   const campoPricesPath = path.join(process.cwd(), 'data_price_surveys.json');
   let memoryPriceSurveys: any[] = [];
   try {
@@ -3870,6 +3881,17 @@ Responde con un JSON estructurado con:
       res.status(201).json(survey);
     } catch (err: any) {
       res.status(500).json({ error: 'Error al guardar precios', details: err?.message });
+    }
+  });
+
+  app.delete('/api/price-surveys/:id', (req, res) => {
+    try {
+      const { id } = req.params;
+      memoryPriceSurveys = memoryPriceSurveys.filter(s => s.id !== id);
+      try { fs.writeFileSync(campoPricesPath, JSON.stringify(memoryPriceSurveys, null, 2), 'utf8'); } catch (err) {}
+      res.json({ success: true, id });
+    } catch (err: any) {
+      res.status(500).json({ error: 'Error al eliminar precio', details: err?.message });
     }
   });
 
@@ -3896,6 +3918,17 @@ Responde con un JSON estructurado con:
     }
   });
 
+  app.delete('/api/inventory-logs/:id', (req, res) => {
+    try {
+      const { id } = req.params;
+      memoryInvLogs = memoryInvLogs.filter(s => s.id !== id);
+      try { fs.writeFileSync(campoInvPath, JSON.stringify(memoryInvLogs, null, 2), 'utf8'); } catch (err) {}
+      res.json({ success: true, id });
+    } catch (err: any) {
+      res.status(500).json({ error: 'Error al eliminar inventario', details: err?.message });
+    }
+  });
+
   const campoTastingPath = path.join(process.cwd(), 'data_tasting_surveys.json');
   let memoryTastingSurveys: any[] = [];
   try {
@@ -3916,6 +3949,17 @@ Responde con un JSON estructurado con:
       res.status(201).json(survey);
     } catch (err: any) {
       res.status(500).json({ error: 'Error al guardar degustación', details: err?.message });
+    }
+  });
+
+  app.delete('/api/tasting-surveys/:id', (req, res) => {
+    try {
+      const { id } = req.params;
+      memoryTastingSurveys = memoryTastingSurveys.filter(s => s.id !== id);
+      try { fs.writeFileSync(campoTastingPath, JSON.stringify(memoryTastingSurveys, null, 2), 'utf8'); } catch (err) {}
+      res.json({ success: true, id });
+    } catch (err: any) {
+      res.status(500).json({ error: 'Error al eliminar encuesta', details: err?.message });
     }
   });
 
@@ -4049,9 +4093,9 @@ Responde con un JSON estructurado con:
                   vendedor: vendorName,
                   source: 'vendedor_app',
                   status,
-                  delivered: status === 'completed' ? target : 0,
+                  delivered: Number(c.delivered) || (status === 'completed' ? target : 0),
                   target,
-                  acceptanceRate: status === 'completed' ? (s.rating ? s.rating * 20 : 95) : 0,
+                  acceptanceRate: Number(c.acceptanceRate) || (status === 'completed' ? (s.rating ? s.rating * 20 : 95) : 0),
                   comments: contact ? `Contacto en tienda: ${contact}. ${notes}` : notes
                 });
               }
@@ -4253,13 +4297,17 @@ Responde con un JSON estructurado con:
                     const updatedComments = {
                       ...parsed,
                       promotoraAsignada:
-                        updates.promoter && !String(updates.promoter).toUpperCase().includes('POR ASIGNAR')
-                          ? updates.promoter
-                          : '',
-                      promotoraEmail: updates.promoterEmail || '',
-                      promotoraId: updates.promoterId || '',
+                        updates.promoter !== undefined
+                          ? !String(updates.promoter).toUpperCase().includes('POR ASIGNAR')
+                            ? updates.promoter
+                            : ''
+                          : parsed.promotoraAsignada,
+                      promotoraEmail: updates.promoterEmail !== undefined ? updates.promoterEmail : parsed.promotoraEmail,
+                      promotoraId: updates.promoterId !== undefined ? updates.promoterId : parsed.promotoraId,
                       promoterRole: updates.promoterRole || parsed.promoterRole,
-                      status: updates.status || parsed.status
+                      status: updates.status || parsed.status,
+                      delivered: updates.delivered !== undefined ? updates.delivered : parsed.delivered,
+                      acceptanceRate: updates.acceptanceRate !== undefined ? updates.acceptanceRate : parsed.acceptanceRate
                     };
                     await fetch(`${SUPABASE_DEG_URL}/rest/v1/surveys?id=eq.${row.id}`, {
                       method: 'PATCH',

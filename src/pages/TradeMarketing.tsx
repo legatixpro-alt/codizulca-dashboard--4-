@@ -70,6 +70,7 @@ import { ENRICHED_CLIENTS } from '../data/clientsWithLocation';
 import { checkinsService, CheckInRecord, CheckInType } from '../lib/checkinsService';
 import { merchandisingService, MerchandisingReport } from '../lib/merchandisingService';
 import { staffService, StaffMember } from '../lib/staffService';
+import { campoService } from '../lib/campoService';
 import {
   degustacionesService,
   DegustacionItem,
@@ -557,6 +558,30 @@ export const TradeMarketing: React.FC = () => {
       const records = await checkinsService.getAllCheckIns();
       setCheckIns(records);
       setLastCheckInSync(new Date());
+
+      // Sincronizar también la pestaña de Asistencias en Informes con los Check-ins reales de las promotoras
+      const mappedAttendances: AttendanceItem[] = records.map((rec) => {
+        const staffMatch = resolvePromoterIdentity(rec.promoter);
+        const timeFormatted = rec.date && rec.date.includes('T')
+          ? new Date(rec.date).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' })
+          : '08:30 AM';
+        return {
+          id: rec.id,
+          promoter: rec.promoter || 'Promotora',
+          promoterRole: (staffMatch?.role as any) || 'Impulsadora',
+          client: rec.store || 'Punto de Venta',
+          zone: staffMatch?.zone || 'Zulia / Falcón',
+          date: normalizeDateToDMY(rec.date),
+          checkInTime: timeFormatted,
+          checkOutTime: rec.type === 'Salida' ? timeFormatted : null,
+          hoursRendered: rec.type === 'Salida' ? 'Jornada Completa' : 'En Guardia Activa',
+          gpsVerified: Boolean(rec.location && rec.location.lat && rec.location.lng),
+          distanceMeters: rec.location?.accuracy ? Math.round(rec.location.accuracy) : 12,
+          status: rec.type === 'Salida' ? 'completado' : 'en_tienda',
+          batteryLevel: rec.batteryLevel || '92%'
+        };
+      });
+      setAttendances(mappedAttendances);
     } finally {
       setIsRefreshingCheckIns(false);
     }
@@ -597,12 +622,275 @@ export const TradeMarketing: React.FC = () => {
     }
   };
 
+  // Sincronización integral de toda la información cargada por las promotoras desde la App Móvil (/portal/*)
+  const loadCampoSynchronizedData = async () => {
+    try {
+      const [priceSurveys, invLogs, tastingSurveys, shelfScans, merchList, checkinList] = await Promise.all([
+        campoService.getPriceSurveys(),
+        campoService.getInventoryLogs(),
+        campoService.getTastingSurveys(),
+        campoService.getShelfScans(),
+        merchandisingService.getAll(),
+        checkinsService.getAllCheckIns()
+      ]);
+
+      // 1. Sincronizar Monitoreo de Precios (CampoPrecios -> Trade Marketing Precios)
+      const mappedPrices: PriceComparisonItem[] = priceSurveys.map((ps, idx) => {
+        const staffMatch = resolvePromoterIdentity(ps.promoter);
+        const firstComp = ps.competitors && ps.competitors.length > 0
+          ? ps.competitors[0]
+          : { name: 'Competidor', priceUsd: ps.ownPriceUsd, priceBs: ps.ownPriceBs, diffPercent: 0 };
+        const gapPercent = ps.ownPriceUsd > 0 && firstComp.priceUsd > 0
+          ? Number((((ps.ownPriceUsd - firstComp.priceUsd) / firstComp.priceUsd) * 100).toFixed(1))
+          : 0;
+        const competitiveness: PriceComparisonItem['competitiveness'] =
+          gapPercent <= -2
+            ? 'Mas Competitivo'
+            : gapPercent <= 2
+            ? 'A la Par'
+            : gapPercent <= 8
+            ? 'Mas Alto'
+            : 'Alerta Desviacion';
+
+        return {
+          id: ps.id || `PRICE-${idx + 1}`,
+          client: ps.store || 'Punto de Venta',
+          zone: staffMatch?.zone || 'Zulia / Falcón',
+          promoter: ps.promoter || 'Promotora',
+          origin: 'App Promotora',
+          date: normalizeDateToDMY(ps.date),
+          codizulcaProduct: ps.productName,
+          codizulcaSku: `SKU-AST-${String(idx + 1).padStart(2, '0')}`,
+          codizulcaPriceUSD: Number(ps.ownPriceUsd) || 0,
+          codizulcaPriceBS: Number(ps.ownPriceBs) || 0,
+          competitors: (ps.competitors || []).map((c) => ({
+            brand: c.name,
+            product: `${c.name} (${ps.productName.split(' ')[0]})`,
+            priceUSD: Number(c.priceUsd) || 0
+          })),
+          competitorBrand: firstComp.name,
+          competitorProduct: `${firstComp.name} Equivalente`,
+          competitorPriceUSD: Number(firstComp.priceUsd) || 0,
+          competitorPriceBS: Number(firstComp.priceBs) || 0,
+          differencePercent: gapPercent,
+          competitiveness,
+          shelfFacing: 'Nivel Ojos / Manos',
+          notes: ps.observations || 'Relevamiento en vivo desde App de Promotoras'
+        };
+      });
+      setPriceComparisons(mappedPrices);
+
+      // 2. Sincronizar Control de Inventario y Degustación (CampoInventario -> Trade Marketing Inventario)
+      const mappedInvReports: InventoryTastingReport[] = invLogs.map((log, idx) => {
+        const init = Number(log.initialStock) || 0;
+        const fin = Number(log.finalStock) || 0;
+        const samples = Number(log.tastingsGiven) || 0;
+        const net = Number(log.netRotation) ?? Math.max(0, init - fin - samples);
+        const rotPct = init > 0 ? Math.round(((init - fin) / init) * 100) : 0;
+        return {
+          id: log.id || `INV-${idx + 1}`,
+          productName: log.productName,
+          sku: `SKU-INV-${String(idx + 1).padStart(2, '0')}`,
+          client: log.store,
+          promoter: log.promoter,
+          date: normalizeDateToDMY(log.date),
+          initialStock: init,
+          finalStock: fin,
+          samplesGiven: samples,
+          salesGenerated: net,
+          unit: 'Unid/Kg',
+          rotationPercent: rotPct,
+          promoterObservation: log.observations || 'Reporte sincronizado desde App Móvil de Promotoras',
+          isRecent: true
+        };
+      });
+      setInventoryReports(mappedInvReports);
+
+      // También poblar FieldInventories combinando logs de inventario y escaneos de góndola
+      const mappedFieldInv: FieldInventoryItem[] = [
+        ...invLogs.map((log, idx): FieldInventoryItem => {
+          const staffMatch = resolvePromoterIdentity(log.promoter);
+          const fin = Number(log.finalStock) || 0;
+          const status: FieldInventoryItem['stockStatus'] =
+            fin === 0 ? 'quiebre' : fin < 10 ? 'bajo' : fin < 25 ? 'medio' : 'alto';
+          return {
+            id: log.id || `FINV-${idx + 1}`,
+            client: log.store,
+            zone: staffMatch?.zone || 'Zulia / Falcón',
+            product: log.productName,
+            sku: `SKU-${String(idx + 1).padStart(3, '0')}`,
+            category: 'Embutidos / Asturias',
+            facingCount: 6,
+            shelfStock: fin,
+            storageStock: Math.max(0, (Number(log.initialStock) || 0) - fin),
+            totalStock: Number(log.initialStock) || fin,
+            unit: 'Unid',
+            stockStatus: status,
+            daysOfInventory: fin > 0 ? Math.max(2, Math.round(fin / 3)) : 0,
+            suggestedReorder: status === 'quiebre' || status === 'bajo' ? 30 : 0,
+            promoter: log.promoter,
+            lastAuditDate: normalizeDateToDMY(log.date)
+          };
+        }),
+        ...shelfScans.map((scan, idx): FieldInventoryItem => {
+          const staffMatch = resolvePromoterIdentity(scan.promoter);
+          const ourFacings = Number(scan.metrics?.ourFacings) || 0;
+          const outOfStock = Boolean(scan.metrics?.outOfStockDetected);
+          return {
+            id: scan.id || `SCAN-INV-${idx + 1}`,
+            client: scan.store,
+            zone: staffMatch?.zone || 'Zulia / Falcón',
+            product: scan.category || 'Línea Refrigerados Codizulca',
+            sku: `GOND-${String(idx + 1).padStart(3, '0')}`,
+            category: scan.category || 'Charcutería',
+            facingCount: ourFacings,
+            shelfStock: ourFacings * 4,
+            storageStock: 10,
+            totalStock: ourFacings * 4 + 10,
+            unit: 'Frentes',
+            stockStatus: outOfStock ? 'quiebre' : ourFacings < 6 ? 'bajo' : 'alto',
+            daysOfInventory: outOfStock ? 0 : 7,
+            suggestedReorder: outOfStock ? 25 : 0,
+            promoter: scan.promoter,
+            lastAuditDate: normalizeDateToDMY(scan.date)
+          };
+        })
+      ];
+      setFieldInventories(mappedFieldInv);
+
+      // 3. Sincronizar Historial de Visitas e Informes Unificados (Encuestas Corta/Larga + Precios + Inventario + Merchandising + Asistencia)
+      const unifiedInformes: InformeItem[] = [
+        ...tastingSurveys.map((ts): InformeItem => {
+          const staffMatch = resolvePromoterIdentity(ts.promoter);
+          const rating = Number(ts.ratingOverall) || 5;
+          const acceptance: InformeItem['acceptance'] =
+            rating >= 5 ? 'Muy Positivo' : rating >= 4 ? 'Positivo' : rating >= 3 ? 'Neutro' : 'Negativo';
+          return {
+            id: ts.id,
+            date: normalizeDateToDMY(ts.date),
+            checkIn: ts.date && ts.date.includes('T')
+              ? new Date(ts.date).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' })
+              : '09:30 AM',
+            promoter: ts.promoter,
+            client: ts.store,
+            zone: staffMatch?.zone || 'Zulia / Falcón',
+            type: ts.type === 'extendida' ? 'Informe Degustación' : 'Encuesta Breve',
+            stock: 'alto',
+            pop: 'excelente',
+            acceptance,
+            samplesGiven: 1,
+            photosCount: 1,
+            gpsVerified: true,
+            comments: `Producto: ${ts.productName} | Intención de compra: ${ts.purchaseIntent} (${rating}/5★). ${ts.comments || ''}`.trim()
+          };
+        }),
+        ...invLogs.map((inv): InformeItem => {
+          const staffMatch = resolvePromoterIdentity(inv.promoter);
+          const fin = Number(inv.finalStock) || 0;
+          return {
+            id: `INF-${inv.id}`,
+            date: normalizeDateToDMY(inv.date),
+            checkIn: inv.date && inv.date.includes('T')
+              ? new Date(inv.date).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' })
+              : '10:00 AM',
+            promoter: inv.promoter,
+            client: inv.store,
+            zone: staffMatch?.zone || 'Zulia / Falcón',
+            type: 'Informe Degustación',
+            stock: fin === 0 ? 'quiebre' : fin < 10 ? 'bajo' : fin < 25 ? 'medio' : 'alto',
+            pop: 'bueno',
+            acceptance: 'Muy Positivo',
+            samplesGiven: Number(inv.tastingsGiven) || 0,
+            photosCount: 1,
+            gpsVerified: true,
+            comments: `Inventario ${inv.productName}: Inicial ${inv.initialStock}, Muestras ${inv.tastingsGiven}, Final ${inv.finalStock} (Rotación Neta: ${inv.netRotation}). ${inv.observations || ''}`.trim()
+          };
+        }),
+        ...priceSurveys.map((ps): InformeItem => {
+          const staffMatch = resolvePromoterIdentity(ps.promoter);
+          return {
+            id: `INF-${ps.id}`,
+            date: normalizeDateToDMY(ps.date),
+            checkIn: ps.date && ps.date.includes('T')
+              ? new Date(ps.date).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' })
+              : '10:30 AM',
+            promoter: ps.promoter,
+            client: ps.store,
+            zone: staffMatch?.zone || 'Zulia / Falcón',
+            type: 'Relevamiento Precios',
+            stock: 'alto',
+            pop: 'bueno',
+            acceptance: 'Positivo',
+            photosCount: ps.photoPriceTag ? 1 : 0,
+            gpsVerified: true,
+            comments: `Monitoreo de Precio: ${ps.productName} a $${Number(ps.ownPriceUsd).toFixed(2)} (Bs. ${Number(ps.ownPriceBs).toFixed(2)}) vs ${(ps.competitors || []).length} competidores. ${ps.observations || ''}`.trim()
+          };
+        }),
+        ...merchList.map((mr): InformeItem => {
+          const staffMatch = resolvePromoterIdentity(mr.promoter);
+          return {
+            id: `INF-${mr.id}`,
+            date: normalizeDateToDMY(mr.date),
+            checkIn: mr.time || '09:00 AM',
+            promoter: mr.promoter,
+            client: mr.store,
+            zone: staffMatch?.zone || 'Zulia / Falcón',
+            type: mr.metrics ? 'Auditoría Profunda' : 'Merchandising PDV',
+            stock: mr.metrics?.outOfStockDetected ? 'quiebre' : 'alto',
+            pop: mr.metrics?.popDetected === false ? 'regular' : 'excelente',
+            acceptance: 'Muy Positivo',
+            photosCount: mr.photos ? mr.photos.length : 0,
+            gpsVerified: Boolean(mr.certified),
+            comments: mr.observations || `Actividades: ${(mr.activities || []).join(', ')}`
+          };
+        }),
+        ...checkinList.map((ci): InformeItem => {
+          const staffMatch = resolvePromoterIdentity(ci.promoter);
+          const timeFormatted = ci.date && ci.date.includes('T')
+            ? new Date(ci.date).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' })
+            : '08:30 AM';
+          return {
+            id: `INF-${ci.id}`,
+            date: normalizeDateToDMY(ci.date),
+            checkIn: timeFormatted,
+            promoter: ci.promoter,
+            client: ci.store,
+            zone: staffMatch?.zone || 'Zulia / Falcón',
+            type: 'Encuesta Breve',
+            stock: 'alto',
+            pop: 'excelente',
+            acceptance: 'Muy Positivo',
+            photosCount: ci.photoBase64 ? 1 : 0,
+            gpsVerified: Boolean(ci.location && ci.location.lat && ci.location.lng),
+            comments: `Asistencia verificada (${ci.type}) en ${ci.store}.`
+          };
+        })
+      ];
+
+      setInformes(unifiedInformes);
+    } catch (e) {
+      console.warn('Error syncing promoter field data into Trade Marketing:', e);
+    }
+  };
+
   useEffect(() => {
     loadMerchandisingReports();
-    const unsub = merchandisingService.subscribe(() => {
+    loadCampoSynchronizedData();
+    const unsubMerch = merchandisingService.subscribe(() => {
       loadMerchandisingReports();
+      loadCampoSynchronizedData();
     });
-    return () => unsub();
+    const unsubCampo = campoService.subscribe(() => {
+      loadCampoSynchronizedData();
+    });
+    const unsubCheckins = checkinsService.subscribe(() => {
+      loadCampoSynchronizedData();
+    });
+    return () => {
+      unsubMerch();
+      unsubCampo();
+      unsubCheckins();
+    };
   }, []);
 
   const handleDeleteMerchReport = async (id: string) => {
@@ -834,21 +1122,22 @@ export const TradeMarketing: React.FC = () => {
     }
   };
 
-  const handleCreateInventoryReport = (e: React.FormEvent) => {
+  const handleCreateInventoryReport = async (e: React.FormEvent) => {
     e.preventDefault();
     const initial = Number(newReportForm.initialStock) || 0;
     const final = Number(newReportForm.finalStock) || 0;
     const samples = Number(newReportForm.samplesGiven) || 0;
     const sales = Math.round((initial - final - samples) * 10) / 10;
     const rotation = initial > 0 ? Math.round(((initial - final) / initial) * 100) : 0;
+    const reportId = `INV-${Date.now().toString().slice(-6)}`;
 
     const newRep: InventoryTastingReport = {
-      id: `REP-${String(inventoryReports.length + 1).padStart(2, '0')}`,
+      id: reportId,
       productName: newReportForm.productName,
       sku: 'SKU-' + Math.floor(100 + Math.random() * 900),
       client: newReportForm.client,
       promoter: newReportForm.promoter,
-      date: '28/09/2026',
+      date: normalizeDateToDMY(new Date().toISOString()),
       initialStock: initial,
       finalStock: final,
       samplesGiven: samples,
@@ -861,10 +1150,24 @@ export const TradeMarketing: React.FC = () => {
 
     setInventoryReports([newRep, ...inventoryReports]);
     setIsNewReportModalOpen(false);
+
+    await campoService.saveInventoryLog({
+      id: reportId,
+      date: new Date().toISOString(),
+      store: newReportForm.client,
+      promoter: newReportForm.promoter,
+      productName: newReportForm.productName,
+      initialStock: initial,
+      tastingsGiven: samples,
+      finalStock: final,
+      netRotation: sales,
+      observations: newReportForm.promoterObservation
+    });
   };
 
-  const handleDeleteReport = (id: string) => {
+  const handleDeleteReport = async (id: string) => {
     setInventoryReports((prev) => prev.filter((r) => r.id !== id));
+    await campoService.deleteInventoryLog(id);
   };
 
   const handleSaveObservation = (id: string) => {
@@ -2783,7 +3086,7 @@ export const TradeMarketing: React.FC = () => {
           {/* ========================================================================= */}
           {informesTab === 'precios' && (
             <div className="space-y-5 animate-in fade-in-50 duration-300">
-              {/* 1. TARJETAS KPI DE PRECIOS EXACTAS A LA IMAGEN 2 */}
+              {/* 1. TARJETAS KPI DE PRECIOS SINCRONIZADAS CON LA APP DE PROMOTORAS */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
                 {/* Tarjeta 1: SKUS RELEVADOS */}
                 <div className="bg-[#121316] border border-white/10 rounded-2xl p-4 shadow-xl flex flex-col justify-between">
@@ -2791,8 +3094,14 @@ export const TradeMarketing: React.FC = () => {
                     SKUS RELEVADOS
                   </span>
                   <div className="flex items-baseline gap-2 mt-2">
-                    <span className="text-3xl font-black text-white">6</span>
-                    <span className="text-xs text-zinc-500 font-mono">marcas cotejadas</span>
+                    <span className="text-3xl font-black text-white">
+                      {priceComparisons.length > 0
+                        ? new Set(priceComparisons.map((p) => p.codizulcaProduct)).size
+                        : 0}
+                    </span>
+                    <span className="text-xs text-zinc-500 font-mono">
+                      ({priceComparisons.length} relevamientos)
+                    </span>
                   </div>
                 </div>
 
@@ -2802,8 +3111,16 @@ export const TradeMarketing: React.FC = () => {
                     VENTAJA COMPETITIVA
                   </span>
                   <div className="flex items-baseline gap-2 mt-2">
-                    <span className="text-3xl font-black text-emerald-400">67%</span>
-                    <span className="text-xs text-zinc-500 font-mono">más económico</span>
+                    <span className="text-3xl font-black text-emerald-400">
+                      {priceComparisons.length > 0
+                        ? `${Math.round(
+                            (priceComparisons.filter((p) => p.differencePercent <= 0).length /
+                              priceComparisons.length) *
+                              100
+                          )}%`
+                        : '0%'}
+                    </span>
+                    <span className="text-xs text-zinc-500 font-mono">más económico / par</span>
                   </div>
                 </div>
 
@@ -2813,18 +3130,29 @@ export const TradeMarketing: React.FC = () => {
                     DIFERENCIAL PROMEDIO
                   </span>
                   <div className="flex items-baseline gap-2 mt-2">
-                    <span className="text-3xl font-black text-emerald-400">-6.4%</span>
-                    <span className="text-xs text-zinc-500 font-mono leading-tight">favor Codizulca</span>
+                    <span className="text-3xl font-black text-emerald-400">
+                      {priceComparisons.length > 0
+                        ? `${(
+                            priceComparisons.reduce((acc, p) => acc + (p.differencePercent || 0), 0) /
+                            priceComparisons.length
+                          ).toFixed(1)}%`
+                        : '0.0%'}
+                    </span>
+                    <span className="text-xs text-zinc-500 font-mono leading-tight">vs competidores</span>
                   </div>
                 </div>
 
                 {/* Tarjeta 4: PDV CLAVE ALKOSTO */}
                 <div className="bg-[#121316] border border-white/10 rounded-2xl p-4 shadow-xl flex flex-col justify-between">
                   <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">
-                    PDV CLAVE ALKOSTO
+                    PDV MONITOREADOS
                   </span>
                   <div className="flex items-baseline gap-2 mt-2">
-                    <span className="text-3xl font-black text-amber-400">3</span>
+                    <span className="text-3xl font-black text-amber-400">
+                      {priceComparisons.length > 0
+                        ? new Set(priceComparisons.map((p) => p.client)).size
+                        : 0}
+                    </span>
                     <span className="text-xs text-zinc-500 font-mono leading-tight">sedes monitoreadas</span>
                   </div>
                 </div>
@@ -3041,9 +3369,7 @@ export const TradeMarketing: React.FC = () => {
                         Registros Recientes
                       </h3>
                       <span className="px-2.5 py-0.5 rounded-full bg-zinc-800 border border-white/5 text-zinc-300 font-medium text-xs font-mono">
-                        {filteredPriceComparisons.length === priceComparisons.length
-                          ? '311 de 311 registros'
-                          : `${filteredPriceComparisons.length} de 311 registros`}
+                        {`${filteredPriceComparisons.length} de ${priceComparisons.length} registros`}
                       </span>
                     </div>
                     <p className="text-xs text-zinc-400">

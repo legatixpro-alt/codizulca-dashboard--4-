@@ -36,6 +36,7 @@ import {
   MerchandisingReport
 } from '../../lib/merchandisingService';
 import { STORAGE_KEY_ACTIVE_STORE } from '../../lib/checkinsService';
+import { campoService } from '../../lib/campoService';
 import { ClientSearchAutocomplete } from '../../components/mobile/ClientSearchAutocomplete';
 
 const FREQUENT_STORES = [
@@ -58,13 +59,23 @@ export const PortalMerchandising: React.FC = () => {
   const { profile } = useAuth();
   const [searchParams] = useSearchParams();
 
-  // 1. Promotor y Rol Especializado
+  // 1. Promotor y Rol Especializado (sincronizado con sesión personal)
   const userParam = searchParams.get('user');
   const [promoterName, setPromoterName] = useState<string>(() => {
     if (userParam?.toLowerCase().includes('jose')) return 'Jose Barroso';
     if (userParam?.toLowerCase().includes('zioreli')) return 'Zioreli Grangger';
-    return profile?.full_name || localStorage.getItem('portal_active_promoter') || 'Jose Barroso';
+    const activeProm = campoService.getActivePromoter();
+    return activeProm?.name || profile?.full_name || localStorage.getItem('portal_active_promoter') || 'Jose Barroso';
   });
+
+  useEffect(() => {
+    const syncPromoter = () => {
+      const activeProm = campoService.getActivePromoter();
+      if (activeProm?.name) setPromoterName(activeProm.name);
+    };
+    window.addEventListener('codizulca_promoter_changed', syncPromoter);
+    return () => window.removeEventListener('codizulca_promoter_changed', syncPromoter);
+  }, []);
 
   // 2. Punto de Venta y Ubicación
   const [storeName, setStoreName] = useState<string>(() => {

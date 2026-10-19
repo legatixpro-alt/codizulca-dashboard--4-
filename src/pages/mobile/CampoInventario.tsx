@@ -13,13 +13,33 @@ import {
   CODIZULCA_PRODUCTS,
   FREQUENT_STORES,
   campoService,
-  InventoryLogPayload
+  InventoryLogPayload,
+  PromoterProfile
 } from '../../lib/campoService';
+import { useOutletContext } from 'react-router-dom';
+import { STORAGE_KEY_ACTIVE_STORE } from '../../lib/checkinsService';
+import { degustacionesService } from '../../lib/degustacionesService';
 
 export const CampoInventario: React.FC<{ activePromoterName?: string }> = ({
   activePromoterName
 }) => {
-  const [storeName, setStoreName] = useState<string>(FREQUENT_STORES[0]);
+  const context = useOutletContext<{
+    activePromoter?: PromoterProfile;
+  }>();
+  const activePromoter = context?.activePromoter || campoService.getActivePromoter();
+
+  const [storeName, setStoreName] = useState<string>(() => {
+    const savedStore = localStorage.getItem(STORAGE_KEY_ACTIVE_STORE);
+    if (savedStore && savedStore.trim() && FREQUENT_STORES.includes(savedStore.trim())) {
+      return savedStore.trim();
+    }
+    if (activePromoter?.assignedStore) {
+      const cleanAssigned = activePromoter.assignedStore.toUpperCase();
+      const matched = FREQUENT_STORES.find(s => s.toUpperCase().includes(cleanAssigned));
+      if (matched) return matched;
+    }
+    return FREQUENT_STORES[0];
+  });
   const [selectedProduct, setSelectedProduct] = useState(CODIZULCA_PRODUCTS[0]);
   
   // Estados de inventario numérico
@@ -49,11 +69,12 @@ export const CampoInventario: React.FC<{ activePromoterName?: string }> = ({
       return;
     }
 
+    const promoterFinalName = activePromoterName || activePromoter?.name || campoService.getActivePromoter().name;
     const payload: InventoryLogPayload = {
       id: 'INV-' + Date.now().toString().slice(-6),
       date: new Date().toISOString(),
       store: storeName,
-      promoter: activePromoterName || campoService.getActivePromoter().name,
+      promoter: promoterFinalName,
       productName: selectedProduct.name,
       initialStock,
       tastingsGiven,
@@ -63,6 +84,29 @@ export const CampoInventario: React.FC<{ activePromoterName?: string }> = ({
     };
 
     const res = await campoService.saveInventoryLog(payload);
+
+    // Si registró muestras degustadas, sincronizar también con su degustación activa en Trade Marketing
+    if (tastingsGiven > 0) {
+      try {
+        const assigned = await degustacionesService.getForPromoter({
+          id: activePromoter?.id,
+          name: promoterFinalName,
+          email: activePromoter?.email
+        });
+        if (assigned.length > 0) {
+          const activeDeg = assigned.find((d) => d.status === 'in_progress') || assigned[0];
+          if (activeDeg) {
+            await degustacionesService.update(activeDeg.id, {
+              delivered: Math.max(Number(activeDeg.delivered) || 0, tastingsGiven),
+              status: activeDeg.status === 'scheduled' ? 'in_progress' : activeDeg.status
+            });
+          }
+        }
+      } catch {
+        // ignore if offline
+      }
+    }
+
     setSaveSuccess(true);
     setIsOfflineSaved(res.offline);
   };

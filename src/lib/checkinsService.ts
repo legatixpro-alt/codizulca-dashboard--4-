@@ -45,48 +45,52 @@ export const checkinsService = {
    * Obtiene todos los checkins (servidor / supabase + local fallback)
    */
   async getAllCheckIns(): Promise<CheckInRecord[]> {
+    let serverList: CheckInRecord[] = [];
     try {
       const response = await fetch('/api/checkins');
       if (response.ok) {
         const data = await response.json();
         if (Array.isArray(data)) {
-          // Filtrar cualquier dato de prueba residual
-          const cleanData = data.filter((c: CheckInRecord) =>
+          serverList = data.filter((c: CheckInRecord) =>
+            c && c.id &&
             !c.id.startsWith('chk-00') &&
             !c.store?.includes("Palos Grandes") &&
             !c.photoBase64?.includes('unsplash')
           );
-          localStorage.setItem(STORAGE_KEY_CHECKINS, JSON.stringify(cleanData));
-          return cleanData;
         }
       }
     } catch {
       // Si la red falla o está offline, continuar con almacenamiento local
     }
 
+    let localList: CheckInRecord[] = [];
     const local = localStorage.getItem(STORAGE_KEY_CHECKINS);
     if (local) {
       try {
         const parsed = JSON.parse(local);
         if (Array.isArray(parsed)) {
-          const cleaned = parsed.filter((c: CheckInRecord) =>
+          localList = parsed.filter((c: CheckInRecord) =>
+            c && c.id &&
             !c.id.startsWith('chk-00') &&
             !c.store?.includes("Palos Grandes") &&
             !c.photoBase64?.includes('unsplash')
           );
-          if (cleaned.length !== parsed.length) {
-            localStorage.setItem(STORAGE_KEY_CHECKINS, JSON.stringify(cleaned));
-          }
-          return cleaned;
         }
       } catch (e) {
         console.warn('Error leyendo checkins locales:', e);
       }
     }
 
-    // Inicializar limpio sin datos de prueba
-    localStorage.setItem(STORAGE_KEY_CHECKINS, JSON.stringify(INITIAL_CHECKINS_SEED));
-    return INITIAL_CHECKINS_SEED;
+    const map = new Map<string, CheckInRecord>();
+    [...serverList, ...localList].forEach((c) => {
+      if (c && c.id) map.set(c.id, c);
+    });
+
+    const merged = Array.from(map.values()).sort(
+      (a, b) => new Date(b.created_at || b.date || 0).getTime() - new Date(a.created_at || a.date || 0).getTime()
+    );
+    localStorage.setItem(STORAGE_KEY_CHECKINS, JSON.stringify(merged));
+    return merged;
   },
 
   /**

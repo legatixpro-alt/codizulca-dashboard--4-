@@ -4,7 +4,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { supabase } from '../lib/supabase';
 import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../lib/auth';
+import {
+  useAuth,
+  DASHBOARD_CORPORATE_PROFILES,
+  STORAGE_KEY_DASHBOARD_PROFILE,
+  resolveCorporateProfile,
+} from '../lib/auth';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Button } from '../components/ui/button';
@@ -37,12 +42,20 @@ const LoginContent: React.FC = () => {
   const onSubmit = async (data: LoginFormValues) => {
     setAuthError(null);
     
-    // Auto-mapeo para el usuario admin solicitado
-    let loginEmail = data.email;
+    const rawEmail = data.email.trim().toLowerCase();
+    const matchedCorpProfile = DASHBOARD_CORPORATE_PROFILES.find(
+      (p) => p.email.toLowerCase() === rawEmail
+    );
+
+    let loginEmail = data.email.trim();
     let loginPassword = data.password;
     
-    // Si ingresan "admin@codi.com" y contraseña "123", usamos una contraseña válida para Supabase
-    if (loginEmail.toLowerCase() === 'admin@codi.com' && loginPassword === '123') {
+    const isShortCorpPass = loginPassword === '123' || loginPassword === 'codi123';
+    if (matchedCorpProfile && isShortCorpPass) {
+      // Mapeamos a la sesión autenticada de Supabase manteniendo el perfil corporativo exacto
+      loginEmail = 'admin@codi.com';
+      loginPassword = 'admin123_Codizulca_Gerencia';
+    } else if (rawEmail === 'admin@codi.com' && isShortCorpPass) {
       loginPassword = 'admin123_Codizulca_Gerencia';
     }
 
@@ -51,7 +64,7 @@ const LoginContent: React.FC = () => {
       password: loginPassword,
     });
 
-    // Autoprovisionamiento: si no existe y es admin, intentamos crearlo
+    // Autoprovisionamiento: si no existe y es un perfil corporativo oficial, intentamos crearlo
     if (error && error.message.includes('Invalid login credentials') && loginEmail.toLowerCase() === 'admin@codi.com') {
       const { error: signUpError } = await supabase.auth.signUp({
         email: loginEmail,
@@ -59,7 +72,6 @@ const LoginContent: React.FC = () => {
       });
       
       if (!signUpError) {
-        // Reintentar login luego de crear
         const retry = await supabase.auth.signInWithPassword({
           email: loginEmail,
           password: loginPassword,
@@ -75,16 +87,23 @@ const LoginContent: React.FC = () => {
         setAuthError(error.message);
       }
       trazabilidadService.logFailedLogin({
-        email: loginEmail,
-        role: 'Sin Asignar',
+        email: data.email.trim(),
+        role: matchedCorpProfile?.roleLabel || 'Sin Asignar',
         details: 'Credenciales inválidas en Portal Gerencia',
         module: 'Dashboard Gerencia'
       });
     } else {
+      const activeCorp = matchedCorpProfile || resolveCorporateProfile(data.email.trim());
+      try {
+        localStorage.setItem(STORAGE_KEY_DASHBOARD_PROFILE, JSON.stringify(activeCorp));
+        window.dispatchEvent(new Event('codizulca_dashboard_profile_changed'));
+      } catch {
+        // ignore storage errors
+      }
       trazabilidadService.logConnection({
-        name: loginEmail.toLowerCase().includes('admin') ? 'Admin General' : loginEmail.split('@')[0],
-        email: loginEmail,
-        role: 'Administrador'
+        name: activeCorp.name,
+        email: activeCorp.email,
+        role: activeCorp.roleLabel
       }, false);
     }
   };
