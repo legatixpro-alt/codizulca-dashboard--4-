@@ -30,6 +30,7 @@ import {
   DegustacionItem,
   matchPromoterAssignment
 } from '../../lib/degustacionesService';
+import { isPastDegustacionDate } from '../TradeMarketing';
 import { campoService, PromoterProfile } from '../../lib/campoService';
 import { STORAGE_KEY_ACTIVE_STORE } from '../../lib/checkinsService';
 
@@ -48,6 +49,7 @@ export const CampoRuta: React.FC = () => {
   );
 
   // Filtros
+  const [routePeriod, setRoutePeriod] = useState<'actual' | 'historial'>('actual');
   const [selectedStatus, setSelectedStatus] = useState<string>('todos');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [actionSuccessMsg, setActionSuccessMsg] = useState<string | null>(null);
@@ -98,9 +100,20 @@ export const CampoRuta: React.FC = () => {
     );
   }, [allDegustaciones, activePromoter]);
 
+  // Separar Ruta Actual (>= hoy) vs Historial (< hoy)
+  const myCurrentDegustaciones = useMemo(() => {
+    return myDegustaciones.filter((item) => !isPastDegustacionDate(item.date));
+  }, [myDegustaciones]);
+
+  const myHistoricalDegustaciones = useMemo(() => {
+    return myDegustaciones.filter((item) => isPastDegustacionDate(item.date));
+  }, [myDegustaciones]);
+
+  const periodDegustaciones = routePeriod === 'actual' ? myCurrentDegustaciones : myHistoricalDegustaciones;
+
   // Filtrado de la lista personal según estado y búsqueda
   const displayedDegustaciones = useMemo(() => {
-    return myDegustaciones.filter((item) => {
+    return periodDegustaciones.filter((item) => {
       const matchStatus = selectedStatus === 'todos' || item.status === selectedStatus;
       const matchSearch =
         searchTerm.trim() === '' ||
@@ -110,17 +123,17 @@ export const CampoRuta: React.FC = () => {
         item.id.toLowerCase().includes(searchTerm.toLowerCase());
       return matchStatus && matchSearch;
     });
-  }, [myDegustaciones, selectedStatus, searchTerm]);
+  }, [periodDegustaciones, selectedStatus, searchTerm]);
 
-  // Contadores rápidos para la promotora activa
+  // Contadores rápidos para la promotora activa en el periodo seleccionado
   const stats = useMemo(() => {
     return {
-      total: myDegustaciones.length,
-      scheduled: myDegustaciones.filter((d) => d.status === 'scheduled').length,
-      in_progress: myDegustaciones.filter((d) => d.status === 'in_progress').length,
-      completed: myDegustaciones.filter((d) => d.status === 'completed').length,
+      total: periodDegustaciones.length,
+      scheduled: periodDegustaciones.filter((d) => d.status === 'scheduled').length,
+      in_progress: periodDegustaciones.filter((d) => d.status === 'in_progress').length,
+      completed: periodDegustaciones.filter((d) => d.status === 'completed').length,
     };
-  }, [myDegustaciones]);
+  }, [periodDegustaciones]);
 
   // Abrir modal de detalles
   const handleOpenDetails = (item: DegustacionItem) => {
@@ -303,9 +316,40 @@ export const CampoRuta: React.FC = () => {
       </div>
 
       {/* ========================================================================= */}
-      {/* 2. BARRA DE BÚSQUEDA Y FILTRADO PERSONAL                                  */}
+      {/* 2. PESTAÑAS RUTA ACTUAL vs HISTORIAL Y BARRA DE BÚSQUEDA                 */}
       {/* ========================================================================= */}
       <div className="space-y-2">
+        <div className="grid grid-cols-2 gap-1.5 bg-[#121212] border border-white/10 p-1 rounded-xl">
+          <button
+            type="button"
+            onClick={() => setRoutePeriod('actual')}
+            className={`py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              routePeriod === 'actual'
+                ? 'bg-red-600 text-white shadow font-black'
+                : 'text-zinc-400 hover:text-white'
+            }`}
+          >
+            <span>Ruta Actual</span>
+            <span className="px-1.5 py-0.2 rounded-full bg-black/30 text-[10px] font-mono">
+              {myCurrentDegustaciones.length}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setRoutePeriod('historial')}
+            className={`py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              routePeriod === 'historial'
+                ? 'bg-red-600 text-white shadow font-black'
+                : 'text-zinc-400 hover:text-white'
+            }`}
+          >
+            <span>Historial</span>
+            <span className="px-1.5 py-0.2 rounded-full bg-black/30 text-[10px] font-mono">
+              {myHistoricalDegustaciones.length}
+            </span>
+          </button>
+        </div>
+
         {/* Buscador Rápido de Mis Actividades */}
         <div className="relative">
           <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -333,7 +377,7 @@ export const CampoRuta: React.FC = () => {
       <div className="space-y-2.5">
         <div className="flex items-center justify-between px-1">
           <span className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">
-            Mis Degustaciones Asignadas ({displayedDegustaciones.length})
+            {routePeriod === 'actual' ? 'Cronograma Actual Asignado' : 'Historial de Degustaciones'} ({displayedDegustaciones.length})
           </span>
           {selectedStatus !== 'todos' && (
             <button
@@ -351,11 +395,24 @@ export const CampoRuta: React.FC = () => {
               <Calendar className="w-5 h-5" />
             </div>
             <p className="text-xs font-bold text-zinc-300">
-              No tienes degustaciones asignadas con los criterios seleccionados
+              {routePeriod === 'actual'
+                ? 'Ruta actual lista para las degustaciones de la nueva semana'
+                : 'No tienes degustaciones en el historial con los filtros seleccionados'}
             </p>
             <p className="text-[11px] text-zinc-500 max-w-xs mx-auto">
-              La coordinadora de Trade Marketing asignará tus próximas degustaciones directamente a tu perfil.
+              {routePeriod === 'actual'
+                ? 'Las degustaciones de fechas anteriores ya pasaron a tu pestaña de Historial. Aquí aparecerán las nuevas degustaciones que te asigne Trade Marketing.'
+                : 'Aquí se conservan todas tus degustaciones de fechas anteriores.'}
             </p>
+            {routePeriod === 'actual' && myHistoricalDegustaciones.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setRoutePeriod('historial')}
+                className="mt-1 px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-[11px] font-bold transition-colors cursor-pointer"
+              >
+                Ver Historial ({myHistoricalDegustaciones.length})
+              </button>
+            )}
           </div>
         ) : (
           displayedDegustaciones.map((item) => {

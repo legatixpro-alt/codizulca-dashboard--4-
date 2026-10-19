@@ -1,6 +1,17 @@
 import { describe, it, expect } from 'vitest';
-import { getWeekBounds, parseDateDMY, getWeekInfo } from '../pages/TradeMarketing';
-import { matchVendedorName, normalizeDateToDMY } from '../lib/degustacionesService';
+import {
+  getWeekBounds,
+  parseDateDMY,
+  getWeekInfo,
+  getTodayStart,
+  isPastDegustacionDate,
+  getDefaultScheduleDateStr
+} from '../pages/TradeMarketing';
+import {
+  matchVendedorName,
+  normalizeDateToDMY,
+  degustacionesService
+} from '../lib/degustacionesService';
 
 describe('TradeMarketing - Date & Sunday Cutoff Logic Test Suite', () => {
   // =========================================================================
@@ -144,5 +155,31 @@ describe('TradeMarketing - Date & Sunday Cutoff Logic Test Suite', () => {
       const thisMonday = parseDateDMY('19/10/2026');
       expect(thisMonday >= weekStart && thisMonday <= weekEnd).toBe(true); // Debe ir a Cronograma Actual
     });
+
+    it('debe pasar TODAS las degustaciones de fechas anteriores a hoy al Historial y dejar Cronograma Actual listo para mañana', () => {
+      // Hoy: Domingo 18 de Octubre de 2026
+      const refToday = new Date(2026, 9, 18, 21, 35, 0);
+      const todayStart = getTodayStart(refToday);
+
+      expect(todayStart.getFullYear()).toBe(2026);
+      expect(todayStart.getMonth()).toBe(9);
+      expect(todayStart.getDate()).toBe(18);
+      expect(todayStart.getHours()).toBe(0);
+
+      // Todas las degustaciones del 07/10/2026 al 17/10/2026 son anteriores a hoy y deben ir a Historial
+      const allItems = degustacionesService.getDegustaciones();
+      const currentItems = allItems.filter((item) => !isPastDegustacionDate(item.date, todayStart));
+      const historicalItems = allItems.filter((item) => isPastDegustacionDate(item.date, todayStart));
+
+      expect(currentItems.length).toBe(0);
+      expect(historicalItems.length).toBe(allItems.length);
+      expect(historicalItems.length).toBeGreaterThanOrEqual(40);
+
+      // Cuando mañana (19/10/2026) un vendedor programe una degustación, debe entrar en Cronograma Actual
+      expect(isPastDegustacionDate('19/10/2026', todayStart)).toBe(false);
+      expect(isPastDegustacionDate('20/10/2026', todayStart)).toBe(false);
+      expect(getDefaultScheduleDateStr(refToday)).toBe('19/10/2026');
+    });
   });
 });
+

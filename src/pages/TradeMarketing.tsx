@@ -318,10 +318,38 @@ export const parseDateDMY = (dateStr: string): Date => {
     const month = parseInt(parts[1], 10) - 1;
     const year = parseInt(parts[2], 10);
     if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
-      return new Date(year, month, day);
+      return new Date(year, month, day, 0, 0, 0, 0);
     }
   }
-  return new Date();
+  const fallback = new Date();
+  fallback.setHours(0, 0, 0, 0);
+  return fallback;
+};
+
+// Inicio exacto del día actual (00:00:00.000) para separar Cronograma Actual (>= hoy) vs Historial (< hoy)
+export const getTodayStart = (referenceDate: Date = new Date()): Date => {
+  const d = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), referenceDate.getDate());
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
+// Evalúa si la fecha de una degustación es anterior al día de hoy (debe pasar automáticamente al Historial)
+export const isPastDegustacionDate = (dateStr: string, referenceDate: Date = new Date()): boolean => {
+  const todayStart = getTodayStart(referenceDate);
+  const parsed = parseDateDMY(dateStr);
+  return parsed.getTime() < todayStart.getTime();
+};
+
+// Fecha por defecto para programar nuevas degustaciones (si hoy es domingo, apunta al lunes siguiente)
+export const getDefaultScheduleDateStr = (referenceDate: Date = new Date()): string => {
+  const target = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), referenceDate.getDate());
+  if (target.getDay() === 0) {
+    target.setDate(target.getDate() + 1);
+  }
+  const dd = String(target.getDate()).padStart(2, '0');
+  const mm = String(target.getMonth() + 1).padStart(2, '0');
+  const yyyy = target.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
 };
 
 const MONTH_NAMES = [
@@ -1235,7 +1263,7 @@ export const TradeMarketing: React.FC = () => {
     zone: 'Punto Fijo',
     vendedor: 'MARIANA CHACÍN',
     source: 'vendedor_app' as 'vendedor_app' | 'coordinacion' | 'sistema',
-    date: new Date().toLocaleDateString('es-VE'),
+    date: getDefaultScheduleDateStr(),
     time: '14:00 - 18:00',
     target: 150,
     comments: ''
@@ -1312,7 +1340,7 @@ export const TradeMarketing: React.FC = () => {
 
     const newItem: DegustacionItem = {
       id: `DEG-VEND-${Date.now().toString().slice(-6)}`,
-      date: newActivity.date,
+      date: normalizeDateToDMY(newActivity.date),
       time: newActivity.time,
       activity: newActivity.activity,
       product: newActivity.product,
@@ -1348,7 +1376,7 @@ export const TradeMarketing: React.FC = () => {
       zone: 'Punto Fijo',
       vendedor: 'MARIANA CHACÍN',
       source: 'vendedor_app',
-      date: new Date().toLocaleDateString('es-VE'),
+      date: getDefaultScheduleDateStr(),
       time: '14:00 - 18:00',
       target: 150,
       comments: ''
@@ -1396,40 +1424,34 @@ export const TradeMarketing: React.FC = () => {
   };
 
   // =========================================================================
-  // SEPARACIÓN AUTOMÁTICA: CRONOGRAMA ACTUAL vs HISTORIAL (CORTE DE DOMINGO)
+  // SEPARACIÓN AUTOMÁTICA: CRONOGRAMA ACTUAL (>= HOY) vs HISTORIAL (< HOY)
+  // Todo lo que sea de una fecha anterior a hoy pasa automáticamente al Historial,
+  // dejando el Cronograma Actual limpio y listo para la nueva programación de vendedores.
   // =========================================================================
-  const { weekStart, weekEnd } = useMemo(() => {
-    const nowBounds = getWeekBounds(new Date());
-    const hasCurrentOrUpcoming = degustaciones.some((item) => {
-      const d = parseDateDMY(item.date);
-      return d >= nowBounds.weekStart;
-    });
-    if (hasCurrentOrUpcoming || degustaciones.length === 0) {
-      return nowBounds;
-    }
-    // Si aún no han enviado solicitudes para la nueva semana calendario, anclar a la última semana activa con solicitudes de vendedores
-    const sortedDates = degustaciones
-      .map((item) => parseDateDMY(item.date))
-      .filter((d) => !isNaN(d.getTime()))
-      .sort((a, b) => b.getTime() - a.getTime());
-    return sortedDates.length > 0 ? getWeekBounds(sortedDates[0]) : nowBounds;
-  }, [degustaciones]);
+  const todayStart = useMemo(() => getTodayStart(new Date()), []);
 
-  // Degustaciones de la semana en curso y próximas agendadas (Lunes de la semana actual en adelante)
+  const { weekStart, weekEnd } = useMemo(() => {
+    const refForWeek = new Date(todayStart);
+    // Si hoy es domingo (fin de semana), mostrar el rango de la nueva semana que inicia mañana lunes
+    if (refForWeek.getDay() === 0) {
+      refForWeek.setDate(refForWeek.getDate() + 1);
+    }
+    return getWeekBounds(refForWeek);
+  }, [todayStart]);
+
+  // Cronograma Actual: Únicamente degustaciones con fecha de hoy en adelante (>= todayStart)
   const currentWeekDegustaciones = useMemo(() => {
     return degustaciones.filter((item) => {
-      const d = parseDateDMY(item.date);
-      return d >= weekStart;
+      return !isPastDegustacionDate(item.date, todayStart);
     });
-  }, [degustaciones, weekStart]);
+  }, [degustaciones, todayStart]);
 
-  // Degustaciones archivadas de fechas anteriores (Semana pasada hacia atrás)
+  // Historial: Todas las degustaciones de fechas anteriores a hoy (< todayStart)
   const historicalDegustaciones = useMemo(() => {
     return degustaciones.filter((item) => {
-      const d = parseDateDMY(item.date);
-      return d < weekStart;
+      return isPastDegustacionDate(item.date, todayStart);
     });
-  }, [degustaciones, weekStart]);
+  }, [degustaciones, todayStart]);
 
   // Agrupación automática de Historial por Semana (Semana 4, Semana 3, Semana 2, Semana 1)
   const historicalWeeksGrouped = useMemo(() => {
@@ -2130,7 +2152,8 @@ export const TradeMarketing: React.FC = () => {
                   onChange={(e) => setSelectedHistoricalWeek(e.target.value)}
                   className="bg-transparent text-white font-bold focus:outline-none cursor-pointer"
                 >
-                  <option value="todas" className="bg-zinc-900 text-white">Todas las Semanas</option>
+                  <option value="todas" className="bg-zinc-900 text-white">Todas las Semanas ({historicalDegustaciones.length})</option>
+                  <option value="semana-4" className="bg-zinc-900 text-white">Semana 4 (19 Oct - 25 Oct)</option>
                   <option value="semana-3" className="bg-zinc-900 text-white">Semana 3 (12 Oct - 18 Oct)</option>
                   <option value="semana-2" className="bg-zinc-900 text-white">Semana 2 (05 Oct - 11 Oct)</option>
                   <option value="semana-1" className="bg-zinc-900 text-white">Semana 1 (01 Oct - 04 Oct)</option>
@@ -2204,25 +2227,35 @@ export const TradeMarketing: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setDegustacionSubtab('actual')}
-                className={`px-5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`px-5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
                   degustacionSubtab === 'actual'
                     ? 'bg-red-600 text-white shadow-md font-black'
                     : 'text-zinc-400 hover:text-white'
                 }`}
               >
-                Cronograma Actual
+                <span>Cronograma Actual</span>
+                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono ${
+                  degustacionSubtab === 'actual' ? 'bg-black/30 text-white' : 'bg-zinc-800 text-zinc-300'
+                }`}>
+                  {currentWeekDegustaciones.length}
+                </span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setDegustacionSubtab('historial')}
-                className={`px-5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`px-5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
                   degustacionSubtab === 'historial'
                     ? 'bg-red-600 text-white shadow-md font-black'
                     : 'text-zinc-400 hover:text-white'
                 }`}
               >
-                Historial
+                <span>Historial</span>
+                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono ${
+                  degustacionSubtab === 'historial' ? 'bg-black/30 text-white' : 'bg-zinc-800 text-zinc-300'
+                }`}>
+                  {historicalDegustaciones.length}
+                </span>
               </button>
             </div>
 
@@ -2275,14 +2308,14 @@ export const TradeMarketing: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                   <span className="text-xs font-bold uppercase tracking-wider text-white">
-                    Semana en Curso (Actividades Activas y Próximas)
+                    Cronograma Actual (Actividades desde Hoy y Próxima Programación)
                   </span>
                   <span className="px-2 py-0.5 rounded bg-white/10 text-zinc-300 font-mono text-[10px]">
                     {weekStart.toLocaleDateString('es-VE', { day: '2-digit', month: 'short' })} - {weekEnd.toLocaleDateString('es-VE', { day: '2-digit', month: 'short' })}
                   </span>
                 </div>
                 <span className="text-[11px] text-zinc-400 font-mono">
-                  {filteredCurrentDegustaciones.length} solicitudes de degustación programadas esta semana
+                  {filteredCurrentDegustaciones.length} solicitudes activas en cronograma • {historicalDegustaciones.length} archivadas en Historial
                 </span>
               </div>
 
@@ -2305,15 +2338,25 @@ export const TradeMarketing: React.FC = () => {
                     {filteredCurrentDegustaciones.length === 0 ? (
                       <tr>
                         <td colSpan={9} className="p-12 text-center">
-                          <div className="max-w-md mx-auto space-y-3">
-                            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto text-amber-400 shadow-md">
-                              <Clock className="w-6 h-6" />
+                          <div className="max-w-lg mx-auto space-y-3">
+                            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto text-emerald-400 shadow-md">
+                              <Calendar className="w-6 h-6" />
                             </div>
-                            <h4 className="font-bold text-white text-base">Esperando Solicitudes de Degustación desde la App de Vendedores</h4>
+                            <h4 className="font-bold text-white text-base">
+                              Cronograma Actual Listo para la Nueva Programación de Vendedores
+                            </h4>
                             <p className="text-xs text-zinc-400 leading-relaxed">
-                              Este cronograma se sincroniza directamente con las solicitudes de degustación que los vendedores envían desde su app móvil para sus clientes. No hay solicitudes ficticias en el sistema.
+                              Todas las degustaciones de fechas anteriores ({historicalDegustaciones.length} actividades registradas hasta ayer) han sido transferidas automáticamente a la pestaña de <strong className="text-zinc-200">Historial</strong>. Este cronograma está limpio y listo para recibir las solicitudes de degustación que los vendedores programen desde su app móvil a partir de mañana (<strong className="text-emerald-400">{getDefaultScheduleDateStr()}</strong>).
                             </p>
-                            <div className="pt-2 flex items-center justify-center gap-2">
+                            <div className="pt-2 flex items-center justify-center gap-2 flex-wrap">
+                              <button
+                                type="button"
+                                onClick={() => setDegustacionSubtab('historial')}
+                                className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-white/10 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-sm"
+                              >
+                                <FolderArchive className="w-3.5 h-3.5 text-amber-400" />
+                                <span>Ver Historial ({historicalDegustaciones.length})</span>
+                              </button>
                               <button
                                 type="button"
                                 onClick={async () => {
