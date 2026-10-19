@@ -135,13 +135,34 @@ export interface MerchandisingReportPayload {
   offlineQueued?: boolean;
 }
 
-// Catálogo Oficial de Productos Asturias / Codizulca para Monitoreo de Precios
+// Catálogo Oficial de Productos Asturias / Codizulca / Vencampo para Monitoreo de Precios, Inventario y Degustaciones
 export const CODIZULCA_PRODUCTS = [
+  // Línea Vencampo - Arroz (400gr, 500gr, 900gr, 1kg)
+  { id: 'PROD-VEN-ARR-400', name: 'Arroz Vencampo 400gr', defaultPriceUsd: 0.65, category: 'Víveres / Granos', weight: '400gr' },
+  { id: 'PROD-VEN-ARR-500', name: 'Arroz Vencampo 500gr', defaultPriceUsd: 0.80, category: 'Víveres / Granos', weight: '500gr' },
+  { id: 'PROD-VEN-ARR-900', name: 'Arroz Vencampo 900gr', defaultPriceUsd: 1.35, category: 'Víveres / Granos', weight: '900gr' },
+  { id: 'PROD-VEN-ARR-1000', name: 'Arroz Vencampo 1kg', defaultPriceUsd: 1.50, category: 'Víveres / Granos', weight: '1kg' },
+  // Línea Vencampo - Azúcar (400gr, 500gr, 900gr, 1kg)
+  { id: 'PROD-VEN-AZU-400', name: 'Azúcar Vencampo 400gr', defaultPriceUsd: 0.70, category: 'Víveres / Endulzantes', weight: '400gr' },
+  { id: 'PROD-VEN-AZU-500', name: 'Azúcar Vencampo 500gr', defaultPriceUsd: 0.85, category: 'Víveres / Endulzantes', weight: '500gr' },
+  { id: 'PROD-VEN-AZU-900', name: 'Azúcar Vencampo 900gr', defaultPriceUsd: 1.45, category: 'Víveres / Endulzantes', weight: '900gr' },
+  { id: 'PROD-VEN-AZU-1000', name: 'Azúcar Vencampo 1kg', defaultPriceUsd: 1.60, category: 'Víveres / Endulzantes', weight: '1kg' },
+  // Línea Vencampo - Aceite (400gr, 500gr, 900gr, 1kg)
+  { id: 'PROD-VEN-ACE-400', name: 'Aceite Vencampo 400gr', defaultPriceUsd: 1.20, category: 'Víveres / Aceites', weight: '400gr' },
+  { id: 'PROD-VEN-ACE-500', name: 'Aceite Vencampo 500gr', defaultPriceUsd: 1.45, category: 'Víveres / Aceites', weight: '500gr' },
+  { id: 'PROD-VEN-ACE-900', name: 'Aceite Vencampo 900gr', defaultPriceUsd: 2.35, category: 'Víveres / Aceites', weight: '900gr' },
+  { id: 'PROD-VEN-ACE-1000', name: 'Aceite Vencampo 1kg', defaultPriceUsd: 2.60, category: 'Víveres / Aceites', weight: '1kg' },
+  // Línea Vencampo - Leche (400gr, 500gr, 900gr, 1kg)
+  { id: 'PROD-VEN-LEC-400', name: 'Leche Vencampo 400gr', defaultPriceUsd: 3.90, category: 'Lácteos / Leche en Polvo', weight: '400gr' },
+  { id: 'PROD-VEN-LEC-500', name: 'Leche Vencampo 500gr', defaultPriceUsd: 4.80, category: 'Lácteos / Leche en Polvo', weight: '500gr' },
+  { id: 'PROD-VEN-LEC-900', name: 'Leche Vencampo 900gr', defaultPriceUsd: 8.50, category: 'Lácteos / Leche en Polvo', weight: '900gr' },
+  { id: 'PROD-VEN-LEC-1000', name: 'Leche Vencampo 1kg', defaultPriceUsd: 9.40, category: 'Lácteos / Leche en Polvo', weight: '1kg' },
+  // Línea Asturias / Charcutería
   { id: 'PROD-AST-01', name: 'Pechuga de Pavo Asturias', defaultPriceUsd: 9.50, category: 'Aves / Pechugas', weight: 'Kg' },
   { id: 'PROD-AST-02', name: 'Pechuga de Pollo Asturias', defaultPriceUsd: 8.20, category: 'Aves / Pechugas', weight: 'Kg' },
   { id: 'PROD-AST-03', name: 'Jamón Cocido de Pavo Asturias', defaultPriceUsd: 8.90, category: 'Jamones', weight: 'Kg' },
-  { id: 'PROD-AST-04', name: 'Mortadela Especial de Pollo Asturias', defaultPriceUsd: 3.80, category: 'Embutidos', weight: '900gr' },
-  { id: 'PROD-AST-05', name: 'Mortadela Especial de Pollo Asturias', defaultPriceUsd: 2.20, category: 'Embutidos', weight: '500gr' },
+  { id: 'PROD-AST-04', name: 'Mortadela Especial de Pollo Asturias 900gr', defaultPriceUsd: 3.80, category: 'Embutidos', weight: '900gr' },
+  { id: 'PROD-AST-05', name: 'Mortadela Especial de Pollo Asturias 500gr', defaultPriceUsd: 2.20, category: 'Embutidos', weight: '500gr' },
   { id: 'PROD-AST-06', name: 'Jamón de Pierna Estándar', defaultPriceUsd: 7.50, category: 'Jamones', weight: 'Kg' }
 ];
 
@@ -152,7 +173,13 @@ export const COMPETITOR_BRANDS = [
   'Alibal',
   'Montserratina',
   'San Antonio',
-  'Embutidos Arichuna'
+  'Embutidos Arichuna',
+  'Primor',
+  'Mary',
+  'Montalbán',
+  'Mazeite',
+  'Vatel',
+  'La Campiña'
 ];
 
 export interface PromoterProfile {
@@ -200,6 +227,7 @@ export const PROMOTERS_LIST: PromoterProfile[] = [
 
 export const FREQUENT_STORES = [
   "ALKOSTO DONDE COMPRAR ES GANAR, C.A.",
+  "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (LA LIMPIA)",
   "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (AV DELICIAS)",
   "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (SAN FELIPE)",
   "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (PLAZA BARALT)",

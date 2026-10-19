@@ -263,6 +263,17 @@ export const ALKOSTO_BRANCHES = [
     supervisor: 'SAIRU VALLES (Cuentas Clave)',
     rif: 'J-413243580',
     isKeyAccount: true
+  },
+  {
+    id: 'ALKOSTO-06',
+    nombre: 'ALKOSTO DONDE COMPRAR ES GANAR, C.A. (LA LIMPIA)',
+    cadena: 'ALKOSTO',
+    zona: 'Av. La Limpia',
+    region: 'Occidente / Maracaibo',
+    canal: 'SUPERMERCADOS',
+    supervisor: 'SAIRU VALLES (Cuentas Clave)',
+    rif: 'J-413243580',
+    isKeyAccount: true
   }
 ];
 
@@ -6970,6 +6981,13 @@ export const TradeMarketing: React.FC = () => {
                   >
                     Alkosto Bella Vista
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewReportForm({ ...newReportForm, client: 'ALKOSTO DONDE COMPRAR ES GANAR, C.A. (LA LIMPIA)' })}
+                    className="text-[10px] px-2 py-0.5 rounded bg-amber-950/60 hover:bg-amber-900 border border-amber-500/30 text-amber-300 transition-colors"
+                  >
+                    Alkosto La Limpia
+                  </button>
                 </div>
               </div>
 
@@ -6982,6 +7000,22 @@ export const TradeMarketing: React.FC = () => {
                     onChange={(e) => setNewReportForm({ ...newReportForm, productName: e.target.value })}
                     className="w-full bg-zinc-900 border border-white/10 rounded-xl px-3 py-2 text-white font-medium focus:outline-none focus:border-red-500 text-xs cursor-pointer"
                   >
+                    <option value="Arroz Vencampo 400gr">Arroz Vencampo 400gr</option>
+                    <option value="Arroz Vencampo 500gr">Arroz Vencampo 500gr</option>
+                    <option value="Arroz Vencampo 900gr">Arroz Vencampo 900gr</option>
+                    <option value="Arroz Vencampo 1kg">Arroz Vencampo 1kg</option>
+                    <option value="Azúcar Vencampo 400gr">Azúcar Vencampo 400gr</option>
+                    <option value="Azúcar Vencampo 500gr">Azúcar Vencampo 500gr</option>
+                    <option value="Azúcar Vencampo 900gr">Azúcar Vencampo 900gr</option>
+                    <option value="Azúcar Vencampo 1kg">Azúcar Vencampo 1kg</option>
+                    <option value="Aceite Vencampo 400gr">Aceite Vencampo 400gr</option>
+                    <option value="Aceite Vencampo 500gr">Aceite Vencampo 500gr</option>
+                    <option value="Aceite Vencampo 900gr">Aceite Vencampo 900gr</option>
+                    <option value="Aceite Vencampo 1kg">Aceite Vencampo 1kg</option>
+                    <option value="Leche Vencampo 400gr">Leche Vencampo 400gr</option>
+                    <option value="Leche Vencampo 500gr">Leche Vencampo 500gr</option>
+                    <option value="Leche Vencampo 900gr">Leche Vencampo 900gr</option>
+                    <option value="Leche Vencampo 1kg">Leche Vencampo 1kg</option>
                     <option value="Embutidos (Mortadela, Salchichas...) - 1kg">Embutidos (Mortadela, Salchichas...) - 1kg</option>
                     <option value="Pollo Beneficiado Ebenezer por Kg">Pollo Beneficiado Ebenezer por Kg</option>
                     <option value="Salchichas Especiales Asturias 500g">Salchichas Especiales Asturias 500g</option>

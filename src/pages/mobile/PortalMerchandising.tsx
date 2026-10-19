@@ -40,6 +40,7 @@ import { campoService } from '../../lib/campoService';
 import { ClientSearchAutocomplete } from '../../components/mobile/ClientSearchAutocomplete';
 
 const FREQUENT_STORES = [
+  "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (LA LIMPIA)",
   "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (Bella Vista)",
   "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (Maracaibo Norte)",
   "Supermercado Olímpica (El Bajo)",

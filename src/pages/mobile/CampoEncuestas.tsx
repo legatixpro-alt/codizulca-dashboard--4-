@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import {
   CODIZULCA_PRODUCTS,
+  FREQUENT_STORES,
   campoService,
   TastingSurveyPayload,
   PromoterProfile
@@ -17,17 +18,19 @@ import { useOutletContext } from 'react-router-dom';
 import { STORAGE_KEY_ACTIVE_STORE } from '../../lib/checkinsService';
 import { degustacionesService } from '../../lib/degustacionesService';
 
-const AVAILABLE_PRODUCTS = [
-  'Arroz 900gr',
-  'Mortadela Tapara Especial 1kg',
-  'Jamón Cocido Superior 1kg',
-  'Salchichas Viena (Paquete 12)',
-  'Tocineta Ahumada Especial 1kg',
-  'Chuleta Ahumada de Cerdo',
-  'Salchichón Tipo Milano',
-  'Queso Amarillo Paisa / Gouda',
-  ...CODIZULCA_PRODUCTS.map((p) => p.name)
-];
+const AVAILABLE_PRODUCTS = Array.from(
+  new Set([
+    ...CODIZULCA_PRODUCTS.map((p) => p.name),
+    'Arroz 900gr',
+    'Mortadela Tapara Especial 1kg',
+    'Jamón Cocido Superior 1kg',
+    'Salchichas Viena (Paquete 12)',
+    'Tocineta Ahumada Especial 1kg',
+    'Chuleta Ahumada de Cerdo',
+    'Salchichón Tipo Milano',
+    'Queso Amarillo Paisa / Gouda'
+  ])
+);
 
 export const CampoEncuestas: React.FC<{ activePromoterName?: string }> = ({
   activePromoterName
@@ -52,7 +55,7 @@ export const CampoEncuestas: React.FC<{ activePromoterName?: string }> = ({
     }
     return 'ALKOSTO DONDE COMPRAR ES GANAR, C.A.';
   });
-  const [selectedProduct, setSelectedProduct] = useState<string>('Mortadela Tapara Especial 1kg');
+  const [selectedProduct, setSelectedProduct] = useState<string>('Arroz Vencampo 900gr');
 
   // === MODELO 1: ENCUESTA CORTA ===
   const [saborCalidadCorta, setSaborCalidadCorta] = useState<number>(5);
@@ -254,18 +257,36 @@ export const CampoEncuestas: React.FC<{ activePromoterName?: string }> = ({
           
           {/* CARD 1: TIENDA / LOCAL Y PRODUCTO IMPULSADO - CATEGORÍA */}
           <div className="bg-[#0d0d0d] border border-neutral-800 rounded-2xl p-4 space-y-3 shadow-xl">
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 block mb-1.5">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 block">
                 TIENDA / LOCAL
               </label>
+              <select
+                value={FREQUENT_STORES.includes(storeName) ? storeName : ''}
+                onChange={(e) => {
+                  if (e.target.value) setStoreName(e.target.value);
+                }}
+                className="w-full bg-[#171717] border border-neutral-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500 cursor-pointer"
+              >
+                <option value="">Seleccionar sucursal frecuente (Alkosto / PDV)...</option>
+                {FREQUENT_STORES.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
               <input
                 type="text"
+                list="encuestas-frequent-stores"
                 value={storeName}
                 onChange={(e) => setStoreName(e.target.value)}
-                placeholder="Ej. Automercado Plaza"
+                placeholder="Ej. ALKOSTO DONDE COMPRAR ES GANAR, C.A. (LA LIMPIA)"
                 className="w-full bg-[#000000] border border-neutral-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-red-500 transition-colors"
                 required
               />
+              <datalist id="encuestas-frequent-stores">
+                {FREQUENT_STORES.map((s) => (
+                  <option key={s} value={s} />
+                ))}
+              </datalist>
             </div>
 
             <div>
@@ -369,18 +390,36 @@ export const CampoEncuestas: React.FC<{ activePromoterName?: string }> = ({
           
           {/* CARD 1: TIENDA / LOCAL Y PRODUCTO IMPULSADO - CATEGORÍA */}
           <div className="bg-[#0d0d0d] border border-neutral-800 rounded-2xl p-4 space-y-3 shadow-xl">
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 block mb-1.5">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 block">
                 TIENDA / LOCAL
               </label>
+              <select
+                value={FREQUENT_STORES.includes(storeName) ? storeName : ''}
+                onChange={(e) => {
+                  if (e.target.value) setStoreName(e.target.value);
+                }}
+                className="w-full bg-[#171717] border border-neutral-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500 cursor-pointer"
+              >
+                <option value="">Seleccionar sucursal frecuente (Alkosto / PDV)...</option>
+                {FREQUENT_STORES.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
               <input
                 type="text"
+                list="encuestas-frequent-stores-larga"
                 value={storeName}
                 onChange={(e) => setStoreName(e.target.value)}
-                placeholder="Ej. Automercado Plaza"
+                placeholder="Ej. ALKOSTO DONDE COMPRAR ES GANAR, C.A. (LA LIMPIA)"
                 className="w-full bg-[#000000] border border-neutral-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-red-500 transition-colors"
                 required
               />
+              <datalist id="encuestas-frequent-stores-larga">
+                {FREQUENT_STORES.map((s) => (
+                  <option key={s} value={s} />
+                ))}
+              </datalist>
             </div>
 
             <div>

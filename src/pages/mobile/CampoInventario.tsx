@@ -213,7 +213,9 @@ export const CampoInventario: React.FC<{ activePromoterName?: string }> = ({
             >
               {CODIZULCA_PRODUCTS.map((prod) => (
                 <option key={prod.id} value={prod.id}>
-                  {prod.name} ({prod.category} - {prod.weight})
+                  {prod.name.toLowerCase().includes(prod.weight.toLowerCase())
+                    ? `${prod.name} (${prod.category})`
+                    : `${prod.name} (${prod.category} - ${prod.weight})`}
                 </option>
               ))}
             </select>
