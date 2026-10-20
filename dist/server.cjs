@@ -4098,6 +4098,12 @@ Responde con un JSON estructurado con:
       }
     } catch (e) {
     }
+    if (memoryCheckins.length === 0 && import_fs2.default.existsSync(checkinsFilePath)) {
+      try {
+        memoryCheckins = JSON.parse(import_fs2.default.readFileSync(checkinsFilePath, "utf8"));
+      } catch (err) {
+      }
+    }
     return res.json(memoryCheckins);
   });
   app.post("/api/checkins", async (req, res) => {

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { degustacionesService, DEFAULT_DEGUSTACIONES, DegustacionItem } from '../degustacionesService';
 
 describe('degustacionesService - Senior QA Automation Test Suite', () => {
-  const STORAGE_KEY = 'codizulca_cronograma_degustaciones_v5';
+  const STORAGE_KEY = 'codizulca_cronograma_degustaciones_v6';
 
   beforeEach(() => {
     localStorage.clear();
@@ -21,7 +21,9 @@ describe('degustacionesService - Senior QA Automation Test Suite', () => {
     it('debe inicializar con las 40 solicitudes auténticas de vendedores si localStorage está vacío', () => {
       const items = degustacionesService.getDegustaciones();
       expect(items).toBeDefined();
-      expect(items.length).toBe(40);
+      const activeVendorRequests = items.filter((i) => !i.id.startsWith('DEG-HIST-'));
+      expect(activeVendorRequests.length).toBe(40);
+      expect(items.length).toBeGreaterThanOrEqual(40);
       expect(items[0]).toHaveProperty('vendedor');
       expect(items[0].source).toBe('vendedor_app');
     });
@@ -165,7 +167,8 @@ describe('degustacionesService - Senior QA Automation Test Suite', () => {
 
       const items = degustacionesService.getDegustaciones();
       expect(items).toBeDefined();
-      expect(items.length).toBe(40);
+      expect(items.length).toBeGreaterThanOrEqual(40);
+      expect(items.filter((i) => !i.id.startsWith('DEG-HIST-')).length).toBe(40);
     });
 
     it('debe limpiarse si localStorage contiene un array con valores nulos o indefinidos', () => {
@@ -232,7 +235,8 @@ describe('degustacionesService - Senior QA Automation Test Suite', () => {
 
       const result = await degustacionesService.getDegustacionesAsync();
       expect(result).toBeDefined();
-      expect(result.length).toBe(40);
+      expect(result.length).toBeGreaterThanOrEqual(40);
+      expect(result.filter((i) => !i.id.startsWith('DEG-HIST-')).length).toBe(40);
     });
 
     it('debe soportar HTTP 404 Not Found en getDegustacionesAsync sin lanzar excepción', async () => {
@@ -245,7 +249,8 @@ describe('degustacionesService - Senior QA Automation Test Suite', () => {
 
       const result = await degustacionesService.getDegustacionesAsync();
       expect(result).toBeDefined();
-      expect(result.length).toBe(40);
+      expect(result.length).toBeGreaterThanOrEqual(40);
+      expect(result.filter((i) => !i.id.startsWith('DEG-HIST-')).length).toBe(40);
     });
 
     it('debe soportar timeout o fallo completo de red (Network Error / TypeError) en sincronización de API', async () => {
@@ -254,7 +259,8 @@ describe('degustacionesService - Senior QA Automation Test Suite', () => {
 
       const result = await degustacionesService.getDegustacionesAsync();
       expect(result).toBeDefined();
-      expect(result.length).toBe(40);
+      expect(result.length).toBeGreaterThanOrEqual(40);
+      expect(result.filter((i) => !i.id.startsWith('DEG-HIST-')).length).toBe(40);
 
       // Agregar degustación en modo offline no debe lanzar error no capturado
       const testItem = { ...DEFAULT_DEGUSTACIONES[0], id: 'OFFLINE-ITEM-1' };

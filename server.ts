@@ -3730,6 +3730,11 @@ Responde con un JSON estructurado con:
     } catch (e) {
       // Fallback a memoria/archivo local
     }
+    if (memoryCheckins.length === 0 && fs.existsSync(checkinsFilePath)) {
+      try {
+        memoryCheckins = JSON.parse(fs.readFileSync(checkinsFilePath, 'utf8'));
+      } catch (err) {}
+    }
     return res.json(memoryCheckins);
   });
 

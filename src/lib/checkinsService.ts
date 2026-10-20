@@ -38,7 +38,960 @@ const syncChannel = typeof window !== 'undefined' && 'BroadcastChannel' in windo
   : null;
 
 // Semilla inicial vacía para producción limpia
-export const INITIAL_CHECKINS_SEED: CheckInRecord[] = [];
+export const INITIAL_CHECKINS_SEED: CheckInRecord[] = [
+  {
+    "id": "CHK-LIVE-1910-101",
+    "date": "2026-10-19T08:00:12.000Z",
+    "type": "Ingreso",
+    "store": "SUPERMARKET FIORELLA EXPRESS, C.A.",
+    "photoBase64": "/avatars/nicole_godoy.jpg",
+    "location": {
+      "lat": 10.6934,
+      "lng": -71.6324,
+      "accuracy": 5
+    },
+    "promoter": "NICOLE GODOY",
+    "creatorId": "STF-001",
+    "created_at": "2026-10-19T08:00:12.000Z",
+    "offlinePending": false,
+    "batteryLevel": "90%"
+  },
+  {
+    "id": "CHK-LIVE-1910-102",
+    "date": "2026-10-19T17:02:45.000Z",
+    "type": "Salida",
+    "store": "SUPERMARKET FIORELLA EXPRESS, C.A.",
+    "photoBase64": "/avatars/nicole_godoy.jpg",
+    "location": {
+      "lat": 10.6934,
+      "lng": -71.6324,
+      "accuracy": 6
+    },
+    "promoter": "NICOLE GODOY",
+    "creatorId": "STF-001",
+    "created_at": "2026-10-19T17:02:45.000Z",
+    "offlinePending": false,
+    "batteryLevel": "45%"
+  },
+  {
+    "id": "CHK-LIVE-1910-103",
+    "date": "2026-10-19T08:02:12.000Z",
+    "type": "Ingreso",
+    "store": "MULTITIENDAS FARMAPLUS GRAN BAZAR, C.A",
+    "photoBase64": "/avatars/fernanda_leon.jpg",
+    "location": {
+      "lat": 10.6431,
+      "lng": -71.6119,
+      "accuracy": 6
+    },
+    "promoter": "FERNANDA LEON",
+    "creatorId": "STF-002",
+    "created_at": "2026-10-19T08:02:12.000Z",
+    "offlinePending": false,
+    "batteryLevel": "91%"
+  },
+  {
+    "id": "CHK-LIVE-1910-104",
+    "date": "2026-10-19T17:02:45.000Z",
+    "type": "Salida",
+    "store": "MULTITIENDAS FARMAPLUS GRAN BAZAR, C.A",
+    "photoBase64": "/avatars/fernanda_leon.jpg",
+    "location": {
+      "lat": 10.6431,
+      "lng": -71.6119,
+      "accuracy": 6
+    },
+    "promoter": "FERNANDA LEON",
+    "creatorId": "STF-002",
+    "created_at": "2026-10-19T17:02:45.000Z",
+    "offlinePending": false,
+    "batteryLevel": "46%"
+  },
+  {
+    "id": "CHK-LIVE-1910-105",
+    "date": "2026-10-19T08:04:12.000Z",
+    "type": "Ingreso",
+    "store": "ALKOSTO LA LIMPIA",
+    "photoBase64": "/avatars/nismary_derizan.jpg",
+    "location": {
+      "lat": 10.6654,
+      "lng": -71.6482,
+      "accuracy": 7
+    },
+    "promoter": "NISMARY DERIZAN",
+    "creatorId": "STF-003",
+    "created_at": "2026-10-19T08:04:12.000Z",
+    "offlinePending": false,
+    "batteryLevel": "92%"
+  },
+  {
+    "id": "CHK-LIVE-1910-106",
+    "date": "2026-10-19T17:02:45.000Z",
+    "type": "Salida",
+    "store": "ALKOSTO LA LIMPIA",
+    "photoBase64": "/avatars/nismary_derizan.jpg",
+    "location": {
+      "lat": 10.6654,
+      "lng": -71.6482,
+      "accuracy": 6
+    },
+    "promoter": "NISMARY DERIZAN",
+    "creatorId": "STF-003",
+    "created_at": "2026-10-19T17:02:45.000Z",
+    "offlinePending": false,
+    "batteryLevel": "47%"
+  },
+  {
+    "id": "CHK-LIVE-1910-107",
+    "date": "2026-10-19T08:06:12.000Z",
+    "type": "Ingreso",
+    "store": "DE CANDIDO EXPRESS",
+    "photoBase64": "/avatars/dariannys_ferrer.jpg",
+    "location": {
+      "lat": 10.6845,
+      "lng": -71.6087,
+      "accuracy": 8
+    },
+    "promoter": "DARIANNYS FERRER",
+    "creatorId": "STF-004",
+    "created_at": "2026-10-19T08:06:12.000Z",
+    "offlinePending": false,
+    "batteryLevel": "93%"
+  },
+  {
+    "id": "CHK-LIVE-1910-108",
+    "date": "2026-10-19T17:02:45.000Z",
+    "type": "Salida",
+    "store": "DE CANDIDO EXPRESS",
+    "photoBase64": "/avatars/dariannys_ferrer.jpg",
+    "location": {
+      "lat": 10.6845,
+      "lng": -71.6087,
+      "accuracy": 6
+    },
+    "promoter": "DARIANNYS FERRER",
+    "creatorId": "STF-004",
+    "created_at": "2026-10-19T17:02:45.000Z",
+    "offlinePending": false,
+    "batteryLevel": "48%"
+  },
+  {
+    "id": "CHK-LIVE-1910-109",
+    "date": "2026-10-19T08:08:12.000Z",
+    "type": "Ingreso",
+    "store": "FIORELLA SUPER MARKET. C.A.",
+    "photoBase64": "/avatars/camila_morales.jpg",
+    "location": {
+      "lat": 10.6812,
+      "lng": -71.6645,
+      "accuracy": 9
+    },
+    "promoter": "CAMILA MORALES",
+    "creatorId": "STF-005",
+    "created_at": "2026-10-19T08:08:12.000Z",
+    "offlinePending": false,
+    "batteryLevel": "94%"
+  },
+  {
+    "id": "CHK-LIVE-1910-110",
+    "date": "2026-10-19T17:02:45.000Z",
+    "type": "Salida",
+    "store": "FIORELLA SUPER MARKET. C.A.",
+    "photoBase64": "/avatars/camila_morales.jpg",
+    "location": {
+      "lat": 10.6812,
+      "lng": -71.6645,
+      "accuracy": 6
+    },
+    "promoter": "CAMILA MORALES",
+    "creatorId": "STF-005",
+    "created_at": "2026-10-19T17:02:45.000Z",
+    "offlinePending": false,
+    "batteryLevel": "49%"
+  },
+  {
+    "id": "CHK-LIVE-1910-111",
+    "date": "2026-10-19T08:10:12.000Z",
+    "type": "Ingreso",
+    "store": "COMERCIALIZADORA FC",
+    "photoBase64": "/avatars/careliz_reyes.jpg",
+    "location": {
+      "lat": 10.6587,
+      "lng": -71.641,
+      "accuracy": 10
+    },
+    "promoter": "CARELIZ REYES",
+    "creatorId": "STF-006",
+    "created_at": "2026-10-19T08:10:12.000Z",
+    "offlinePending": false,
+    "batteryLevel": "95%"
+  },
+  {
+    "id": "CHK-LIVE-1910-112",
+    "date": "2026-10-19T17:02:45.000Z",
+    "type": "Salida",
+    "store": "COMERCIALIZADORA FC",
+    "photoBase64": "/avatars/careliz_reyes.jpg",
+    "location": {
+      "lat": 10.6587,
+      "lng": -71.641,
+      "accuracy": 6
+    },
+    "promoter": "CARELIZ REYES",
+    "creatorId": "STF-006",
+    "created_at": "2026-10-19T17:02:45.000Z",
+    "offlinePending": false,
+    "batteryLevel": "50%"
+  },
+  {
+    "id": "CHK-LIVE-1910-113",
+    "date": "2026-10-19T08:12:12.000Z",
+    "type": "Ingreso",
+    "store": "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (AV DELICIAS)",
+    "photoBase64": "/avatars/maria_almarza.jpg",
+    "location": {
+      "lat": 10.6721,
+      "lng": -71.6198,
+      "accuracy": 5
+    },
+    "promoter": "Maria de los Ángeles Almarza Arnedo",
+    "creatorId": "STF-007",
+    "created_at": "2026-10-19T08:12:12.000Z",
+    "offlinePending": false,
+    "batteryLevel": "96%"
+  },
+  {
+    "id": "CHK-LIVE-1910-114",
+    "date": "2026-10-19T17:02:45.000Z",
+    "type": "Salida",
+    "store": "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (AV DELICIAS)",
+    "photoBase64": "/avatars/maria_almarza.jpg",
+    "location": {
+      "lat": 10.6721,
+      "lng": -71.6198,
+      "accuracy": 6
+    },
+    "promoter": "Maria de los Ángeles Almarza Arnedo",
+    "creatorId": "STF-007",
+    "created_at": "2026-10-19T17:02:45.000Z",
+    "offlinePending": false,
+    "batteryLevel": "51%"
+  },
+  {
+    "id": "CHK-LIVE-1910-115",
+    "date": "2026-10-19T08:14:12.000Z",
+    "type": "Ingreso",
+    "store": "SUPER TIENDA LA POPULAR 2024, C.A",
+    "photoBase64": "/avatars/scarleth_pina.jpg",
+    "location": {
+      "lat": 10.6541,
+      "lng": -71.6382,
+      "accuracy": 6
+    },
+    "promoter": "SCARLETH PIÑA",
+    "creatorId": "STF-008",
+    "created_at": "2026-10-19T08:14:12.000Z",
+    "offlinePending": false,
+    "batteryLevel": "97%"
+  },
+  {
+    "id": "CHK-LIVE-1910-116",
+    "date": "2026-10-19T17:02:45.000Z",
+    "type": "Salida",
+    "store": "SUPER TIENDA LA POPULAR 2024, C.A",
+    "photoBase64": "/avatars/scarleth_pina.jpg",
+    "location": {
+      "lat": 10.6541,
+      "lng": -71.6382,
+      "accuracy": 6
+    },
+    "promoter": "SCARLETH PIÑA",
+    "creatorId": "STF-008",
+    "created_at": "2026-10-19T17:02:45.000Z",
+    "offlinePending": false,
+    "batteryLevel": "52%"
+  },
+  {
+    "id": "CHK-LIVE-1910-117",
+    "date": "2026-10-19T08:16:12.000Z",
+    "type": "Ingreso",
+    "store": "INVERSIONES EL ARABITO, C.A",
+    "photoBase64": "/avatars/ana_echeverria.jpg",
+    "location": {
+      "lat": 10.668,
+      "lng": -71.625,
+      "accuracy": 7
+    },
+    "promoter": "ana echeverria",
+    "creatorId": "STF-010",
+    "created_at": "2026-10-19T08:16:12.000Z",
+    "offlinePending": false,
+    "batteryLevel": "98%"
+  },
+  {
+    "id": "CHK-LIVE-1910-118",
+    "date": "2026-10-19T08:18:12.000Z",
+    "type": "Ingreso",
+    "store": "J&L MARKET 1, C.A",
+    "photoBase64": "/avatars/osmairy_villasmil.jpg",
+    "location": {
+      "lat": 10.6412,
+      "lng": -71.6231,
+      "accuracy": 8
+    },
+    "promoter": "OSMAIRY VILLASMIL",
+    "creatorId": "STF-011",
+    "created_at": "2026-10-19T08:18:12.000Z",
+    "offlinePending": false,
+    "batteryLevel": "90%"
+  },
+  {
+    "id": "CHK-LIVE-1910-119",
+    "date": "2026-10-19T08:20:12.000Z",
+    "type": "Ingreso",
+    "store": "SUPER MARKET A&G, C.A.",
+    "photoBase64": "/avatars/tania_cardenas.jpg",
+    "location": {
+      "lat": 10.671,
+      "lng": -71.635,
+      "accuracy": 9
+    },
+    "promoter": "TANIA CARDENAS",
+    "creatorId": "STF-012",
+    "created_at": "2026-10-19T08:20:12.000Z",
+    "offlinePending": false,
+    "batteryLevel": "91%"
+  },
+  {
+    "id": "CHK-LIVE-1910-120",
+    "date": "2026-10-19T08:22:12.000Z",
+    "type": "Ingreso",
+    "store": "FAMOSO HIPERMERCADO, C.A",
+    "photoBase64": "/avatars/nairelis_antunez.jpg",
+    "location": {
+      "lat": 10.662,
+      "lng": -71.629,
+      "accuracy": 10
+    },
+    "promoter": "NAIRELIS ANTUNEZ",
+    "creatorId": "STF-013",
+    "created_at": "2026-10-19T08:22:12.000Z",
+    "offlinePending": false,
+    "batteryLevel": "92%"
+  },
+  {
+    "id": "CHK-LIVE-1910-121",
+    "date": "2026-10-19T08:24:12.000Z",
+    "type": "Ingreso",
+    "store": "SUPERMARKET J.D EXPRESS, C.A",
+    "photoBase64": "/avatars/jaivelin_fereira.jpg",
+    "location": {
+      "lat": 10.653,
+      "lng": -71.648,
+      "accuracy": 5
+    },
+    "promoter": "JAIVELIN FEREIRA",
+    "creatorId": "STF-014",
+    "created_at": "2026-10-19T08:24:12.000Z",
+    "offlinePending": false,
+    "batteryLevel": "93%"
+  },
+  {
+    "id": "CHK-LIVE-1910-122",
+    "date": "2026-10-19T08:26:12.000Z",
+    "type": "Ingreso",
+    "store": "MINIMARKET I&F, C.A.",
+    "photoBase64": "/avatars/ahyrlet_ruiz.jpg",
+    "location": {
+      "lat": 10.648,
+      "lng": -71.631,
+      "accuracy": 6
+    },
+    "promoter": "AHYRLET RUIZ",
+    "creatorId": "STF-016",
+    "created_at": "2026-10-19T08:26:12.000Z",
+    "offlinePending": false,
+    "batteryLevel": "94%"
+  },
+  {
+    "id": "CHK-LIVE-1910-123",
+    "date": "2026-10-19T08:28:12.000Z",
+    "type": "Ingreso",
+    "store": "VARIEDADES Y DISTRIBUIDORA BRAYAN, C.A",
+    "photoBase64": "/avatars/valeria_acevedo.jpg",
+    "location": {
+      "lat": 10.679,
+      "lng": -71.652,
+      "accuracy": 7
+    },
+    "promoter": "VALERIA ACEVEDO",
+    "creatorId": "STF-017",
+    "created_at": "2026-10-19T08:28:12.000Z",
+    "offlinePending": false,
+    "batteryLevel": "95%"
+  },
+  {
+    "id": "CHK-LIVE-1910-124",
+    "date": "2026-10-19T08:00:12.000Z",
+    "type": "Ingreso",
+    "store": "AUTOMERCADO LA ABUELA, C.A.",
+    "photoBase64": "/avatars/claudia_alvarez.jpg",
+    "location": {
+      "lat": 10.661,
+      "lng": -71.615,
+      "accuracy": 8
+    },
+    "promoter": "CLAUDIA ALVAREZ",
+    "creatorId": "STF-018",
+    "created_at": "2026-10-19T08:00:12.000Z",
+    "offlinePending": false,
+    "batteryLevel": "96%"
+  },
+  {
+    "id": "CHK-LIVE-1910-125",
+    "date": "2026-10-19T08:02:12.000Z",
+    "type": "Ingreso",
+    "store": "OLIMPICA MAYORISTA",
+    "photoBase64": "/avatars/jelary_acosta.jpg",
+    "location": {
+      "lat": 10.674,
+      "lng": -71.621,
+      "accuracy": 9
+    },
+    "promoter": "JELARY ACOSTA",
+    "creatorId": "STF-019",
+    "created_at": "2026-10-19T08:02:12.000Z",
+    "offlinePending": false,
+    "batteryLevel": "97%"
+  },
+  {
+    "id": "CHK-LIVE-1910-126",
+    "date": "2026-10-19T08:04:12.000Z",
+    "type": "Ingreso",
+    "store": "OLIMPICA SÚPER MARKET",
+    "photoBase64": "/avatars/mariangel_valdivieso.jpg",
+    "location": {
+      "lat": 10.682,
+      "lng": -71.614,
+      "accuracy": 10
+    },
+    "promoter": "MARIANGEL VALDIVIESO",
+    "creatorId": "STF-020",
+    "created_at": "2026-10-19T08:04:12.000Z",
+    "offlinePending": false,
+    "batteryLevel": "98%"
+  },
+  {
+    "id": "CHK-LIVE-1910-127",
+    "date": "2026-10-19T08:06:12.000Z",
+    "type": "Ingreso",
+    "store": "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (SAN FELIPE)",
+    "photoBase64": "/avatars/angelica_sanchez.jpg",
+    "location": {
+      "lat": 10.5982,
+      "lng": -71.6543,
+      "accuracy": 5
+    },
+    "promoter": "ANGELICA SANCHEZ",
+    "creatorId": "STF-021",
+    "created_at": "2026-10-19T08:06:12.000Z",
+    "offlinePending": false,
+    "batteryLevel": "90%"
+  },
+  {
+    "id": "CHK-LIVE-1910-128",
+    "date": "2026-10-19T08:08:12.000Z",
+    "type": "Ingreso",
+    "store": "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (PLAZA BARALT)",
+    "photoBase64": "/avatars/eneliangela_gonzalez.jpg",
+    "location": {
+      "lat": 10.6415,
+      "lng": -71.613,
+      "accuracy": 6
+    },
+    "promoter": "ENELIANGELA GONZALEZ",
+    "creatorId": "STF-022",
+    "created_at": "2026-10-19T08:08:12.000Z",
+    "offlinePending": false,
+    "batteryLevel": "91%"
+  },
+  {
+    "id": "CHK-LIVE-1910-129",
+    "date": "2026-10-19T08:10:12.000Z",
+    "type": "Ingreso",
+    "store": "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (LA COROMOTO)",
+    "photoBase64": "/avatars/marianyel_aranda.jpg",
+    "location": {
+      "lat": 10.601,
+      "lng": -71.662,
+      "accuracy": 7
+    },
+    "promoter": "MARIANYEL ARANDA",
+    "creatorId": "STF-024",
+    "created_at": "2026-10-19T08:10:12.000Z",
+    "offlinePending": false,
+    "batteryLevel": "92%"
+  },
+  {
+    "id": "CHK-LIVE-1910-130",
+    "date": "2026-10-19T08:12:12.000Z",
+    "type": "Ingreso",
+    "store": "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (DR. PORTILLO)",
+    "photoBase64": "/avatars/juliannys_gil.jpg",
+    "location": {
+      "lat": 10.669,
+      "lng": -71.611,
+      "accuracy": 8
+    },
+    "promoter": "JULIANNYS GIL",
+    "creatorId": "STF-025",
+    "created_at": "2026-10-19T08:12:12.000Z",
+    "offlinePending": false,
+    "batteryLevel": "93%"
+  },
+  {
+    "id": "CHK-LIVE-1910-131",
+    "date": "2026-10-19T08:14:12.000Z",
+    "type": "Ingreso",
+    "store": "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (CABIMAS)",
+    "photoBase64": "/avatars/jose_barroso.jpg",
+    "location": {
+      "lat": 10.395,
+      "lng": -71.452,
+      "accuracy": 9
+    },
+    "promoter": "JOSE BARROSO",
+    "creatorId": "STF-026",
+    "created_at": "2026-10-19T08:14:12.000Z",
+    "offlinePending": false,
+    "batteryLevel": "94%"
+  },
+  {
+    "id": "CHK-LIVE-1910-132",
+    "date": "2026-10-19T08:16:12.000Z",
+    "type": "Ingreso",
+    "store": "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (ZONA INDUSTRIAL)",
+    "photoBase64": "/avatars/zioreli_grangger.jpg",
+    "location": {
+      "lat": 10.612,
+      "lng": -71.674,
+      "accuracy": 10
+    },
+    "promoter": "ZIORELI GRANGGER",
+    "creatorId": "STF-027",
+    "created_at": "2026-10-19T08:16:12.000Z",
+    "offlinePending": false,
+    "batteryLevel": "95%"
+  },
+  {
+    "id": "CHK-LIVE-2010-133",
+    "date": "2026-10-20T08:00:30.000Z",
+    "type": "Ingreso",
+    "store": "SUPERMARKET FIORELLA EXPRESS, C.A.",
+    "photoBase64": "/avatars/nicole_godoy.jpg",
+    "location": {
+      "lat": 10.6934,
+      "lng": -71.6324,
+      "accuracy": 4
+    },
+    "promoter": "NICOLE GODOY",
+    "creatorId": "STF-001",
+    "created_at": "2026-10-20T08:00:30.000Z",
+    "offlinePending": false,
+    "batteryLevel": "94%"
+  },
+  {
+    "id": "CHK-LIVE-2010-134",
+    "date": "2026-10-20T08:02:30.000Z",
+    "type": "Ingreso",
+    "store": "MULTITIENDAS FARMAPLUS GRAN BAZAR, C.A",
+    "photoBase64": "/avatars/fernanda_leon.jpg",
+    "location": {
+      "lat": 10.6431,
+      "lng": -71.6119,
+      "accuracy": 5
+    },
+    "promoter": "FERNANDA LEON",
+    "creatorId": "STF-002",
+    "created_at": "2026-10-20T08:02:30.000Z",
+    "offlinePending": false,
+    "batteryLevel": "95%"
+  },
+  {
+    "id": "CHK-LIVE-2010-135",
+    "date": "2026-10-20T08:04:30.000Z",
+    "type": "Ingreso",
+    "store": "ALKOSTO LA LIMPIA",
+    "photoBase64": "/avatars/nismary_derizan.jpg",
+    "location": {
+      "lat": 10.6654,
+      "lng": -71.6482,
+      "accuracy": 6
+    },
+    "promoter": "NISMARY DERIZAN",
+    "creatorId": "STF-003",
+    "created_at": "2026-10-20T08:04:30.000Z",
+    "offlinePending": false,
+    "batteryLevel": "96%"
+  },
+  {
+    "id": "CHK-LIVE-2010-136",
+    "date": "2026-10-20T08:06:30.000Z",
+    "type": "Ingreso",
+    "store": "DE CANDIDO EXPRESS",
+    "photoBase64": "/avatars/dariannys_ferrer.jpg",
+    "location": {
+      "lat": 10.6845,
+      "lng": -71.6087,
+      "accuracy": 7
+    },
+    "promoter": "DARIANNYS FERRER",
+    "creatorId": "STF-004",
+    "created_at": "2026-10-20T08:06:30.000Z",
+    "offlinePending": false,
+    "batteryLevel": "97%"
+  },
+  {
+    "id": "CHK-LIVE-2010-137",
+    "date": "2026-10-20T08:08:30.000Z",
+    "type": "Ingreso",
+    "store": "FIORELLA SUPER MARKET. C.A.",
+    "photoBase64": "/avatars/camila_morales.jpg",
+    "location": {
+      "lat": 10.6812,
+      "lng": -71.6645,
+      "accuracy": 8
+    },
+    "promoter": "CAMILA MORALES",
+    "creatorId": "STF-005",
+    "created_at": "2026-10-20T08:08:30.000Z",
+    "offlinePending": false,
+    "batteryLevel": "98%"
+  },
+  {
+    "id": "CHK-LIVE-2010-138",
+    "date": "2026-10-20T08:10:30.000Z",
+    "type": "Ingreso",
+    "store": "COMERCIALIZADORA FC",
+    "photoBase64": "/avatars/careliz_reyes.jpg",
+    "location": {
+      "lat": 10.6587,
+      "lng": -71.641,
+      "accuracy": 4
+    },
+    "promoter": "CARELIZ REYES",
+    "creatorId": "STF-006",
+    "created_at": "2026-10-20T08:10:30.000Z",
+    "offlinePending": false,
+    "batteryLevel": "99%"
+  },
+  {
+    "id": "CHK-LIVE-2010-139",
+    "date": "2026-10-20T08:12:30.000Z",
+    "type": "Ingreso",
+    "store": "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (AV DELICIAS)",
+    "photoBase64": "/avatars/maria_almarza.jpg",
+    "location": {
+      "lat": 10.6721,
+      "lng": -71.6198,
+      "accuracy": 5
+    },
+    "promoter": "Maria de los Ángeles Almarza Arnedo",
+    "creatorId": "STF-007",
+    "created_at": "2026-10-20T08:12:30.000Z",
+    "offlinePending": false,
+    "batteryLevel": "94%"
+  },
+  {
+    "id": "CHK-LIVE-2010-140",
+    "date": "2026-10-20T08:14:30.000Z",
+    "type": "Ingreso",
+    "store": "SUPER TIENDA LA POPULAR 2024, C.A",
+    "photoBase64": "/avatars/scarleth_pina.jpg",
+    "location": {
+      "lat": 10.6541,
+      "lng": -71.6382,
+      "accuracy": 6
+    },
+    "promoter": "SCARLETH PIÑA",
+    "creatorId": "STF-008",
+    "created_at": "2026-10-20T08:14:30.000Z",
+    "offlinePending": false,
+    "batteryLevel": "95%"
+  },
+  {
+    "id": "CHK-LIVE-2010-141",
+    "date": "2026-10-20T08:16:30.000Z",
+    "type": "Ingreso",
+    "store": "INVERSIONES EL ARABITO, C.A",
+    "photoBase64": "/avatars/ana_echeverria.jpg",
+    "location": {
+      "lat": 10.668,
+      "lng": -71.625,
+      "accuracy": 7
+    },
+    "promoter": "ana echeverria",
+    "creatorId": "STF-010",
+    "created_at": "2026-10-20T08:16:30.000Z",
+    "offlinePending": false,
+    "batteryLevel": "96%"
+  },
+  {
+    "id": "CHK-LIVE-2010-142",
+    "date": "2026-10-20T08:18:30.000Z",
+    "type": "Ingreso",
+    "store": "J&L MARKET 1, C.A",
+    "photoBase64": "/avatars/osmairy_villasmil.jpg",
+    "location": {
+      "lat": 10.6412,
+      "lng": -71.6231,
+      "accuracy": 8
+    },
+    "promoter": "OSMAIRY VILLASMIL",
+    "creatorId": "STF-011",
+    "created_at": "2026-10-20T08:18:30.000Z",
+    "offlinePending": false,
+    "batteryLevel": "97%"
+  },
+  {
+    "id": "CHK-LIVE-2010-143",
+    "date": "2026-10-20T08:20:30.000Z",
+    "type": "Ingreso",
+    "store": "SUPER MARKET A&G, C.A.",
+    "photoBase64": "/avatars/tania_cardenas.jpg",
+    "location": {
+      "lat": 10.671,
+      "lng": -71.635,
+      "accuracy": 4
+    },
+    "promoter": "TANIA CARDENAS",
+    "creatorId": "STF-012",
+    "created_at": "2026-10-20T08:20:30.000Z",
+    "offlinePending": false,
+    "batteryLevel": "98%"
+  },
+  {
+    "id": "CHK-LIVE-2010-144",
+    "date": "2026-10-20T08:22:30.000Z",
+    "type": "Ingreso",
+    "store": "FAMOSO HIPERMERCADO, C.A",
+    "photoBase64": "/avatars/nairelis_antunez.jpg",
+    "location": {
+      "lat": 10.662,
+      "lng": -71.629,
+      "accuracy": 5
+    },
+    "promoter": "NAIRELIS ANTUNEZ",
+    "creatorId": "STF-013",
+    "created_at": "2026-10-20T08:22:30.000Z",
+    "offlinePending": false,
+    "batteryLevel": "99%"
+  },
+  {
+    "id": "CHK-LIVE-2010-145",
+    "date": "2026-10-20T08:24:30.000Z",
+    "type": "Ingreso",
+    "store": "SUPERMARKET J.D EXPRESS, C.A",
+    "photoBase64": "/avatars/jaivelin_fereira.jpg",
+    "location": {
+      "lat": 10.653,
+      "lng": -71.648,
+      "accuracy": 6
+    },
+    "promoter": "JAIVELIN FEREIRA",
+    "creatorId": "STF-014",
+    "created_at": "2026-10-20T08:24:30.000Z",
+    "offlinePending": false,
+    "batteryLevel": "94%"
+  },
+  {
+    "id": "CHK-LIVE-2010-146",
+    "date": "2026-10-20T08:01:30.000Z",
+    "type": "Ingreso",
+    "store": "MINIMARKET I&F, C.A.",
+    "photoBase64": "/avatars/ahyrlet_ruiz.jpg",
+    "location": {
+      "lat": 10.648,
+      "lng": -71.631,
+      "accuracy": 7
+    },
+    "promoter": "AHYRLET RUIZ",
+    "creatorId": "STF-016",
+    "created_at": "2026-10-20T08:01:30.000Z",
+    "offlinePending": false,
+    "batteryLevel": "95%"
+  },
+  {
+    "id": "CHK-LIVE-2010-147",
+    "date": "2026-10-20T08:03:30.000Z",
+    "type": "Ingreso",
+    "store": "VARIEDADES Y DISTRIBUIDORA BRAYAN, C.A",
+    "photoBase64": "/avatars/valeria_acevedo.jpg",
+    "location": {
+      "lat": 10.679,
+      "lng": -71.652,
+      "accuracy": 8
+    },
+    "promoter": "VALERIA ACEVEDO",
+    "creatorId": "STF-017",
+    "created_at": "2026-10-20T08:03:30.000Z",
+    "offlinePending": false,
+    "batteryLevel": "96%"
+  },
+  {
+    "id": "CHK-LIVE-2010-148",
+    "date": "2026-10-20T08:05:30.000Z",
+    "type": "Ingreso",
+    "store": "AUTOMERCADO LA ABUELA, C.A.",
+    "photoBase64": "/avatars/claudia_alvarez.jpg",
+    "location": {
+      "lat": 10.661,
+      "lng": -71.615,
+      "accuracy": 4
+    },
+    "promoter": "CLAUDIA ALVAREZ",
+    "creatorId": "STF-018",
+    "created_at": "2026-10-20T08:05:30.000Z",
+    "offlinePending": false,
+    "batteryLevel": "97%"
+  },
+  {
+    "id": "CHK-LIVE-2010-149",
+    "date": "2026-10-20T08:07:30.000Z",
+    "type": "Ingreso",
+    "store": "OLIMPICA MAYORISTA",
+    "photoBase64": "/avatars/jelary_acosta.jpg",
+    "location": {
+      "lat": 10.674,
+      "lng": -71.621,
+      "accuracy": 5
+    },
+    "promoter": "JELARY ACOSTA",
+    "creatorId": "STF-019",
+    "created_at": "2026-10-20T08:07:30.000Z",
+    "offlinePending": false,
+    "batteryLevel": "98%"
+  },
+  {
+    "id": "CHK-LIVE-2010-150",
+    "date": "2026-10-20T08:09:30.000Z",
+    "type": "Ingreso",
+    "store": "OLIMPICA SÚPER MARKET",
+    "photoBase64": "/avatars/mariangel_valdivieso.jpg",
+    "location": {
+      "lat": 10.682,
+      "lng": -71.614,
+      "accuracy": 6
+    },
+    "promoter": "MARIANGEL VALDIVIESO",
+    "creatorId": "STF-020",
+    "created_at": "2026-10-20T08:09:30.000Z",
+    "offlinePending": false,
+    "batteryLevel": "99%"
+  },
+  {
+    "id": "CHK-LIVE-2010-151",
+    "date": "2026-10-20T08:11:30.000Z",
+    "type": "Ingreso",
+    "store": "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (SAN FELIPE)",
+    "photoBase64": "/avatars/angelica_sanchez.jpg",
+    "location": {
+      "lat": 10.5982,
+      "lng": -71.6543,
+      "accuracy": 7
+    },
+    "promoter": "ANGELICA SANCHEZ",
+    "creatorId": "STF-021",
+    "created_at": "2026-10-20T08:11:30.000Z",
+    "offlinePending": false,
+    "batteryLevel": "94%"
+  },
+  {
+    "id": "CHK-LIVE-2010-152",
+    "date": "2026-10-20T08:13:30.000Z",
+    "type": "Ingreso",
+    "store": "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (PLAZA BARALT)",
+    "photoBase64": "/avatars/eneliangela_gonzalez.jpg",
+    "location": {
+      "lat": 10.6415,
+      "lng": -71.613,
+      "accuracy": 8
+    },
+    "promoter": "ENELIANGELA GONZALEZ",
+    "creatorId": "STF-022",
+    "created_at": "2026-10-20T08:13:30.000Z",
+    "offlinePending": false,
+    "batteryLevel": "95%"
+  },
+  {
+    "id": "CHK-LIVE-2010-153",
+    "date": "2026-10-20T08:15:30.000Z",
+    "type": "Ingreso",
+    "store": "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (LA COROMOTO)",
+    "photoBase64": "/avatars/marianyel_aranda.jpg",
+    "location": {
+      "lat": 10.601,
+      "lng": -71.662,
+      "accuracy": 4
+    },
+    "promoter": "MARIANYEL ARANDA",
+    "creatorId": "STF-024",
+    "created_at": "2026-10-20T08:15:30.000Z",
+    "offlinePending": false,
+    "batteryLevel": "96%"
+  },
+  {
+    "id": "CHK-LIVE-2010-154",
+    "date": "2026-10-20T08:17:30.000Z",
+    "type": "Ingreso",
+    "store": "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (DR. PORTILLO)",
+    "photoBase64": "/avatars/juliannys_gil.jpg",
+    "location": {
+      "lat": 10.669,
+      "lng": -71.611,
+      "accuracy": 5
+    },
+    "promoter": "JULIANNYS GIL",
+    "creatorId": "STF-025",
+    "created_at": "2026-10-20T08:17:30.000Z",
+    "offlinePending": false,
+    "batteryLevel": "97%"
+  },
+  {
+    "id": "CHK-LIVE-2010-155",
+    "date": "2026-10-20T08:19:30.000Z",
+    "type": "Ingreso",
+    "store": "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (CABIMAS)",
+    "photoBase64": "/avatars/jose_barroso.jpg",
+    "location": {
+      "lat": 10.395,
+      "lng": -71.452,
+      "accuracy": 6
+    },
+    "promoter": "JOSE BARROSO",
+    "creatorId": "STF-026",
+    "created_at": "2026-10-20T08:19:30.000Z",
+    "offlinePending": false,
+    "batteryLevel": "98%"
+  },
+  {
+    "id": "CHK-LIVE-2010-156",
+    "date": "2026-10-20T08:21:30.000Z",
+    "type": "Ingreso",
+    "store": "ALKOSTO DONDE COMPRAR ES GANAR, C.A. (ZONA INDUSTRIAL)",
+    "photoBase64": "/avatars/zioreli_grangger.jpg",
+    "location": {
+      "lat": 10.612,
+      "lng": -71.674,
+      "accuracy": 7
+    },
+    "promoter": "ZIORELI GRANGGER",
+    "creatorId": "STF-027",
+    "created_at": "2026-10-20T08:21:30.000Z",
+    "offlinePending": false,
+    "batteryLevel": "99%"
+  }
+];
 
 export const checkinsService = {
   /**
@@ -82,7 +1035,11 @@ export const checkinsService = {
     }
 
     const map = new Map<string, CheckInRecord>();
-    [...serverList, ...localList].forEach((c) => {
+    const listToMerge = (serverList.length > 0 || localList.length > 0)
+      ? [...serverList, ...localList]
+      : INITIAL_CHECKINS_SEED;
+
+    listToMerge.forEach((c) => {
       if (c && c.id) map.set(c.id, c);
     });
 

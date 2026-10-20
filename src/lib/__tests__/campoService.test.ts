@@ -212,10 +212,8 @@ describe('campoService - Offline-First & Sync Test Suite', () => {
   });
 
   describe('Precios Module Catalogue & Store Isolation', () => {
-    it('solo contiene las 10 sucursales oficiales de Alkosto en FREQUENT_STORES', () => {
-      expect(FREQUENT_STORES.length).toBe(10);
-      expect(FREQUENT_STORES.every((s) => s.startsWith('ALKOSTO DONDE COMPRAR ES GANAR, C.A.'))).toBe(true);
-      expect(FREQUENT_STORES.some((s) => s.includes('Viviana') || s.includes('Olímpica') || s.includes('Madeirense'))).toBe(false);
+    it('contiene las sucursales oficiales de Alkosto y Olímpica en FREQUENT_STORES', () => {
+      expect(FREQUENT_STORES.length).toBe(13);
       expect(FREQUENT_STORES).toContain('ALKOSTO DONDE COMPRAR ES GANAR, C.A. (AV DELICIAS)');
       expect(FREQUENT_STORES).toContain('ALKOSTO DONDE COMPRAR ES GANAR, C.A. (SAN FELIPE)');
       expect(FREQUENT_STORES).toContain('ALKOSTO DONDE COMPRAR ES GANAR, C.A. (PLAZA BARALT)');
@@ -225,16 +223,23 @@ describe('campoService - Offline-First & Sync Test Suite', () => {
       expect(FREQUENT_STORES).toContain('ALKOSTO DONDE COMPRAR ES GANAR, C.A. (LOS CACTUS)');
       expect(FREQUENT_STORES).toContain('ALKOSTO DONDE COMPRAR ES GANAR, C.A. (TRUJILLO)');
       expect(FREQUENT_STORES).toContain('ALKOSTO DONDE COMPRAR ES GANAR, C.A. (ZONA INDUSTRIAL)');
+      expect(FREQUENT_STORES).toContain('ALKOSTO DONDE COMPRAR ES GANAR, C.A. (LA LIMPIA)');
+      expect(FREQUENT_STORES).toContain('OLIMPICA MAYORISTA');
+      expect(FREQUENT_STORES).toContain('OLIMPICA SÚPER MARKET');
     });
 
-    it('solo contiene los 6 productos solicitados de Asturias en CODIZULCA_PRODUCTS', () => {
-      expect(CODIZULCA_PRODUCTS.length).toBe(6);
+    it('contiene los productos de Asturias y las presentaciones de Vencampo en CODIZULCA_PRODUCTS', () => {
+      expect(CODIZULCA_PRODUCTS.length).toBe(22);
       const names = CODIZULCA_PRODUCTS.map((p) => p.name);
       expect(names).toContain('Pechuga de Pavo Asturias');
       expect(names).toContain('Pechuga de Pollo Asturias');
       expect(names).toContain('Jamón Cocido de Pavo Asturias');
       expect(names).toContain('Jamón de Pierna Estándar');
-      const mortadelas = CODIZULCA_PRODUCTS.filter((p) => p.name === 'Mortadela Especial de Pollo Asturias');
+      expect(names.some((n) => n.includes('Arroz Vencampo'))).toBe(true);
+      expect(names.some((n) => n.includes('Azúcar Vencampo'))).toBe(true);
+      expect(names.some((n) => n.includes('Aceite Vencampo'))).toBe(true);
+      expect(names.some((n) => n.includes('Leche Vencampo'))).toBe(true);
+      const mortadelas = CODIZULCA_PRODUCTS.filter((p) => p.name.includes('Mortadela Especial de Pollo Asturias'));
       expect(mortadelas.length).toBe(2);
       expect(mortadelas.some((m) => m.weight === '900gr')).toBe(true);
       expect(mortadelas.some((m) => m.weight === '500gr')).toBe(true);

@@ -100,13 +100,23 @@ export const CampoRuta: React.FC = () => {
     );
   }, [allDegustaciones, activePromoter]);
 
-  // Separar Ruta Actual (>= hoy) vs Historial (< hoy)
+  // Separar Ruta Actual (>= hoy o actividades pendientes/en curso) vs Historial (< hoy completadas/canceladas)
   const myCurrentDegustaciones = useMemo(() => {
-    return myDegustaciones.filter((item) => !isPastDegustacionDate(item.date));
+    return myDegustaciones.filter((item) => {
+      if (item.status === 'scheduled' || item.status === 'in_progress') {
+        return true;
+      }
+      return !isPastDegustacionDate(item.date);
+    });
   }, [myDegustaciones]);
 
   const myHistoricalDegustaciones = useMemo(() => {
-    return myDegustaciones.filter((item) => isPastDegustacionDate(item.date));
+    return myDegustaciones.filter((item) => {
+      if (item.status === 'scheduled' || item.status === 'in_progress') {
+        return false;
+      }
+      return isPastDegustacionDate(item.date);
+    });
   }, [myDegustaciones]);
 
   const periodDegustaciones = routePeriod === 'actual' ? myCurrentDegustaciones : myHistoricalDegustaciones;
