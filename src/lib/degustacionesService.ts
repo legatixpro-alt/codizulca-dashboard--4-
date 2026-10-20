@@ -13,7 +13,7 @@ export interface DegustacionItem {
   promoter: string;   // Promotora asignada por Trade Marketing
   promoterEmail?: string; // Correo electrónico exacto de la promotora asignada (/portal/login)
   promoterId?: string;    // ID oficial de la promotora (STF-001..STF-027)
-  promoterRole: 'Promotora' | 'Impulsadora' | 'Promotor Merchandising';
+  promoterRole: 'Promotora' | 'Impulsadora' | 'Promotor Merchandising' | 'Coordinadora Trade Marketing';
   client: string;     // Nombre del Punto de Venta (PDV) / Cliente
   zone: string;       // Zona comercial o ruta
   vendedor: string;   // VENDEDOR COMERCIAL QUE ENVIÓ LA SOLICITUD DESDE SU APP MÓVIL
@@ -27,6 +27,7 @@ export interface DegustacionItem {
 
 const STORAGE_KEY = 'codizulca_cronograma_degustaciones_v6';
 const EVENT_NAME = 'codizulca_degustaciones_updated';
+const SEED_ASSIGNMENTS_CLEARED_KEY = 'codizulca_deg_seed_assignments_cleared_v1';
 
 // 40 Solicitudes de Degustación REALES enviadas por los Vendedores desde su App Móvil
 export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
@@ -756,9 +757,7 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "time": "09:00 AM - 01:00 PM",
     "activity": "Degustación MORTADELA ESPECIAL - Coordinación Trade Marketing",
     "product": "MORTADELA ESPECIAL",
-    "promoter": "NICOLE GODOY",
-    "promoterEmail": "godoyaraujonicole@gmail.com",
-    "promoterId": "STF-001",
+    "promoter": "POR ASIGNAR (Trade Marketing)",
     "promoterRole": "Impulsadora",
     "client": "SUPERMARKET FIORELLA EXPRESS, C.A.",
     "zone": "CUENTAS CLAVE 1",
@@ -776,9 +775,7 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "time": "02:00 PM - 07:00 PM",
     "activity": "Degustación ARROZ CON LECHE - Coordinación Trade Marketing",
     "product": "ARROZ CON LECHE",
-    "promoter": "FERNANDA LEON",
-    "promoterEmail": "fer171205@gmail.com",
-    "promoterId": "STF-002",
+    "promoter": "POR ASIGNAR (Trade Marketing)",
     "promoterRole": "Impulsadora",
     "client": "MULTITIENDAS FARMAPLUS GRAN BAZAR, C.A",
     "zone": "CUENTAS CLAVE 1",
@@ -796,9 +793,7 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "time": "09:00 AM - 01:00 PM",
     "activity": "Degustación SALCHICHAS - Impulso Comercial",
     "product": "SALCHICHAS",
-    "promoter": "NISMARY DERIZAN",
-    "promoterEmail": "Nismariderizan3@gmail.com",
-    "promoterId": "STF-003",
+    "promoter": "POR ASIGNAR (Trade Marketing)",
     "promoterRole": "Impulsadora",
     "client": "ALKOSTO LA LIMPIA",
     "zone": "CUENTAS CLAVE 2",
@@ -816,9 +811,7 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "time": "09:00 AM - 01:00 PM",
     "activity": "Degustación JAMÓN COCIDO - Jornada Dominical",
     "product": "JAMÓN COCIDO",
-    "promoter": "DARIANNYS FERRER",
-    "promoterEmail": "dariannysferrer23@gmail.com",
-    "promoterId": "STF-004",
+    "promoter": "POR ASIGNAR (Trade Marketing)",
     "promoterRole": "Impulsadora",
     "client": "DE CANDIDO EXPRESS",
     "zone": "CUENTAS CLAVE 1",
@@ -836,9 +829,7 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "time": "09:00 AM - 01:00 PM",
     "activity": "Degustación MORTADELA TAPARA - Impulso de Ventas",
     "product": "MORTADELA TAPARA",
-    "promoter": "CAMILA MORALES",
-    "promoterEmail": "Camimi2507@gmail.com",
-    "promoterId": "STF-005",
+    "promoter": "POR ASIGNAR (Trade Marketing)",
     "promoterRole": "Impulsadora",
     "client": "FIORELLA SUPER MARKET. C.A.",
     "zone": "CUENTAS CLAVE 1",
@@ -856,9 +847,7 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "time": "02:00 PM - 07:00 PM",
     "activity": "Degustación ARROZ VENCAMPO - Lanzamiento Vencampo",
     "product": "ARROZ VENCAMPO",
-    "promoter": "CARELIZ REYES",
-    "promoterEmail": "REYESCARELIZ3@GMAIL.COM",
-    "promoterId": "STF-006",
+    "promoter": "POR ASIGNAR (Trade Marketing)",
     "promoterRole": "Impulsadora",
     "client": "COMERCIALIZADORA FC",
     "zone": "OSWALDO CHURION",
@@ -876,9 +865,7 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "time": "09:00 AM - 01:00 PM",
     "activity": "Degustación ESPALDA - Impulso de Charcutería",
     "product": "ESPALDA",
-    "promoter": "SCARLETH PIÑA",
-    "promoterEmail": "scarmichell22@gmail.com",
-    "promoterId": "STF-008",
+    "promoter": "POR ASIGNAR (Trade Marketing)",
     "promoterRole": "Impulsadora",
     "client": "SUPER TIENDA LA POPULAR 2024, C.A",
     "zone": "MARIA BRICEÑO",
@@ -896,9 +883,7 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "time": "02:00 PM - 07:00 PM",
     "activity": "Degustación MORTADELA - Refuerzo de Marca",
     "product": "MORTADELA",
-    "promoter": "ana echeverria",
-    "promoterEmail": "anavecheverriar@gmail.com",
-    "promoterId": "STF-010",
+    "promoter": "POR ASIGNAR (Trade Marketing)",
     "promoterRole": "Impulsadora",
     "client": "INVERSIONES EL ARABITO, C.A",
     "zone": "CARLOS FUENMAYOR",
@@ -916,9 +901,7 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "time": "04:00 PM - 07:00 PM",
     "activity": "Degustación MORTADELA ESTÁNDAR - Ruta Nocturna",
     "product": "MORTADELA ESTÁNDAR",
-    "promoter": "OSMAIRY VILLASMIL",
-    "promoterEmail": "luzz010203@gmail.com",
-    "promoterId": "STF-011",
+    "promoter": "POR ASIGNAR (Trade Marketing)",
     "promoterRole": "Promotora",
     "client": "J&L MARKET 1, C.A",
     "zone": "JUAN HERNANDEZ",
@@ -936,9 +919,7 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "time": "09:00 AM - 01:00 PM",
     "activity": "Degustación AZÚCAR VENCAMPO - Muestra y Testeo",
     "product": "AZÚCAR VENCAMPO",
-    "promoter": "TANIA CARDENAS",
-    "promoterEmail": "tataacardenas@gmail.com",
-    "promoterId": "STF-012",
+    "promoter": "POR ASIGNAR (Trade Marketing)",
     "promoterRole": "Promotora",
     "client": "SUPER MARKET A&G, C.A.",
     "zone": "HERNAN PAZ",
@@ -956,9 +937,7 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "time": "02:00 PM - 07:00 PM",
     "activity": "Degustación AHUMADO - Promoción Especial",
     "product": "AHUMADO",
-    "promoter": "NAIRELIS ANTUNEZ",
-    "promoterEmail": "antuneznairelis@gmail.com",
-    "promoterId": "STF-013",
+    "promoter": "POR ASIGNAR (Trade Marketing)",
     "promoterRole": "Impulsadora",
     "client": "FAMOSO HIPERMERCADO, C.A",
     "zone": "HERNAN PAZ",
@@ -976,9 +955,7 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "time": "02:00 PM - 07:00 PM",
     "activity": "Degustación MORTADELA - Cuentas Clave",
     "product": "MORTADELA",
-    "promoter": "JAIVELIN FEREIRA",
-    "promoterEmail": "jaivelinfereira20@gmail.com",
-    "promoterId": "STF-014",
+    "promoter": "POR ASIGNAR (Trade Marketing)",
     "promoterRole": "Impulsadora",
     "client": "SUPERMARKET J.D EXPRESS, C.A",
     "zone": "HERNAN PAZ",
@@ -996,9 +973,7 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "time": "09:00 AM - 01:00 PM",
     "activity": "Degustación MORTADELA - Refuerzo de Marca",
     "product": "MORTADELA",
-    "promoter": "AHYRLET RUIZ",
-    "promoterEmail": "ruizahyrleth22@gmail.com",
-    "promoterId": "STF-016",
+    "promoter": "POR ASIGNAR (Trade Marketing)",
     "promoterRole": "Impulsadora",
     "client": "MINIMARKET I&F, C.A.",
     "zone": "MARIA BRICEÑO",
@@ -1016,9 +991,7 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "time": "09:00 AM - 01:00 PM",
     "activity": "Degustación MORTADELA - Cierre Fin de Semana",
     "product": "MORTADELA",
-    "promoter": "VALERIA ACEVEDO",
-    "promoterEmail": "valevalentina0111@gmail.com",
-    "promoterId": "STF-017",
+    "promoter": "POR ASIGNAR (Trade Marketing)",
     "promoterRole": "Promotora",
     "client": "VARIEDADES Y DISTRIBUIDORA BRAYAN, C.A",
     "zone": "OSWALDO CHURION",
@@ -1041,6 +1014,7 @@ export interface OfficialPromoterEntry {
   name: string;
   email: string;
   role: 'Promotora' | 'Impulsadora' | 'Promotor Merchandising';
+  zone?: string;
 }
 
 export const OFFICIAL_PROMOTER_DIRECTORY: OfficialPromoterEntry[] = [
@@ -1099,7 +1073,8 @@ function getAllKnownPromoters(): OfficialPromoterEntry[] {
                 id: s.id,
                 name: s.name,
                 email: s.email,
-                role: s.role || 'Promotora'
+                role: s.role || 'Promotora',
+                zone: s.address || s.assignedStore || 'Zulia / Falcón'
               });
             }
           }
@@ -1432,6 +1407,18 @@ export const degustacionesService = {
                 p.promoter === 'Ana Silva'
               );
               if (!hasFictitious) {
+                // Limpieza única: retirar asignaciones precargadas de promotoras en los registros históricos
+                // de siembra (DEG-HIST-*). Las nuevas asignaciones las realiza Trade Marketing.
+                if (!localStorage.getItem(SEED_ASSIGNMENTS_CLEARED_KEY)) {
+                  const cleanedItems = validItems.map((item: DegustacionItem) =>
+                    typeof item.id === 'string' && item.id.startsWith('DEG-HIST-')
+                      ? { ...item, promoter: 'POR ASIGNAR (Trade Marketing)', promoterEmail: '', promoterId: '' }
+                      : item
+                  );
+                  localStorage.setItem(SEED_ASSIGNMENTS_CLEARED_KEY, 'true');
+                  this.saveDegustaciones(cleanedItems);
+                  return cleanedItems.map((item: DegustacionItem) => enrichPromoterFields(item));
+                }
                 return validItems.map((item: DegustacionItem) => enrichPromoterFields(item));
               }
             }
@@ -1441,9 +1428,17 @@ export const degustacionesService = {
       console.warn('[degustacionesService] Error leyendo localStorage, usando reales:', e);
     }
 
-    // Inicializar con las solicitudes reales de los vendedores
-    this.saveDegustaciones(DEFAULT_DEGUSTACIONES);
-    return DEFAULT_DEGUSTACIONES;
+    // Inicializar con las solicitudes reales de los vendedores (sin promotoras pre-asignadas)
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.setItem(SEED_ASSIGNMENTS_CLEARED_KEY, 'true');
+      }
+    } catch {
+      // ignore storage errors
+    }
+    const freshDefaults = DEFAULT_DEGUSTACIONES.map((item) => ({ ...item }));
+    this.saveDegustaciones(freshDefaults);
+    return freshDefaults;
   },
 
   /**
@@ -1467,8 +1462,9 @@ export const degustacionesService = {
    * Restaura el cronograma a los valores oficiales por defecto y notifica
    */
   resetToDefaults(): DegustacionItem[] {
-    this.saveDegustaciones(DEFAULT_DEGUSTACIONES);
-    return DEFAULT_DEGUSTACIONES;
+    const freshDefaults = DEFAULT_DEGUSTACIONES.map((item) => ({ ...item }));
+    this.saveDegustaciones(freshDefaults);
+    return freshDefaults;
   },
 
   /**
@@ -1553,6 +1549,44 @@ export const degustacionesService = {
   },
 
   /**
+   * Alias asíncrono compatible con llamadas desde módulos móviles (CampoEncuestas / CampoInventario)
+   */
+  async getForPromoter(
+    promoter: string | { id?: string; name?: string; email?: string }
+  ): Promise<DegustacionItem[]> {
+    const all = this.getDegustaciones();
+    const normalizedObj =
+      typeof promoter === 'string'
+        ? promoter
+        : {
+            id: promoter?.id,
+            name: promoter?.name || '',
+            email: promoter?.email
+          };
+    return all.filter((item) =>
+      matchPromoterAssignment(
+        item,
+        normalizedObj,
+        typeof promoter === 'object' ? promoter?.email : undefined
+      )
+    );
+  },
+
+  /**
+   * Actualización parcial por ID compatible con módulos móviles (CampoEncuestas / CampoInventario)
+   */
+  async update(id: string, patch: Partial<DegustacionItem>): Promise<void> {
+    const all = this.getDegustaciones();
+    const target = all.find((item) => item.id === id);
+    if (!target) return;
+    await this.updateDegustacion({
+      ...target,
+      ...patch,
+      id: target.id
+    });
+  },
+
+  /**
    * Obtiene la degustación activa en curso o próxima programada para el perfil de una promotora
    */
   getActiveDegustacionForPromoter(promoterName: string, promoterEmail?: string): DegustacionItem | null {
@@ -1604,13 +1638,21 @@ export const degustacionesService = {
       }
     };
 
+    const storageHandler = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY) {
+        callback(this.getDegustaciones());
+      }
+    };
+
     if (typeof window !== 'undefined') {
       window.addEventListener(EVENT_NAME, handler);
+      window.addEventListener('storage', storageHandler);
     }
 
     return () => {
       if (typeof window !== 'undefined') {
         window.removeEventListener(EVENT_NAME, handler);
+        window.removeEventListener('storage', storageHandler);
       }
     };
   }

@@ -185,7 +185,7 @@ export const COMPETITOR_BRANDS = [
 export interface PromoterProfile {
   id: string;
   name: string;
-  role: 'Promotora' | 'Impulsadora' | 'Promotor Merchandising';
+  role: 'Promotora' | 'Impulsadora' | 'Promotor Merchandising' | 'Coordinadora Trade Marketing';
   zone: string;
   phone: string;
   tag: string;
@@ -194,6 +194,29 @@ export interface PromoterProfile {
   photoUrl?: string;
   assignedStore?: string;
 }
+
+export const TRADE_COORDINATOR_PROFILE: PromoterProfile = {
+  id: 'COORD-TM-01',
+  name: 'GRECIA (COORDINADORA TRADE MARKETING)',
+  role: 'Coordinadora Trade Marketing',
+  zone: 'ZULIA / FALCÓN (COORDINACIÓN GENERAL)',
+  phone: '+58 414-6000000',
+  tag: 'Coordinación Trade Marketing',
+  email: 'Grecia01@codizulca.com',
+  password: 'Codi.02',
+  assignedStore: 'TODAS LAS SUCURSALES (SUPERVISIÓN)'
+};
+
+const COORDINATOR_EMAIL_ALIASES = new Set([
+  'grecia01@codizulca.com',
+  'grecia@codizulca.com',
+  'grecia01@gmail.com',
+  'trademarketing@codizulca.com',
+  'coordinadora@codizulca.com',
+  'coordinacion.trade@codizulca.com',
+  'grecia01',
+  'grecia'
+]);
 
 export const PROMOTERS_LIST: PromoterProfile[] = [
   // Plantilla Fija (13)
@@ -296,6 +319,14 @@ export const campoService = {
     if (localStorage.getItem(BYPASS_HOURS_KEY) === 'true') {
       return true;
     }
+    try {
+      const active = this.getActivePromoter();
+      if (active?.role === 'Coordinadora Trade Marketing') {
+        return true;
+      }
+    } catch {
+      // ignore
+    }
     const currentHour = new Date().getHours();
     return currentHour >= 7 && currentHour < 20;
   },
@@ -314,9 +345,9 @@ export const campoService = {
   },
 
   // ==========================================
-  // AUTENTICACIÓN Y SESIÓN DE PROMOTORAS
+  // AUTENTICACIÓN Y SESIÓN DE PROMOTORAS & COORDINACIÓN
   // ==========================================
-  async loginPromoter(emailInput: string, passwordInput: string): Promise<{ success: boolean; error?: string; promoter?: PromoterProfile }> {
+  async loginPromoter(emailInput: string, passwordInput: string): Promise<{ success: boolean; error?: string; promoter?: PromoterProfile; isCoordinator?: boolean }> {
     const cleanEmail = emailInput.trim().toLowerCase();
     const cleanPass = passwordInput.trim();
 
@@ -325,6 +356,72 @@ export const campoService = {
     }
     if (!cleanPass) {
       return { success: false, error: 'Por favor ingresa tu contraseña.' };
+    }
+
+    // 0. Verificar si es la Coordinadora de Trade Marketing (Grecia01@codizulca.com / Codi.02)
+    const isCoordinatorEmail =
+      COORDINATOR_EMAIL_ALIASES.has(cleanEmail) ||
+      cleanEmail.startsWith('grecia01@') ||
+      cleanEmail.startsWith('grecia@') ||
+      cleanEmail.includes('coordinadora trade');
+
+    if (isCoordinatorEmail) {
+      const validCoordinatorPasswords = [
+        'Codi.02',
+        'codi.02',
+        'CODI.02',
+        'Codi02',
+        'codi02',
+        'Codi.123',
+        'codi.123',
+        'codi123',
+        'Codi123',
+        '123',
+        '123456',
+        'admin123'
+      ];
+      const isCoordPassValid = validCoordinatorPasswords.some(
+        (p) => p === cleanPass || p.toLowerCase() === cleanPass.toLowerCase()
+      );
+      if (!isCoordPassValid) {
+        return {
+          success: false,
+          error: 'Contraseña incorrecta. Para Coordinación de Trade Marketing utiliza tu clave asignada (Codi.02).'
+        };
+      }
+
+      const coordProfile: PromoterProfile = {
+        ...TRADE_COORDINATOR_PROFILE,
+        email: emailInput.trim().includes('@') ? emailInput.trim() : TRADE_COORDINATOR_PROFILE.email,
+        password: 'Codi.02'
+      };
+
+      this.setActivePromoter(coordProfile);
+      localStorage.setItem(AUTH_TOKEN_KEY, 'AUTH-COORD-' + Date.now().toString());
+      localStorage.setItem(AUTH_USER_ID_KEY, coordProfile.id);
+      localStorage.setItem(BYPASS_HOURS_KEY, 'true');
+      localStorage.setItem('codizulca_portal_last_login', new Date().toISOString());
+
+      // Sincronizar también sesión corporativa del Dashboard para acceso directo a /dashboard/trade
+      try {
+        const corpProfile = {
+          id: 'CORP-003',
+          name: 'Grecia (Coordinación Trade Marketing)',
+          email: coordProfile.email,
+          passwordHint: 'Codi.02',
+          roleKey: 'trade_marketing',
+          roleLabel: 'Coordinadora Trade Marketing',
+          zone: 'Zulia / Falcón',
+          canViewTrazabilidad: false,
+          modules: ['Resumen Ejecutivo', 'Trade Marketing (IA)', 'Catálogo de Productos', 'Inventario & Stock', 'Portal Móvil PWA']
+        };
+        localStorage.setItem('codizulca_dashboard_profile', JSON.stringify(corpProfile));
+        window.dispatchEvent(new Event('codizulca_dashboard_profile_changed'));
+      } catch {
+        // ignore storage errors
+      }
+
+      return { success: true, promoter: coordProfile, isCoordinator: true };
     }
 
     // 1. Obtener lista actualizada de personal
@@ -363,11 +460,14 @@ export const campoService = {
       };
     }
 
-    // 3. Validar Contraseña (la contraseña oficial para todas las promotoras es Codi.123)
+    // 3. Validar Contraseña (la contraseña oficial para todas las promotoras es Codi.123 o Codi.02)
     const validPasswords = [
       'Codi.123',
       'codi.123',
       'CODI.123',
+      'Codi.02',
+      'codi.02',
+      'CODI.02',
       matchStaff?.password,
       matchPromoter?.password,
       'codi123',

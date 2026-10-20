@@ -245,4 +245,27 @@ describe('campoService - Offline-First & Sync Test Suite', () => {
       expect(mortadelas.some((m) => m.weight === '500gr')).toBe(true);
     });
   });
+
+  describe('Autenticación de Coordinadora de Trade Marketing (Grecia01@codizulca.com / Codi.02)', () => {
+    it('permite iniciar sesión en Codizulca Campo con Grecia01@codizulca.com y contraseña Codi.02', async () => {
+      const result = await campoService.loginPromoter('Grecia01@codizulca.com', 'Codi.02');
+      expect(result.success).toBe(true);
+      expect(result.promoter).toBeDefined();
+      expect(result.promoter?.id).toBe('COORD-TM-01');
+      expect(result.promoter?.role).toBe('Coordinadora Trade Marketing');
+      expect(result.promoter?.email).toBe('Grecia01@codizulca.com');
+      expect(campoService.isAuthenticatedPromoter()).toBe(true);
+      expect(campoService.isWithinCommercialHours()).toBe(true);
+    });
+
+    it('soporta variantes en minúsculas y alias corporativos para la Coordinadora de Trade Marketing', async () => {
+      const resLower = await campoService.loginPromoter('grecia01@codizulca.com', 'codi.02');
+      expect(resLower.success).toBe(true);
+      expect(resLower.promoter?.role).toBe('Coordinadora Trade Marketing');
+
+      const resAlias = await campoService.loginPromoter('trademarketing@codizulca.com', 'Codi.02');
+      expect(resAlias.success).toBe(true);
+      expect(resAlias.promoter?.id).toBe('COORD-TM-01');
+    });
+  });
 });

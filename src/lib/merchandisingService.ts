@@ -238,14 +238,16 @@ export const merchandisingService = {
 
   subscribe(callback: () => void): () => void {
     const handler = () => callback();
+    const storageHandler = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY || e.key === 'codizulca_shelf_scans') callback();
+    };
     window.addEventListener('codizulca_merchandising_changed', handler);
     window.addEventListener('codizulca_campo_data_updated', handler);
-    window.addEventListener('storage', (e) => {
-      if (e.key === STORAGE_KEY || e.key === 'codizulca_shelf_scans') callback();
-    });
+    window.addEventListener('storage', storageHandler);
     return () => {
       window.removeEventListener('codizulca_merchandising_changed', handler);
       window.removeEventListener('codizulca_campo_data_updated', handler);
+      window.removeEventListener('storage', storageHandler);
     };
   }
 };

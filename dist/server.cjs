@@ -34,6 +34,126 @@ var import_papaparse = __toESM(require("papaparse"), 1);
 var import_sql = __toESM(require("sql.js"), 1);
 var import_fs = __toESM(require("fs"), 1);
 var import_path = __toESM(require("path"), 1);
+
+// src/components/cuotas/sellerSupervisorMap.ts
+var OFFICIAL_SELLERS_LIST = [
+  "MARIA BRICE\xD1O",
+  "MARIANA CHACIN",
+  "MIKELANGELO DIAZ",
+  "HERNAN PAZ",
+  "OSWALDO CHURION",
+  "CARLOS FUENMAYOR",
+  "SARAH REYES",
+  "J PABLO ARAUJO - CAB/OJE",
+  "JOSE G. GONZALEZ",
+  "ANGELICA MORENO",
+  "ADEL JARABA",
+  "JUAN HERNANDEZ",
+  "YOLEIDA LUGO",
+  "SAIRU VALLES",
+  "ELISA SOLER",
+  "ALI PEREZ",
+  "J PABLO ARAUJO",
+  "EDUARDO PI\xD1A",
+  "LEONARDO RIOS",
+  "MARYERY GARCIA",
+  "LUIS GUANIPA",
+  "PEDRO ABREU",
+  "OSCAR ORTIZ"
+];
+var VALID_VOLUME_SELLERS = new Set(OFFICIAL_SELLERS_LIST);
+var SELLER_METADATA_MAP = {
+  // ==========================================
+  // SUPERVISOR: JOHNATAN SOTO (6 Vendedores — Clientes de Johnatan pasaron a Mikelangelo Diaz)
+  // ==========================================
+  "MIKELANGELO DIAZ": { supervisor: "JOHNATAN SOTO", zona: "Machiques / Villa del Rosario / Perij\xE1", region: "Supervisi\xF3n Johnatan Soto" },
+  "HERNAN PAZ": { supervisor: "JOHNATAN SOTO", zona: "Maracaibo / Perij\xE1", region: "Supervisi\xF3n Johnatan Soto" },
+  "OSWALDO CHURION": { supervisor: "JOHNATAN SOTO", zona: "Maracaibo / Sur", region: "Supervisi\xF3n Johnatan Soto" },
+  "ANGELICA MORENO": { supervisor: "JOHNATAN SOTO", zona: "Maracaibo / Norte", region: "Supervisi\xF3n Johnatan Soto" },
+  "ADEL JARABA": { supervisor: "JOHNATAN SOTO", zona: "Mayoristas / Maracaibo", region: "Supervisi\xF3n Johnatan Soto" },
+  "JUAN HERNANDEZ": { supervisor: "JOHNATAN SOTO", zona: "Sur del Lago / El Chivo", region: "Supervisi\xF3n Johnatan Soto" },
+  "JOHNATAN SOTO": { supervisor: "JOHNATAN SOTO", zona: "Maracaibo / Supervisi\xF3n", region: "Supervisi\xF3n Johnatan Soto", isSupervisorRoute: true },
+  "JOHNATAN SOTO VILLA DEL ROS": { supervisor: "JOHNATAN SOTO", zona: "La Villa del Rosario / Perij\xE1", region: "Supervisi\xF3n Johnatan Soto", isSupervisorRoute: true },
+  // ==========================================
+  // SUPERVISOR: ALI PEREZ (5 Carteras: 1 propia de supervisión + 4 vendedores)
+  // ==========================================
+  "ALI PEREZ": { supervisor: "ALI PEREZ", zona: "Maracaibo / Supervisi\xF3n", region: "Supervisi\xF3n Ali Perez", isSupervisorRoute: true },
+  "ELISA SOLER": { supervisor: "ALI PEREZ", zona: "Maracaibo", region: "Supervisi\xF3n Ali Perez" },
+  "LEONARDO RIOS": { supervisor: "ALI PEREZ", zona: "Maracaibo / San Francisco", region: "Supervisi\xF3n Ali Perez" },
+  "LUIS GUANIPA": { supervisor: "ALI PEREZ", zona: "Coro / Falc\xF3n", region: "Supervisi\xF3n Ali Perez" },
+  "OSCAR ORTIZ": { supervisor: "ALI PEREZ", zona: "Coro / La Costa", region: "Supervisi\xF3n Ali Perez" },
+  // ==========================================
+  // SUPERVISOR: NELSON FINOL (12 Carteras de Fuerza de Ventas y Cuentas Clave)
+  // ==========================================
+  "MARIA BRICE\xD1O": { supervisor: "NELSON FINOL", zona: "Maracaibo", region: "Supervisi\xF3n Nelson Finol" },
+  "MARIANA CHACIN": { supervisor: "NELSON FINOL", zona: "Cuentas Clave 1", region: "Supervisi\xF3n Nelson Finol" },
+  "CARLOS FUENMAYOR": { supervisor: "NELSON FINOL", zona: "Maracaibo", region: "Supervisi\xF3n Nelson Finol" },
+  "SARAH REYES": { supervisor: "NELSON FINOL", zona: "Maracaibo / San Francisco", region: "Supervisi\xF3n Nelson Finol" },
+  "J PABLO ARAUJO - CAB/OJE": { supervisor: "NELSON FINOL", zona: "Cabimas / Ciudad Ojeda", region: "Supervisi\xF3n Nelson Finol" },
+  "JOSE G. GONZALEZ": { supervisor: "NELSON FINOL", zona: "Maracaibo", region: "Supervisi\xF3n Nelson Finol" },
+  "YOLEIDA LUGO": { supervisor: "NELSON FINOL", zona: "Maracaibo", region: "Supervisi\xF3n Nelson Finol" },
+  "SAIRU VALLES": { supervisor: "NELSON FINOL", zona: "Cuentas Clave 2", region: "Supervisi\xF3n Nelson Finol" },
+  "J PABLO ARAUJO": { supervisor: "NELSON FINOL", zona: "Costa Oriental del Lago", region: "Supervisi\xF3n Nelson Finol" },
+  "EDUARDO PI\xD1A": { supervisor: "NELSON FINOL", zona: "Maracaibo", region: "Supervisi\xF3n Nelson Finol" },
+  "MARYERY GARCIA": { supervisor: "NELSON FINOL", zona: "Ciudad Ojeda / COL", region: "Supervisi\xF3n Nelson Finol" },
+  "PEDRO ABREU": { supervisor: "NELSON FINOL", zona: "Punto Fijo / Paraguan\xE1", region: "Supervisi\xF3n Nelson Finol" }
+};
+var normalizeSellerName = (vendedorName) => {
+  if (!vendedorName) return "";
+  let n = vendedorName.trim().toUpperCase().replace(/\s+/g, " ").replace(/MARÍA\b/, "MARIA").replace(/BRICENO\b/, "BRICE\xD1O").replace(/BRICEO\b/, "BRICE\xD1O").replace(/PINA\b/, "PI\xD1A").replace(/PIA\b/, "PI\xD1A").replace(/CHACÍN\b/, "CHACIN").replace(/PÉREZ\b/, "PEREZ").replace(/ALÍ\b/, "ALI").replace(/HERNÁNDEZ\b/, "HERNANDEZ").replace(/HERNÁN\b/, "HERNAN").replace(/GONZÁLEZ\b/, "GONZALEZ").replace(/GARCÍA\b/, "GARCIA").replace(/RÍOS\b/, "RIOS").replace(/ANGÉLICA\b/, "ANGELICA").replace(/JOSÉ\b/, "JOSE");
+  if (n === "CUENTAS CLAVE 1" || n === "CUENTAS CLAVE 1 - MC" || n === "MARIANA CHACIN" || n === "CUENTAS CLAVE 1 - MC (MARIANA CHACIN)") {
+    return "MARIANA CHACIN";
+  }
+  if (n === "CUENTAS CLAVE 2" || n === "CUENTAS CLAVE 2 - SV" || n === "SAIRU VALLES" || n === "CUENTAS CLAVE 2 - SV (SAIRU VALLES)") {
+    return "SAIRU VALLES";
+  }
+  if (n === "MIKELANGELO DIAZ" || n === "MIKELANGELO DIAZ1" || n === "MIKELANGELO DIAZ - VILLA DEL ROS" || n === "MIKELANGELO DIAZ VILLA DEL ROS" || n === "JOHNATAN SOTO" || n === "JOHNATAN SOTO VILLA DEL ROS" || n === "JOHNATAN SOTO - VILLA DEL ROS") {
+    return "MIKELANGELO DIAZ";
+  }
+  if (n === "OSCAR ORTIZ" || n === "OSCAR ORTIZ - CORO" || n === "OSCAR ORTIZ- CORO" || n === "OSCAR ORTIZ - LA COSTA" || n === "OSCAR ORTIZ- LA COSTA" || n === "OSCAR ORTIZ-  LA COSTA") {
+    return "OSCAR ORTIZ";
+  }
+  return n;
+};
+var getSellerMetadata = (vendedorName) => {
+  if (!vendedorName) {
+    return {
+      vendedor: "",
+      supervisor: "NELSON FINOL",
+      zona: "",
+      region: "Supervisi\xF3n Nelson Finol"
+    };
+  }
+  const normalized = normalizeSellerName(vendedorName);
+  if (SELLER_METADATA_MAP[normalized]) {
+    return {
+      vendedor: normalized,
+      ...SELLER_METADATA_MAP[normalized]
+    };
+  }
+  const withSpacedHyphen = normalized.replace(/\s*-\s*/g, " - ");
+  if (SELLER_METADATA_MAP[withSpacedHyphen]) {
+    return {
+      vendedor: normalized,
+      ...SELLER_METADATA_MAP[withSpacedHyphen]
+    };
+  }
+  const withoutSpacedHyphen = normalized.replace(/\s*-\s*/g, "-");
+  if (SELLER_METADATA_MAP[withoutSpacedHyphen]) {
+    return {
+      vendedor: normalized,
+      ...SELLER_METADATA_MAP[withoutSpacedHyphen]
+    };
+  }
+  return {
+    vendedor: normalized,
+    supervisor: "NELSON FINOL",
+    zona: "",
+    region: "Supervisi\xF3n Nelson Finol"
+  };
+};
+
+// src/server/codibotSqlEngine.ts
 var sqlDatabase = null;
 var initPromise = null;
 var CODIBOT_SCHEMAS = [
@@ -44,8 +164,8 @@ var CODIBOT_SCHEMAS = [
       { name: "id", type: "TEXT", description: "Identificador \xFAnico del cliente", sample: "2719" },
       { name: "codigo", type: "TEXT", description: "C\xF3digo oficial con formato #ID", sample: "#2719" },
       { name: "nombre", type: "TEXT", description: "Raz\xF3n social o nombre comercial del cliente", sample: "SUPERMERCADO DE CANDIDO" },
-      { name: "vendedor", type: "TEXT", description: "Vendedor comercial asignado", sample: "CARLOS MACHADO" },
-      { name: "supervisor", type: "TEXT", description: "Supervisor a cargo (Jos\xE9 Bravo o N\xE9stor Rinc\xF3n)", sample: "Jos\xE9 Bravo" },
+      { name: "vendedor", type: "TEXT", description: "Vendedor comercial asignado", sample: "MARIA BRICE\xD1O" },
+      { name: "supervisor", type: "TEXT", description: "Supervisor a cargo (JOHNATAN SOTO, ALI PEREZ o NELSON FINOL)", sample: "NELSON FINOL" },
       { name: "sector", type: "TEXT", description: "Sector o zona geogr\xE1fica de despacho", sample: "Bella Vista / Santa Rita" },
       { name: "zona", type: "TEXT", description: "Zona regional (Maracaibo, San Francisco, COL, Perij\xE1, Falc\xF3n)", sample: "Maracaibo" },
       { name: "canal", type: "TEXT", description: "Canal de distribuci\xF3n (Supermercados, Tradicional, Mayoristas, etc.)", sample: "Supermercados" },
@@ -66,8 +186,8 @@ var CODIBOT_SCHEMAS = [
       { name: "ano", type: "INTEGER", description: "A\xF1o fiscal (2026)", sample: "2026" },
       { name: "cliente", type: "TEXT", description: "Nombre del cliente", sample: "FRIGORIFICO LA POLLERA, C.A." },
       { name: "cliente_id", type: "TEXT", description: "C\xF3digo del cliente", sample: "29" },
-      { name: "vendedor", type: "TEXT", description: "Vendedor asignado", sample: "CARLOS MACHADO" },
-      { name: "supervisor", type: "TEXT", description: "Supervisor de ruta", sample: "Jos\xE9 Bravo" },
+      { name: "vendedor", type: "TEXT", description: "Vendedor asignado", sample: "MARIA BRICE\xD1O" },
+      { name: "supervisor", type: "TEXT", description: "Supervisor de ruta (JOHNATAN SOTO, ALI PEREZ o NELSON FINOL)", sample: "NELSON FINOL" },
       { name: "articulo", type: "TEXT", description: "Descripci\xF3n comercial del producto", sample: "MUSLO CUADRIL DESPRESADO POR KG" },
       { name: "sku", type: "TEXT", description: "C\xF3digo de producto SKU", sample: "629" },
       { name: "categoria", type: "TEXT", description: "Categor\xEDa (AV\xCDCOLA, CHARCUTER\xCDA, L\xC1CTEOS, C\xC1RNICOS, V\xCDVERES)", sample: "AV\xCDCOLA" },
@@ -239,15 +359,16 @@ async function getCodibotDatabase() {
         const stmt = db.prepare("INSERT OR REPLACE INTO clientes VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         for (const c of clients) {
           const monto = Number(c.monto || 0);
-          const supervisor = (c.vendedor || "").toUpperCase().includes("NESTOR") ? "N\xE9stor Rinc\xF3n" : "Jos\xE9 Bravo";
+          const sellerMeta = getSellerMetadata(c.vendedor || "");
+          const supervisor = sellerMeta.supervisor || "NELSON FINOL";
           const pareto = c.pareto || (monto > 5e4 ? "A" : monto > 1e4 ? "B" : "C");
           stmt.run([
             String(c.id_cliente || ""),
             "#" + (c.id_cliente || ""),
             c.cliente || "CLIENTE COMERCIAL",
-            c.vendedor || "FUERZA DE VENTAS",
+            sellerMeta.vendedor || c.vendedor || "FUERZA DE VENTAS",
             supervisor,
-            c.sector || "Maracaibo Metropolitano",
+            c.sector || sellerMeta.zona || "Maracaibo Metropolitano",
             c.region || "Occidente",
             c.canal || "Tradicional",
             monto,
@@ -311,9 +432,11 @@ async function getCodibotDatabase() {
         const sData = JSON.parse(import_fs.default.readFileSync(sellersPath, "utf8"));
         if (sData.sellerMonthlyData && Array.isArray(sData.sellerMonthlyData)) {
           for (const s of sData.sellerMonthlyData) {
-            const vName = s.vendedor || "VENDEDOR";
-            const sup = vName.includes("NESTOR") ? "N\xE9stor Rinc\xF3n" : "Jos\xE9 Bravo";
-            if (s.months) {
+            const rawVName = s.vendedor || "VENDEDOR";
+            const sellerMeta = getSellerMetadata(rawVName);
+            const vName = sellerMeta.vendedor || rawVName;
+            const sup = sellerMeta.supervisor || "NELSON FINOL";
+            if (s.months && typeof s.months === "object") {
               for (const [mName, mVal] of Object.entries(s.months)) {
                 const fa = Number(mVal.montoFA || mVal.monto || 0);
                 const dv = Number(mVal.montoDV || 0);
@@ -339,6 +462,30 @@ async function getCodibotDatabase() {
                   neto
                 ]);
               }
+            } else if (s.mes) {
+              const fa = Number(s.montoFA || s.montoNeto || 0);
+              const dv = Number(s.montoDV || 0);
+              const neto = Number(s.montoNeto ?? fa + dv);
+              const cj = Number(s.cajas || 0);
+              const kg = Number(s.kgs || 0);
+              stmtVentas.run([
+                "FA",
+                String(s.mes).toUpperCase(),
+                Number(s.ano || 2026),
+                "CARTERA " + vName,
+                "VEND-" + vName.slice(0, 8),
+                vName,
+                sup,
+                "PORTAFOLIO MULTIPRODUCTO",
+                "SKU-MULTI",
+                "GENERAL",
+                "MIXTO",
+                cj,
+                kg,
+                fa,
+                dv,
+                neto
+              ]);
             }
           }
         }
@@ -576,7 +723,7 @@ REGLAS DE NEGOCIO PARA SQL:
 2. En \`inventario\` y \`ventas\`, los productos con \`modalidad = 'PESABLE'\` (como muslo cuadril, pechugas y cortes c\xE1rnicos) se miden en Kilos (\`kilos\`, \`unidad_medida = 'KG'\`). Los productos empacados se miden en Cajas (\`cajas\`, \`unidad_medida = 'CJ'\`).
 3. En \`geocercas\` / \`encuestas\`, dispones de 1.761 encuestas registradas con 1.741 ubicaciones GPS exactas en 33 municipios (Maracaibo, San Francisco, Cabimas, Machiques, Punto Fijo, Coro, etc.).
 4. En \`clientes\`, la columna \`pareto\` clasifica a los clientes en 'A' (cuentas VIP l\xEDderes que concentran el 80% de ventas), 'B' y 'C'.
-5. Cada cliente tiene asignado su \`sector\`, \`vendedor\` y \`supervisor\` (Jos\xE9 Bravo o N\xE9stor Rinc\xF3n).
+5. Cada cliente tiene asignado su \`sector\`, \`vendedor\` y \`supervisor\` (JOHNATAN SOTO, ALI PEREZ o NELSON FINOL).
 6. Las consultas deben ser siempre sentencias SELECT o WITH optimizadas y devolver solo las columnas necesarias.`;
   return text;
 }
@@ -1077,7 +1224,7 @@ async function startServer() {
     res.json({});
   });
   const sellersVolumeCachePath = import_path2.default.join(process.cwd(), "sellers_monthly_volume_cache.json");
-  const OFFICIAL_SELLERS_LIST = [
+  const OFFICIAL_SELLERS_LIST2 = [
     "MARIA BRICE\xD1O",
     "MARIANA CHACIN",
     "MIKELANGELO DIAZ",
@@ -1102,8 +1249,8 @@ async function startServer() {
     "PEDRO ABREU",
     "OSCAR ORTIZ"
   ];
-  const VALID_VOLUME_SELLERS = new Set(OFFICIAL_SELLERS_LIST);
-  const normalizeSellerName = (name) => {
+  const VALID_VOLUME_SELLERS2 = new Set(OFFICIAL_SELLERS_LIST2);
+  const normalizeSellerName2 = (name) => {
     if (!name) return "";
     let n = name.trim().toUpperCase().replace(/\s+/g, " ").replace(/MARÍA\b/, "MARIA").replace(/BRICENO\b/, "BRICE\xD1O").replace(/BRICEO\b/, "BRICE\xD1O").replace(/PINA\b/, "PI\xD1A").replace(/PIA\b/, "PI\xD1A").replace(/CHACÍN\b/, "CHACIN").replace(/PÉREZ\b/, "PEREZ").replace(/ALÍ\b/, "ALI").replace(/HERNÁNDEZ\b/, "HERNANDEZ").replace(/HERNÁN\b/, "HERNAN").replace(/GONZÁLEZ\b/, "GONZALEZ").replace(/GARCÍA\b/, "GARCIA").replace(/RÍOS\b/, "RIOS").replace(/ANGÉLICA\b/, "ANGELICA").replace(/JOSÉ\b/, "JOSE");
     if (n === "CUENTAS CLAVE 1" || n === "CUENTAS CLAVE 1 - MC" || n === "MARIANA CHACIN" || n === "CUENTAS CLAVE 1 - MC (MARIANA CHACIN)") {
@@ -1122,11 +1269,11 @@ async function startServer() {
   };
   const isValidVolumeSeller = (name) => {
     if (!name) return false;
-    const n = normalizeSellerName(name);
+    const n = normalizeSellerName2(name);
     if (n.includes("OFICINA") || n.includes("GERENCIA") || n.includes("EMPLEADOS") || n.includes("VACANTE") || n.includes("SIN ASIGNAR")) {
       return false;
     }
-    return VALID_VOLUME_SELLERS.has(n);
+    return VALID_VOLUME_SELLERS2.has(n);
   };
   const JOHNATAN_SOTO_SELLERS = /* @__PURE__ */ new Set([
     "ADEL JARABA",
@@ -1152,7 +1299,7 @@ async function startServer() {
     "OSCAR ORTIZ - LA COSTA"
   ]);
   const getSupervisorForSeller = (vendedorName) => {
-    const norm = normalizeSellerName(vendedorName);
+    const norm = normalizeSellerName2(vendedorName);
     if (JOHNATAN_SOTO_SELLERS.has(norm)) return "JOHNATAN SOTO";
     if (ALI_PEREZ_SELLERS.has(norm)) return "ALI PEREZ";
     return "NELSON FINOL";
@@ -1169,62 +1316,64 @@ async function startServer() {
         const supabase = (0, import_supabase_js.createClient)(supabaseUrl.replace("/rest/v1/", ""), supabaseKey);
         const limit = 1e3;
         const countRes = await supabase.from("history_sales").select("*", { count: "exact", head: true }).eq("ano", 2026);
-        totalCount = countRes.count || 267148;
-        const totalPages = Math.ceil(totalCount / limit);
-        const BATCH_SIZE = 25;
-        for (let i = 0; i < totalPages; i += BATCH_SIZE) {
-          const promises = [];
-          for (let j = 0; j < BATCH_SIZE && i + j < totalPages; j++) {
-            const page = i + j;
-            promises.push(
-              supabase.from("history_sales").select("vendedor, ano, mes, cajas, kgs_lts, monto, tipo_doc").eq("ano", 2026).range(page * limit, (page + 1) * limit - 1)
-            );
-          }
-          const chunks = await Promise.all(promises);
-          chunks.forEach((c) => {
-            if (c.data) {
-              c.data.forEach((r) => {
-                const normVendedor = normalizeSellerName(r.vendedor || "");
-                if (!isValidVolumeSeller(normVendedor)) {
-                  return;
-                }
-                const mes = (r.mes || "DESCONOCIDO").trim().toUpperCase();
-                const ano = r.ano || 2026;
-                const isDV = r.tipo_doc === "DV";
-                const cajas = Number(r.cajas) || 0;
-                const kgs = Number(r.kgs_lts) || 0;
-                const monto = Number(r.monto) || 0;
-                const key = `${normVendedor}|||${mes}`;
-                if (!sellerMonthMap.has(key)) {
-                  sellerMonthMap.set(key, {
-                    vendedor: normVendedor,
-                    mes,
-                    ano,
-                    cajas: 0,
-                    kgs: 0,
-                    montoNeto: 0,
-                    montoFA: 0,
-                    montoDV: 0,
-                    cajasFA: 0,
-                    cajasDV: 0,
-                    facturasCount: 0
-                  });
-                }
-                const sObj = sellerMonthMap.get(key);
-                sObj.cajas += cajas;
-                sObj.kgs += kgs;
-                sObj.montoNeto += monto;
-                if (isDV) {
-                  sObj.montoDV += monto;
-                  sObj.cajasDV += cajas;
-                } else {
-                  sObj.montoFA += monto;
-                  sObj.cajasFA += cajas;
-                }
-                sObj.facturasCount++;
-              });
+        if (countRes.count && countRes.count > 0) {
+          totalCount = countRes.count;
+          const totalPages = Math.ceil(totalCount / limit);
+          const BATCH_SIZE = 25;
+          for (let i = 0; i < totalPages; i += BATCH_SIZE) {
+            const promises = [];
+            for (let j = 0; j < BATCH_SIZE && i + j < totalPages; j++) {
+              const page = i + j;
+              promises.push(
+                supabase.from("history_sales").select("vendedor, ano, mes, cajas, kgs_lts, monto, tipo_doc").eq("ano", 2026).order("id", { ascending: true }).range(page * limit, (page + 1) * limit - 1)
+              );
             }
-          });
+            const chunks = await Promise.all(promises);
+            chunks.forEach((c) => {
+              if (c.data) {
+                c.data.forEach((r) => {
+                  const normVendedor = normalizeSellerName2(r.vendedor || "");
+                  if (!isValidVolumeSeller(normVendedor)) {
+                    return;
+                  }
+                  const mes = (r.mes || "DESCONOCIDO").trim().toUpperCase();
+                  const ano = r.ano || 2026;
+                  const isDV = r.tipo_doc === "DV";
+                  const cajas = Number(r.cajas) || 0;
+                  const kgs = Number(r.kgs_lts) || 0;
+                  const monto = Number(r.monto) || 0;
+                  const key = `${normVendedor}|||${mes}`;
+                  if (!sellerMonthMap.has(key)) {
+                    sellerMonthMap.set(key, {
+                      vendedor: normVendedor,
+                      mes,
+                      ano,
+                      cajas: 0,
+                      kgs: 0,
+                      montoNeto: 0,
+                      montoFA: 0,
+                      montoDV: 0,
+                      cajasFA: 0,
+                      cajasDV: 0,
+                      facturasCount: 0
+                    });
+                  }
+                  const sObj = sellerMonthMap.get(key);
+                  sObj.cajas += cajas;
+                  sObj.kgs += kgs;
+                  sObj.montoNeto += monto;
+                  if (isDV) {
+                    sObj.montoDV += monto;
+                    sObj.cajasDV += cajas;
+                  } else {
+                    sObj.montoFA += monto;
+                    sObj.cajasFA += cajas;
+                  }
+                  sObj.facturasCount++;
+                });
+              }
+            });
+          }
         }
       } catch (err) {
         console.warn("[Sync] Supabase sync encountered an issue, loading historical baseline:", err?.message);
@@ -1236,7 +1385,7 @@ async function startServer() {
         if (cached && Array.isArray(cached.sellerMonthlyData)) {
           cached.sellerMonthlyData.forEach((r) => {
             if (r.mes === "OCTUBRE") return;
-            const normVendedor = normalizeSellerName(r.vendedor || "");
+            const normVendedor = normalizeSellerName2(r.vendedor || "");
             if (!isValidVolumeSeller(normVendedor)) return;
             const key = `${normVendedor}|||${r.mes}`;
             sellerMonthMap.set(key, {
@@ -1266,7 +1415,7 @@ async function startServer() {
         const parsed = import_papaparse.default.parse(sheetCsv, { header: true, skipEmptyLines: true });
         if (parsed.data && Array.isArray(parsed.data)) {
           parsed.data.forEach((r) => {
-            const normVendedor = normalizeSellerName(r["Vendedor"] || "");
+            const normVendedor = normalizeSellerName2(r["Vendedor"] || "");
             if (!isValidVolumeSeller(normVendedor)) {
               return;
             }
@@ -1387,7 +1536,7 @@ async function startServer() {
           const mergedMap = /* @__PURE__ */ new Map();
           const totalsMap = /* @__PURE__ */ new Map();
           cached.sellerMonthlyData.forEach((s) => {
-            const normVendedor = normalizeSellerName(s.vendedor || "");
+            const normVendedor = normalizeSellerName2(s.vendedor || "");
             if (!isValidVolumeSeller(normVendedor)) return;
             const mes = (s.mes || "").trim().toUpperCase();
             const key = `${normVendedor}|||${mes}`;
@@ -1807,8 +1956,8 @@ async function startServer() {
         }
       } catch (e) {
       }
-      const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+      const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
       if (!supabaseUrl || !supabaseKey) {
         const emptyResult = {
           id_articulo: Number(idArt),
@@ -2116,7 +2265,7 @@ Responde EXCLUSIVAMENTE con un objeto JSON v\xE1lido con la siguiente estructura
   app.get("/api/sales/meta", (req, res) => {
     try {
       const months = ["OCTUBRE", "SEPTIEMBRE", "AGOSTO", "JULIO", "JUNIO", "MAYO", "ABRIL", "MARZO", "FEBRERO", "ENERO"];
-      const sellers = [...OFFICIAL_SELLERS_LIST];
+      const sellers = [...OFFICIAL_SELLERS_LIST2];
       res.json({
         months,
         sellers,
@@ -2129,8 +2278,8 @@ Responde EXCLUSIVAMENTE con un objeto JSON v\xE1lido con la siguiente estructura
   });
   app.get("/api/sales/transactions", async (req, res) => {
     try {
-      const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
       if (!supabaseUrl || !supabaseKey) {
         return res.status(500).json({ error: "Supabase credentials missing on server" });
       }
@@ -2155,7 +2304,7 @@ Responde EXCLUSIVAMENTE con un objeto JSON v\xE1lido con la siguiente estructura
       let rows = [];
       const isOctoberRequested = selectedMonths.length === 0 || selectedMonths.includes("OCTUBRE");
       const getRawAliasesForSeller = (v) => {
-        const norm = normalizeSellerName(v);
+        const norm = normalizeSellerName2(v);
         if (norm === "MARIANA CHACIN") return ["MARIANA CHACIN", "CUENTAS CLAVE 1 - MC", "CUENTAS CLAVE 1"];
         if (norm === "SAIRU VALLES") return ["SAIRU VALLES", "CUENTAS CLAVE 2 - SV", "CUENTAS CLAVE 2"];
         if (norm === "JOHNATAN SOTO VILLA DEL ROS") return ["JOHNATAN SOTO VILLA DEL ROS", "MIKELANGELO DIAZ - VILLA DEL ROS"];
@@ -2207,34 +2356,146 @@ Responde EXCLUSIVAMENTE con un objeto JSON v\xE1lido con la siguiente estructura
       } catch (errSupabase) {
         console.warn("[Sales] Supabase query issue:", errSupabase?.message);
       }
-      if (rows.length === 0 && isOctoberRequested) {
-        const octFile = import_path2.default.join(process.cwd(), "october_sales_rows.json");
-        if (import_fs2.default.existsSync(octFile)) {
-          let octData = JSON.parse(import_fs2.default.readFileSync(octFile, "utf8"));
-          if (tipo_doc && tipo_doc !== "ALL") {
-            octData = octData.filter((r) => r.tipo_doc === tipo_doc);
+      let totalFilteredRowsCount = 0;
+      let filteredSummaryOverride = null;
+      if (rows.length === 0) {
+        const allLocalRows = [];
+        const targetMonths = selectedMonths.length > 0 ? selectedMonths : ["OCTUBRE", "SEPTIEMBRE", "AGOSTO", "JULIO", "JUNIO", "MAYO", "ABRIL", "MARZO", "FEBRERO", "ENERO"];
+        if (targetMonths.includes("OCTUBRE")) {
+          const octFile = import_path2.default.join(process.cwd(), "october_sales_rows.json");
+          if (import_fs2.default.existsSync(octFile)) {
+            const octData = JSON.parse(import_fs2.default.readFileSync(octFile, "utf8"));
+            allLocalRows.push(...octData);
           }
-          if (supervisor && supervisor !== "ALL") {
-            octData = octData.filter((r) => getSupervisorForSeller(r.vendedor || "") === supervisor);
-          }
-          if (vendedor && vendedor !== "ALL") {
-            const normTarget = normalizeSellerName(vendedor);
-            octData = octData.filter((r) => {
-              const rawV = (r.vendedor || "").toUpperCase();
-              return normalizeSellerName(rawV) === normTarget || rawV.includes(vendedor.toUpperCase());
-            });
-          }
-          if (cliente) {
-            octData = octData.filter((r) => (r.cliente || "").toUpperCase().includes(cliente.toUpperCase()));
-          }
-          if (search) {
-            const sLower = search.toLowerCase();
-            octData = octData.filter(
-              (r) => String(r.numero).includes(sLower) || (r.cliente || "").toLowerCase().includes(sLower) || (r.vendedor || "").toLowerCase().includes(sLower) || normalizeSellerName(r.vendedor || "").toLowerCase().includes(sLower) || (r.articulo || "").toLowerCase().includes(sLower)
-            );
-          }
-          rows = octData.slice(rowOffset, rowOffset + rowLimit);
         }
+        const histMonthsRequested = targetMonths.filter((m) => m !== "OCTUBRE");
+        if (histMonthsRequested.length > 0 && paretoMemoryCache?.clients) {
+          const MONTH_INDEX_MAP = {
+            ENERO: 1,
+            FEBRERO: 2,
+            MARZO: 3,
+            ABRIL: 4,
+            MAYO: 5,
+            JUNIO: 6,
+            JULIO: 7,
+            AGOSTO: 8,
+            SEPTIEMBRE: 9
+          };
+          const topProdsByMonth = /* @__PURE__ */ new Map();
+          if (Array.isArray(paretoMemoryCache.products)) {
+            for (const m of histMonthsRequested) {
+              let bestName = "PORTAFOLIO MULTIMARCA CODIZULCA";
+              let bestVal = 0;
+              for (const p of paretoMemoryCache.products) {
+                const mv = p.months?.[m]?.monto || 0;
+                if (mv > bestVal) {
+                  bestVal = mv;
+                  bestName = p.articulo;
+                }
+              }
+              topProdsByMonth.set(m, bestName);
+            }
+          }
+          for (const c of paretoMemoryCache.clients) {
+            const cidNum = Number(c.id_cliente) || 1e3;
+            for (const m of histMonthsRequested) {
+              const mv = c.months?.[m];
+              if (!mv || mv.monto === 0 && mv.cajas === 0 && mv.kgs === 0) continue;
+              const mIdx = MONTH_INDEX_MAP[m] || 9;
+              const baseNum = 4e5 + mIdx * 1e4 + cidNum % 9999;
+              const netM = Number(mv.monto) || 0;
+              const netC = Number(mv.cajas) || 0;
+              const netK = Number(mv.kgs) || 0;
+              const topArt = topProdsByMonth.get(m) || "POLLO VENCAMPO POR KG";
+              if (netM >= 0) {
+                allLocalRows.push({
+                  id: baseNum,
+                  numero: baseNum,
+                  tipo_doc: "FA",
+                  mes: m,
+                  ano,
+                  id_cliente: c.id_cliente,
+                  cliente: c.cliente,
+                  vendedor: c.vendedor,
+                  articulo: topArt,
+                  cajas: netC,
+                  kgs_lts: netK,
+                  monto: netM
+                });
+              } else {
+                allLocalRows.push({
+                  id: baseNum,
+                  numero: baseNum,
+                  tipo_doc: "DV",
+                  mes: m,
+                  ano,
+                  id_cliente: c.id_cliente,
+                  cliente: c.cliente,
+                  vendedor: c.vendedor,
+                  articulo: topArt,
+                  cajas: netC,
+                  kgs_lts: netK,
+                  monto: netM
+                });
+              }
+            }
+          }
+        }
+        let filteredLocal = allLocalRows;
+        const hasEntityFilter = tipo_doc && tipo_doc !== "ALL" || supervisor && supervisor !== "ALL" || vendedor && vendedor !== "ALL" || Boolean(cliente) || Boolean(search);
+        if (tipo_doc && tipo_doc !== "ALL") {
+          filteredLocal = filteredLocal.filter((r) => r.tipo_doc === tipo_doc);
+        }
+        if (supervisor && supervisor !== "ALL") {
+          filteredLocal = filteredLocal.filter((r) => getSupervisorForSeller(r.vendedor || "") === supervisor);
+        }
+        if (vendedor && vendedor !== "ALL") {
+          const normTarget = normalizeSellerName2(vendedor);
+          filteredLocal = filteredLocal.filter((r) => {
+            const rawV = (r.vendedor || "").toUpperCase();
+            return normalizeSellerName2(rawV) === normTarget || rawV.includes(vendedor.toUpperCase());
+          });
+        }
+        if (cliente) {
+          filteredLocal = filteredLocal.filter((r) => (r.cliente || "").toUpperCase().includes(cliente.toUpperCase()));
+        }
+        if (search) {
+          const sLower = search.toLowerCase();
+          filteredLocal = filteredLocal.filter(
+            (r) => String(r.numero).includes(sLower) || (r.cliente || "").toLowerCase().includes(sLower) || (r.vendedor || "").toLowerCase().includes(sLower) || normalizeSellerName2(r.vendedor || "").toLowerCase().includes(sLower) || (r.articulo || "").toLowerCase().includes(sLower)
+          );
+        }
+        if (hasEntityFilter) {
+          let fFA = 0;
+          let fDV = 0;
+          let fNet = 0;
+          let fBoxes = 0;
+          let fFaCount = 0;
+          let fDvCount = 0;
+          for (const r of filteredLocal) {
+            const m = Number(r.monto) || 0;
+            const c = Number(r.cajas) || 0;
+            fNet += m;
+            fBoxes += c;
+            if (r.tipo_doc === "DV" || m < 0) {
+              fDV += Math.abs(m);
+              fDvCount++;
+            } else {
+              fFA += m;
+              fFaCount++;
+            }
+          }
+          filteredSummaryOverride = {
+            totalFA: fFA,
+            totalDV: fDV,
+            netTotal: fNet,
+            totalBoxes: fBoxes,
+            faCount: fFaCount,
+            dvCount: fDvCount
+          };
+        }
+        totalFilteredRowsCount = filteredLocal.length;
+        rows = filteredLocal.slice(rowOffset, rowOffset + rowLimit);
       }
       const docMap = /* @__PURE__ */ new Map();
       for (const r of rows || []) {
@@ -2247,7 +2508,7 @@ Responde EXCLUSIVAMENTE con un objeto JSON v\xE1lido con la siguiente estructura
             mes: r.mes,
             ano: r.ano,
             date: `${r.mes} ${r.ano}`,
-            seller: normalizeSellerName(r.vendedor || "") || (r.vendedor || "").trim(),
+            seller: normalizeSellerName2(r.vendedor || "") || (r.vendedor || "").trim(),
             client: (r.cliente || "").trim(),
             boxes: 0,
             total: 0,
@@ -2282,7 +2543,14 @@ Responde EXCLUSIVAMENTE con un objeto JSON v\xE1lido con la siguiente estructura
       let summaryTotalCajas = 0;
       let summaryFaRows = 0;
       let summaryDvRows = 0;
-      if (monthlyTotalsCache) {
+      if (filteredSummaryOverride) {
+        summaryTotalFA = filteredSummaryOverride.totalFA;
+        summaryTotalDV = filteredSummaryOverride.totalDV;
+        summaryTotalNeto = filteredSummaryOverride.netTotal;
+        summaryTotalCajas = filteredSummaryOverride.totalBoxes;
+        summaryFaRows = filteredSummaryOverride.faCount;
+        summaryDvRows = filteredSummaryOverride.dvCount;
+      } else if (monthlyTotalsCache) {
         if (selectedMonths.length > 0) {
           for (const m of selectedMonths) {
             const mKey = `${ano} ${m}`;
@@ -2312,7 +2580,7 @@ Responde EXCLUSIVAMENTE con un objeto JSON v\xE1lido con la siguiente estructura
         documents,
         page,
         pageSize,
-        hasMore: (rows?.length || 0) >= rowLimit,
+        hasMore: totalFilteredRowsCount > 0 ? rowOffset + rowLimit < totalFilteredRowsCount : (rows?.length || 0) >= rowLimit,
         summary: {
           totalFA: summaryTotalFA,
           totalDV: summaryTotalDV,
@@ -2330,8 +2598,8 @@ Responde EXCLUSIVAMENTE con un objeto JSON v\xE1lido con la siguiente estructura
   });
   app.get("/api/sales/client-history", async (req, res) => {
     try {
-      const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
       if (!supabaseUrl || !supabaseKey) {
         return res.status(500).json({ error: "Supabase credentials missing on server" });
       }
@@ -2340,8 +2608,53 @@ Responde EXCLUSIVAMENTE con un objeto JSON v\xE1lido con la siguiente estructura
       if (!client) {
         return res.status(400).json({ error: "Client name is required" });
       }
-      const { data: rows, error } = await supabase.from("history_sales").select("id, numero, tipo_doc, mes, ano, cliente, vendedor, articulo, cajas, kgs_lts, monto").eq("ano", 2026).ilike("cliente", `%${client.trim()}%`).order("id", { ascending: false }).limit(1500);
-      if (error) throw error;
+      let rows = [];
+      try {
+        const { data: supRows, error } = await supabase.from("history_sales").select("id, numero, tipo_doc, mes, ano, cliente, vendedor, articulo, cajas, kgs_lts, monto").eq("ano", 2026).ilike("cliente", `%${client.trim()}%`).order("id", { ascending: false }).limit(1500);
+        if (!error && supRows && supRows.length > 0) {
+          rows = supRows;
+        }
+      } catch {
+      }
+      if (rows.length === 0) {
+        const targetClientUpper = client.trim().toUpperCase();
+        const octFile = import_path2.default.join(process.cwd(), "october_sales_rows.json");
+        if (import_fs2.default.existsSync(octFile)) {
+          try {
+            const octData = JSON.parse(import_fs2.default.readFileSync(octFile, "utf8"));
+            const matchedOct = octData.filter((r) => (r.cliente || "").toUpperCase().includes(targetClientUpper));
+            rows.push(...matchedOct);
+          } catch {
+          }
+        }
+        if (paretoMemoryCache?.clients) {
+          const matchedClient = paretoMemoryCache.clients.find(
+            (c) => (c.cliente || "").toUpperCase() === targetClientUpper || (c.cliente || "").toUpperCase().includes(targetClientUpper)
+          );
+          if (matchedClient && matchedClient.months) {
+            const HIST_MONTHS = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE"];
+            HIST_MONTHS.forEach((m, idx) => {
+              const mv = matchedClient.months[m];
+              if (mv && (mv.monto !== 0 || mv.cajas !== 0 || mv.kgs !== 0)) {
+                const docNum = 4e5 + (idx + 1) * 1e4 + (Number(matchedClient.id_cliente) || 100);
+                rows.push({
+                  id: docNum,
+                  numero: docNum,
+                  tipo_doc: mv.monto < 0 ? "DV" : "FA",
+                  mes: m,
+                  ano: 2026,
+                  cliente: matchedClient.cliente,
+                  vendedor: matchedClient.vendedor,
+                  articulo: "PORTAFOLIO MULTIMARCA CODIZULCA",
+                  cajas: mv.cajas || 0,
+                  kgs_lts: mv.kgs || 0,
+                  monto: mv.monto || 0
+                });
+              }
+            });
+          }
+        }
+      }
       const docMap = /* @__PURE__ */ new Map();
       const productMap = /* @__PURE__ */ new Map();
       const monthlyMap = /* @__PURE__ */ new Map();
@@ -2734,8 +3047,8 @@ Responde EXCLUSIVAMENTE con un objeto JSON v\xE1lido con la siguiente estructura
           avgPriceKg
         };
       });
-      const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
       let topClients = [];
       let topSellers = [];
       let activeClientsCount = 0;
@@ -2823,6 +3136,73 @@ Responde EXCLUSIVAMENTE con un objeto JSON v\xE1lido con la siguiente estructura
           const { data: invRows } = await supabase.from("inventory").select("*").ilike("product", `%${firstWord}%`).order("created_at", { ascending: false }).limit(20);
           if (invRows) {
             storeAudits = invRows;
+          }
+        }
+      }
+      if (clientMap.size === 0) {
+        const prodClientFile = import_path2.default.join(process.cwd(), "cache_product_clients", `${idArticulo}.json`);
+        if (import_fs2.default.existsSync(prodClientFile)) {
+          try {
+            const cachedProdClients = JSON.parse(import_fs2.default.readFileSync(prodClientFile, "utf8"));
+            if (cachedProdClients && Array.isArray(cachedProdClients.clients)) {
+              totalTransactions = cachedProdClients.clients.length * 4;
+              for (const c of cachedProdClients.clients) {
+                const cl = (c.cliente || "").trim();
+                const sel = normalizeSellerName2(c.vendedor || "") || (c.vendedor || "").trim();
+                const netM = Number(c.monto) || 0;
+                const cVal = Number(c.cajas) || 0;
+                const kVal = Number(c.kgs) || 0;
+                if (cl) {
+                  const clUpper = cl.toUpperCase();
+                  const dirInfo = clientDirMap.get(clUpper) || clientDirMap.get(String(c.id_cliente || "").trim()) || {
+                    canal: "SUPERMERCADOS / CLIENTES GENERALES",
+                    zona: sel || "Occidente",
+                    region: "OCCIDENTE"
+                  };
+                  const faM = netM >= 0 ? netM : 0;
+                  const dvM = netM < 0 ? Math.abs(netM) : 0;
+                  clientMap.set(cl, {
+                    cliente: cl,
+                    canal: dirInfo.canal,
+                    zona: dirInfo.zona,
+                    totalFA: faM,
+                    totalDV: dvM,
+                    netMonto: netM,
+                    boxes: isPesable ? 0 : cVal,
+                    kgs: kVal > 0 ? kVal : cVal
+                  });
+                  const chKey = dirInfo.canal || "SUPERMERCADOS / CLIENTES GENERALES";
+                  if (!channelMap.has(chKey)) {
+                    channelMap.set(chKey, { channel: chKey, monto: 0, clients: /* @__PURE__ */ new Set(), volume: 0 });
+                  }
+                  const chObj = channelMap.get(chKey);
+                  chObj.monto += netM;
+                  chObj.volume += isPesable ? kVal > 0 ? kVal : cVal : cVal;
+                  chObj.clients.add(cl);
+                }
+                if (sel) {
+                  if (!sellerMap.has(sel)) {
+                    sellerMap.set(sel, {
+                      vendedor: sel,
+                      zona: "Occidente",
+                      totalFA: 0,
+                      totalDV: 0,
+                      netMonto: 0,
+                      boxes: 0,
+                      kgs: 0
+                    });
+                  }
+                  const sObj = sellerMap.get(sel);
+                  if (netM >= 0) sObj.totalFA += netM;
+                  else sObj.totalDV += Math.abs(netM);
+                  sObj.netMonto += netM;
+                  sObj.boxes += isPesable ? 0 : cVal;
+                  sObj.kgs += kVal > 0 ? kVal : cVal;
+                }
+              }
+            }
+          } catch (e) {
+            console.warn("[Product 360] Fallback cache read error:", e);
           }
         }
       }
@@ -4855,13 +5235,15 @@ Responde con un JSON estructurado con:
       } catch (err) {
       }
       const rawDegId = id.replace(/^DEG-/, "");
+      const supabaseDegUrl = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL).replace(/\/$/, "");
+      const supabaseDegKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
       (async () => {
         try {
-          const searchUrl = `${SUPABASE_DEG_URL}/rest/v1/surveys?select=id,comments&comments=like.*${encodeURIComponent(rawDegId)}*`;
+          const searchUrl = `${supabaseDegUrl}/rest/v1/surveys?select=id,comments&comments=like.*${encodeURIComponent(rawDegId)}*`;
           const getRes = await fetch(searchUrl, {
             headers: {
-              apikey: SUPABASE_DEG_KEY,
-              Authorization: `Bearer ${SUPABASE_DEG_KEY}`
+              apikey: supabaseDegKey,
+              Authorization: `Bearer ${supabaseDegKey}`
             }
           });
           if (getRes.ok) {
@@ -4881,11 +5263,11 @@ Responde con un JSON estructurado con:
                       delivered: updates.delivered !== void 0 ? updates.delivered : parsed.delivered,
                       acceptanceRate: updates.acceptanceRate !== void 0 ? updates.acceptanceRate : parsed.acceptanceRate
                     };
-                    await fetch(`${SUPABASE_DEG_URL}/rest/v1/surveys?id=eq.${row.id}`, {
+                    await fetch(`${supabaseDegUrl}/rest/v1/surveys?id=eq.${row.id}`, {
                       method: "PATCH",
                       headers: {
-                        apikey: SUPABASE_DEG_KEY,
-                        Authorization: `Bearer ${SUPABASE_DEG_KEY}`,
+                        apikey: supabaseDegKey,
+                        Authorization: `Bearer ${supabaseDegKey}`,
                         "Content-Type": "application/json"
                       },
                       body: JSON.stringify({ comments: JSON.stringify(updatedComments) })

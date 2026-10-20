@@ -222,6 +222,48 @@ describe('degustacionesService - Senior QA Automation Test Suite', () => {
   });
 
   // =========================================================================
+  // 2.b RUTA DE PROMOTORAS LIMPIA: SIN ASIGNACIONES PRECARGADAS
+  // =========================================================================
+  describe('Ruta de promotoras sin asignaciones precargadas', () => {
+    it('DEFAULT_DEGUSTACIONES no trae ninguna promotora asignada (esperan asignación de Trade Marketing)', () => {
+      const assigned = DEFAULT_DEGUSTACIONES.filter(
+        (i) => !i.promoter.toUpperCase().includes('POR ASIGNAR') || i.promoterEmail || i.promoterId
+      );
+      expect(assigned).toEqual([]);
+    });
+
+    it('limpia una sola vez las asignaciones heredadas en una caché local previa (DEG-HIST-*)', () => {
+      const stale = DEFAULT_DEGUSTACIONES.map((i) =>
+        i.id.startsWith('DEG-HIST-')
+          ? { ...i, promoter: 'NICOLE GODOY', promoterEmail: 'godoyaraujonicole@gmail.com', promoterId: 'STF-001' }
+          : i
+      );
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(stale));
+
+      const items = degustacionesService.getDegustaciones();
+      const withPromoter = items.filter((i) => !i.promoter.toUpperCase().includes('POR ASIGNAR'));
+      expect(withPromoter).toEqual([]);
+      expect(
+        degustacionesService.getDegustacionesForPromoter('NICOLE GODOY', 'godoyaraujonicole@gmail.com')
+      ).toEqual([]);
+    });
+
+    it('conserva las asignaciones que Trade Marketing haga después de la limpieza', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) }));
+      const first = degustacionesService.getDegustaciones()[0];
+      await degustacionesService.updateDegustacion({
+        ...first,
+        promoter: 'NICOLE GODOY',
+        promoterEmail: 'godoyaraujonicole@gmail.com',
+        promoterId: 'STF-001'
+      });
+
+      const mine = degustacionesService.getDegustacionesForPromoter('NICOLE GODOY', 'godoyaraujonicole@gmail.com');
+      expect(mine.map((i) => i.id)).toEqual([first.id]);
+    });
+  });
+
+  // =========================================================================
   // 3. MANEJO DE EXCEPCIONES Y ERRORES DE RED (Network Errors & HTTP 4xx/5xx)
   // =========================================================================
   describe('Manejo de Excepciones y Errores de Red / API', () => {

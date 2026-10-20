@@ -93,12 +93,17 @@ export const CampoRuta: React.FC = () => {
     return () => unsubscribe();
   }, [selectedDegustacion]);
 
-  // Degustaciones que corresponden exclusivamente a la promotora activa (validación exacta por correo electrónico + nombre + ID)
+  const isTradeCoordinator = activePromoter.role === 'Coordinadora Trade Marketing';
+
+  // Degustaciones que corresponden a la promotora activa (o todas las degustaciones si ingresa la Coordinadora de Trade Marketing)
   const myDegustaciones = useMemo(() => {
+    if (isTradeCoordinator) {
+      return allDegustaciones;
+    }
     return allDegustaciones.filter((item) =>
       matchPromoterAssignment(item, activePromoter, activePromoter.email)
     );
-  }, [allDegustaciones, activePromoter]);
+  }, [allDegustaciones, activePromoter, isTradeCoordinator]);
 
   // Separar Ruta Actual (>= hoy o actividades pendientes/en curso) vs Historial (< hoy completadas/canceladas)
   const myCurrentDegustaciones = useMemo(() => {
@@ -125,12 +130,14 @@ export const CampoRuta: React.FC = () => {
   const displayedDegustaciones = useMemo(() => {
     return periodDegustaciones.filter((item) => {
       const matchStatus = selectedStatus === 'todos' || item.status === selectedStatus;
+      const q = searchTerm.toLowerCase();
       const matchSearch =
         searchTerm.trim() === '' ||
-        item.activity.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.product.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.id.toLowerCase().includes(searchTerm.toLowerCase());
+        item.activity.toLowerCase().includes(q) ||
+        item.client.toLowerCase().includes(q) ||
+        item.product.toLowerCase().includes(q) ||
+        item.id.toLowerCase().includes(q) ||
+        (item.promoter && item.promoter.toLowerCase().includes(q));
       return matchStatus && matchSearch;
     });
   }, [periodDegustaciones, selectedStatus, searchTerm]);
@@ -488,6 +495,12 @@ export const CampoRuta: React.FC = () => {
                     <div className="min-w-0 flex-1">
                       <p className="font-bold text-white text-xs truncate">{item.client}</p>
                       <p className="text-[10px] text-zinc-400 truncate">{item.zone}</p>
+                      {isTradeCoordinator && item.promoter && (
+                        <p className="text-[10px] text-emerald-400 font-bold truncate mt-0.5 flex items-center gap-1">
+                          <Users className="w-3 h-3 shrink-0" />
+                          <span>Promotora: {item.promoter}</span>
+                        </p>
+                      )}
                     </div>
                   </div>
 

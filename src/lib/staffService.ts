@@ -548,12 +548,14 @@ export const staffService = {
 
   subscribe(callback: () => void): () => void {
     const handler = () => callback();
-    window.addEventListener('codizulca_staff_changed', handler);
-    window.addEventListener('storage', (e) => {
+    const storageHandler = (e: StorageEvent) => {
       if (e.key === STORAGE_KEY) callback();
-    });
+    };
+    window.addEventListener('codizulca_staff_changed', handler);
+    window.addEventListener('storage', storageHandler);
     return () => {
       window.removeEventListener('codizulca_staff_changed', handler);
+      window.removeEventListener('storage', storageHandler);
     };
   }
 };

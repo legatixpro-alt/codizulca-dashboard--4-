@@ -102,6 +102,9 @@ describe('Restricción de Acceso a Trazabilidad y Sincronización App Promotoras
       expect(resolveCorporateProfile('admin@codi.com').roleLabel).toBe('Administrador General');
       expect(resolveCorporateProfile('johnatan.soto@codizulca.com').canViewTrazabilidad).toBe(false);
       expect(resolveCorporateProfile('trademarketing@codizulca.com').canViewTrazabilidad).toBe(false);
+      expect(resolveCorporateProfile('Grecia01@codizulca.com').roleKey).toBe('trade_marketing');
+      expect(resolveCorporateProfile('Grecia01@codizulca.com').roleLabel).toBe('Coordinadora Trade Marketing');
+      expect(resolveCorporateProfile('Grecia01@codizulca.com').canViewTrazabilidad).toBe(false);
     });
   });
 

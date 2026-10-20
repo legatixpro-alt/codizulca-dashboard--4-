@@ -110,13 +110,13 @@
   "2026 OCTUBRE": {
     "ano": 2026,
     "mes": "OCTUBRE",
-    "totalRows": 13167,
-    "faRows": 11849,
-    "dvRows": 1318,
-    "totalFA": 2725724.06,
-    "totalDV": -153503.47,
-    "totalNeto": 2572220.59,
-    "totalCajas": 316881.69,
-    "totalKgs": 997535.5
+    "totalRows": 15148,
+    "faRows": 13532,
+    "dvRows": 1616,
+    "totalFA": 3186979.18,
+    "totalDV": -172470.11,
+    "totalNeto": 3014509.07,
+    "totalCajas": 374392,
+    "totalKgs": 1157026.11
   }
 }

@@ -28,7 +28,7 @@ export interface CheckInRecord {
 }
 
 const STORAGE_KEY_CHECKINS = 'codizulca_checkins';
-const STORAGE_KEY_QUEUE = 'portal_sync_queue';
+const STORAGE_KEY_QUEUE = 'portal_checkins_sync_queue';
 export const STORAGE_KEY_ACTIVE_STORE = 'portal_active_store';
 export const STORAGE_KEY_ACTIVE_PROMOTER = 'portal_active_promoter';
 
@@ -1076,23 +1076,26 @@ export const checkinsService = {
 
     // Si está online, enviar al servidor / backend
     try {
-      const response = await fetch('/api/checkins', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newRecord)
-      });
-      if (response.ok) {
-        const serverRecord = await response.json();
-        newRecord.offlinePending = false;
-        // Refrescar registro en local
-        const refreshed = updated.map(r => r.id === newRecord.id ? { ...newRecord, ...serverRecord, offlinePending: false } : r);
-        localStorage.setItem(STORAGE_KEY_CHECKINS, JSON.stringify(refreshed));
+      if (typeof window !== 'undefined' && window.location?.origin?.startsWith('http')) {
+        const response = await fetch(`${window.location.origin}/api/checkins`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newRecord)
+        });
+        if (response.ok) {
+          const serverRecord = await response.json();
+          newRecord.offlinePending = false;
+          // Refrescar registro en local
+          const refreshed = updated.map(r => r.id === newRecord.id ? { ...newRecord, ...serverRecord, offlinePending: false } : r);
+          localStorage.setItem(STORAGE_KEY_CHECKINS, JSON.stringify(refreshed));
+        } else {
+          // Si el backend responde con error, encolar para reintento
+          this.enqueueOfflineCheckIn(newRecord);
+        }
       } else {
-        // Si el backend responde con error, encolar para reintento
         this.enqueueOfflineCheckIn(newRecord);
       }
     } catch (err) {
-      console.warn('Fallo al enviar check-in al servidor, guardado en cola offline:', err);
       this.enqueueOfflineCheckIn(newRecord);
     }
 

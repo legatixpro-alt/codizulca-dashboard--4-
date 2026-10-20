@@ -22,6 +22,7 @@ import {
   PromoterProfile
 } from '../../lib/campoService';
 import { CampoStoreSelector } from '../../components/mobile/CampoStoreSelector';
+import { DecimalInput } from '../../components/mobile/DecimalInput';
 
 export const CampoPrecios: React.FC<{ activePromoterName?: string }> = ({
   activePromoterName
@@ -249,11 +250,10 @@ export const CampoPrecios: React.FC<{ activePromoterName?: string }> = ({
                 </label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 font-bold text-xs">$</span>
-                  <input
-                    type="number"
-                    step="0.01"
+                  <DecimalInput
                     value={ownPriceUsd}
-                    onChange={(e) => setOwnPriceUsd(parseFloat(e.target.value) || 0)}
+                    onValueChange={setOwnPriceUsd}
+                    ariaLabel="Precio en estante USD"
                     className="w-full bg-[#171717] border border-neutral-800 rounded-xl pl-7 pr-3 py-2 text-xs text-white font-mono font-bold focus:outline-none focus:border-red-500"
                   />
                 </div>
@@ -334,11 +334,10 @@ export const CampoPrecios: React.FC<{ activePromoterName?: string }> = ({
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div>
                         <span className="text-[9px] text-neutral-500 block">Precio Estante ($):</span>
-                        <input
-                          type="number"
-                          step="0.01"
+                        <DecimalInput
                           value={comp.priceUsd}
-                          onChange={(e) => updateCompetitor(idx, 'priceUsd', parseFloat(e.target.value) || 0)}
+                          onValueChange={(v) => updateCompetitor(idx, 'priceUsd', v)}
+                          ariaLabel={`Precio estante competidor ${comp.name}`}
                           className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-2 py-1 text-xs text-white font-mono font-bold focus:outline-none"
                         />
                       </div>

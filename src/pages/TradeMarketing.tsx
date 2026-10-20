@@ -302,6 +302,7 @@ export const ALKOSTO_BRANCHES = [
 interface PersonalItem {
   id: string;
   name: string;
+  email?: string;
   role: 'Promotora' | 'Impulsadora' | 'Promotor Merchandising';
   zone: string;
   phone: string;
@@ -981,6 +982,7 @@ export const TradeMarketing: React.FC = () => {
         const mapped: PersonalItem[] = data.map((s) => ({
           id: s.id,
           name: s.name,
+          email: s.email,
           role: s.role,
           zone: s.address || s.assignedStore || 'Maracaibo',
           phone: s.phone,
@@ -7405,6 +7407,92 @@ export const TradeMarketing: React.FC = () => {
 
             {/* Lista de Promotoras y Credenciales */}
             <div className="p-4 overflow-y-auto space-y-2.5 flex-1">
+              {/* Tarjeta Destacada: Coordinadora de Trade Marketing (Grecia) */}
+              {(!credentialsSearchTerm.trim() ||
+                'grecia coordinadora trade marketing grecia01@codizulca.com'.includes(
+                  credentialsSearchTerm.toLowerCase()
+                )) && (
+                <div className="p-3.5 rounded-2xl bg-red-950/30 border border-red-500/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-xl overflow-hidden bg-red-600 border border-red-400/40 shrink-0 flex items-center justify-center font-black text-white text-xs">
+                      G
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="font-black text-white text-xs uppercase truncate">
+                          GRECIA (COORDINADORA TRADE MARKETING)
+                        </h4>
+                        <span className="px-1.5 py-0.5 rounded bg-red-600 text-white font-mono text-[9px] font-black uppercase">
+                          Coordinación General
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 text-[11px] text-zinc-300 mt-1 font-mono flex-wrap">
+                        <span className="text-white font-bold truncate">✉️ Grecia01@codizulca.com</span>
+                        <span className="text-zinc-500">•</span>
+                        <div className="flex items-center gap-1">
+                          <span>🔑</span>
+                          <span className="text-emerald-400 font-bold">
+                            {revealedPasswords['COORD-TM-01'] ? 'Codi.02' : '••••••••'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setRevealedPasswords((prev) => ({
+                                ...prev,
+                                'COORD-TM-01': !prev['COORD-TM-01'],
+                              }))
+                            }
+                            className="text-zinc-400 hover:text-white ml-0.5 cursor-pointer"
+                            title="Ver contraseña"
+                          >
+                            {revealedPasswords['COORD-TM-01'] ? (
+                              <EyeOff className="w-3 h-3" />
+                            ) : (
+                              <Eye className="w-3 h-3" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const coordPortalUrl = `${window.location.origin}/portal/login?email=${encodeURIComponent('Grecia01@codizulca.com')}`;
+                        const text = `Credenciales Coordinación Trade Marketing\nCoordinadora: GRECIA\nCorreo: Grecia01@codizulca.com\nContraseña: Codi.02\nEnlace App Campo: ${coordPortalUrl}`;
+                        navigator.clipboard.writeText(text);
+                        setCopiedCredentialId('COORD-TM-01');
+                        setTimeout(() => setCopiedCredentialId(null), 2500);
+                      }}
+                      className="px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-bold flex items-center gap-1 border border-white/10 transition-colors cursor-pointer"
+                    >
+                      {copiedCredentialId === 'COORD-TM-01' ? (
+                        <>
+                          <Check className="w-3 h-3 text-emerald-400" />
+                          <span className="text-emerald-400">¡Copiado!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3 h-3 text-zinc-400" />
+                          <span>Copiar</span>
+                        </>
+                      )}
+                    </button>
+                    <a
+                      href={`${window.location.origin}/portal/login?email=${encodeURIComponent('Grecia01@codizulca.com')}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-2.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-bold flex items-center gap-1 transition-all cursor-pointer"
+                    >
+                      <span>Abrir</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                </div>
+              )}
+
               {staffMembers
                 .filter(s => {
                   if (!credentialsSearchTerm.trim()) return true;

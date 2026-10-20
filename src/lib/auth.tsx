@@ -42,11 +42,11 @@ export const DASHBOARD_CORPORATE_PROFILES: DashboardCorporateProfile[] = [
   },
   {
     id: 'CORP-003',
-    name: 'Coordinación Trade Marketing',
-    email: 'trademarketing@codizulca.com',
-    passwordHint: '123',
+    name: 'Grecia (Coordinación Trade Marketing)',
+    email: 'Grecia01@codizulca.com',
+    passwordHint: 'Codi.02',
     roleKey: 'trade_marketing',
-    roleLabel: 'Coordinador Trade Marketing',
+    roleLabel: 'Coordinadora Trade Marketing',
     zone: 'Zulia / Falcón',
     canViewTrazabilidad: false,
     modules: ['Resumen Ejecutivo', 'Trade Marketing (IA)', 'Catálogo de Productos', 'Inventario & Stock', 'Portal Móvil PWA'],
@@ -149,8 +149,13 @@ export function resolveCorporateProfile(email?: string | null, role?: string | n
   if (emailNorm.includes('gerente') || emailNorm.includes('gerencia') || (role || '').toLowerCase().includes('gerente nacional')) {
     return DASHBOARD_CORPORATE_PROFILES[1]; // Gerente Nacional
   }
-  if (emailNorm.includes('trade') || (role || '').toLowerCase().includes('trade')) {
-    return DASHBOARD_CORPORATE_PROFILES[2]; // Coordinación Trade Marketing
+  if (
+    emailNorm.includes('grecia') ||
+    emailNorm.includes('trade') ||
+    (role || '').toLowerCase().includes('trade') ||
+    (role || '').toLowerCase().includes('coordinador')
+  ) {
+    return DASHBOARD_CORPORATE_PROFILES[2]; // Coordinación Trade Marketing (Grecia)
   }
   if (emailNorm.includes('johnatan')) {
     return DASHBOARD_CORPORATE_PROFILES[3];
@@ -281,14 +286,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     ? storedCorpProfile
     : resolveCorporateProfile(user?.email, profile?.role);
 
+  const effectiveUser: User | null =
+    user ??
+    (storedCorpProfile
+      ? ({
+          id: storedCorpProfile.id,
+          email: storedCorpProfile.email,
+          app_metadata: {},
+          user_metadata: {
+            full_name: storedCorpProfile.name,
+            role: storedCorpProfile.roleLabel,
+          },
+          aud: 'authenticated',
+          created_at: new Date().toISOString(),
+        } as User)
+      : null);
+
   const canAccessTrazabilidad = checkCanAccessTrazabilidad({
     role: storedCorpProfile?.roleLabel || profile?.role || corporateProfile.roleLabel,
-    email: storedCorpProfile?.email || user?.email || corporateProfile.email,
+    email: storedCorpProfile?.email || effectiveUser?.email || corporateProfile.email,
     fullName: storedCorpProfile?.name || profile?.full_name || corporateProfile.name,
   });
 
   return (
-    <AuthContext.Provider value={{ session, user, profile, corporateProfile, canAccessTrazabilidad, isLoading, signOut }}>
+    <AuthContext.Provider value={{ session, user: effectiveUser, profile, corporateProfile, canAccessTrazabilidad, isLoading, signOut }}>
       {children}
     </AuthContext.Provider>
   );

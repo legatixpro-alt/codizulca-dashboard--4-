@@ -20,6 +20,7 @@ import { useOutletContext } from 'react-router-dom';
 import { STORAGE_KEY_ACTIVE_STORE } from '../../lib/checkinsService';
 import { degustacionesService } from '../../lib/degustacionesService';
 import { CampoStoreSelector } from '../../components/mobile/CampoStoreSelector';
+import { DecimalInput, roundQty } from '../../components/mobile/DecimalInput';
 
 export const CampoInventario: React.FC<{ activePromoterName?: string }> = ({
   activePromoterName
@@ -43,29 +44,32 @@ export const CampoInventario: React.FC<{ activePromoterName?: string }> = ({
   });
   const [selectedProduct, setSelectedProduct] = useState(CODIZULCA_PRODUCTS[0]);
   
-  // Estados de inventario numérico
-  const [initialStock, setInitialStock] = useState<number>(45);
-  const [tastingsGiven, setTastingsGiven] = useState<number>(8);
-  const [finalStock, setFinalStock] = useState<number>(22);
+  // Estados de inventario numérico (admiten decimales: Kg de embutidos, etc.)
+  const [initialStock, setInitialStock] = useState<number>(0);
+  const [salesGiven, setSalesGiven] = useState<number>(0);
+  const [tastingsGiven, setTastingsGiven] = useState<number>(0);
   const [observations, setObservations] = useState<string>('');
 
   const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
   const [isOfflineSaved, setIsOfflineSaved] = useState<boolean>(false);
 
-  // Validación Lógica Estricta
-  const isFinalStockInvalid = finalStock > initialStock;
-  const isTastingsExceeded = (tastingsGiven + finalStock) > initialStock;
+  // Inventario Final automático: Inicial - Ventas - Degustaciones/Muestras
+  const rawFinalStock = roundQty(initialStock - salesGiven - tastingsGiven);
+  const finalStock = Math.max(0, rawFinalStock);
 
-  // Cálculo de Rotación Neta: Inicial - Final - Degustaciones
-  const netRotation = Math.max(0, initialStock - finalStock - tastingsGiven);
+  // Validación Lógica Estricta: lo vendido + degustado no puede exceder el inventario inicial
+  const isFinalStockInvalid = rawFinalStock < 0;
+
+  // Rotación Neta (Ventas) ingresada por la promotora
+  const netRotation = salesGiven;
   const rotationPercentage = initialStock > 0 ? Math.round((netRotation / initialStock) * 100) : 0;
 
   const handleSave = async () => {
     if (isFinalStockInvalid) {
-      alert('Error de validación: El inventario final no puede ser mayor al inventario inicial.');
+      alert('Error de validación: Las ventas y degustaciones no pueden ser mayores al inventario inicial.');
       return;
     }
-    if (initialStock < 0 || finalStock < 0 || tastingsGiven < 0) {
+    if (initialStock < 0 || salesGiven < 0 || tastingsGiven < 0) {
       alert('Los valores numéricos no pueden ser negativos.');
       return;
     }
@@ -114,6 +118,9 @@ export const CampoInventario: React.FC<{ activePromoterName?: string }> = ({
 
   const handleReset = () => {
     setObservations('');
+    setInitialStock(0);
+    setSalesGiven(0);
+    setTastingsGiven(0);
     setSaveSuccess(false);
   };
 
@@ -229,14 +236,30 @@ export const CampoInventario: React.FC<{ activePromoterName?: string }> = ({
                   <span className="text-[10px] text-neutral-500">Stock físico al iniciar guardia</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    min="0"
+                  <DecimalInput
                     value={initialStock}
-                    onChange={(e) => setInitialStock(parseInt(e.target.value) || 0)}
-                    className="w-20 bg-neutral-900 border border-neutral-800 rounded-lg px-2.5 py-1.5 text-center text-xs text-white font-mono font-bold focus:outline-none focus:border-red-500"
+                    onValueChange={setInitialStock}
+                    ariaLabel="Inventario inicial"
+                    className="w-24 bg-neutral-900 border border-neutral-800 rounded-lg px-2.5 py-1.5 text-center text-xs text-white font-mono font-bold focus:outline-none focus:border-red-500"
                   />
-                  <span className="text-xs text-neutral-400 font-mono">u.</span>
+                  <span className="text-xs text-neutral-400 font-mono">Kg/u.</span>
+                </div>
+              </div>
+
+              {/* Ventas */}
+              <div className="p-3 bg-[#171717] rounded-xl border border-neutral-800 flex items-center justify-between">
+                <div>
+                  <strong className="text-xs text-emerald-300 block">Ventas (Desplazamiento)</strong>
+                  <span className="text-[10px] text-neutral-500">Cantidad vendida durante la guardia (admite decimales)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <DecimalInput
+                    value={salesGiven}
+                    onValueChange={setSalesGiven}
+                    ariaLabel="Ventas"
+                    className="w-24 bg-neutral-900 border border-neutral-800 rounded-lg px-2.5 py-1.5 text-center text-xs text-emerald-400 font-mono font-bold focus:outline-none focus:border-emerald-500"
+                  />
+                  <span className="text-xs text-neutral-400 font-mono">Kg/u.</span>
                 </div>
               </div>
 
@@ -244,21 +267,20 @@ export const CampoInventario: React.FC<{ activePromoterName?: string }> = ({
               <div className="p-3 bg-[#171717] rounded-xl border border-neutral-800 flex items-center justify-between">
                 <div>
                   <strong className="text-xs text-amber-300 block">Degustaciones / Muestras</strong>
-                  <span className="text-[10px] text-neutral-500">Unidades consumidas en prueba</span>
+                  <span className="text-[10px] text-neutral-500">Cantidad consumida en prueba</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    min="0"
+                  <DecimalInput
                     value={tastingsGiven}
-                    onChange={(e) => setTastingsGiven(parseInt(e.target.value) || 0)}
-                    className="w-20 bg-neutral-900 border border-neutral-800 rounded-lg px-2.5 py-1.5 text-center text-xs text-amber-400 font-mono font-bold focus:outline-none focus:border-amber-500"
+                    onValueChange={setTastingsGiven}
+                    ariaLabel="Degustaciones y muestras"
+                    className="w-24 bg-neutral-900 border border-neutral-800 rounded-lg px-2.5 py-1.5 text-center text-xs text-amber-400 font-mono font-bold focus:outline-none focus:border-amber-500"
                   />
-                  <span className="text-xs text-neutral-400 font-mono">u.</span>
+                  <span className="text-xs text-neutral-400 font-mono">Kg/u.</span>
                 </div>
               </div>
 
-              {/* Inventario Final */}
+              {/* Inventario Final (calculado automáticamente) */}
               <div className={`p-3 rounded-xl border flex items-center justify-between transition-colors ${
                 isFinalStockInvalid
                   ? 'bg-red-950/40 border-red-500/60'
@@ -266,17 +288,16 @@ export const CampoInventario: React.FC<{ activePromoterName?: string }> = ({
               }`}>
                 <div>
                   <strong className="text-xs text-white block">Inventario Final (Cierre)</strong>
-                  <span className="text-[10px] text-neutral-500">Stock remanente al cerrar guardia</span>
+                  <span className="text-[10px] text-neutral-500">Automático: Inicial − Ventas − Muestras</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    min="0"
-                    value={finalStock}
-                    onChange={(e) => setFinalStock(parseInt(e.target.value) || 0)}
-                    className="w-20 bg-neutral-900 border border-neutral-800 rounded-lg px-2.5 py-1.5 text-center text-xs text-white font-mono font-bold focus:outline-none focus:border-red-500"
-                  />
-                  <span className="text-xs text-neutral-400 font-mono">u.</span>
+                  <div
+                    className="w-24 bg-neutral-950 border border-emerald-500/30 rounded-lg px-2.5 py-1.5 text-center text-xs text-emerald-300 font-mono font-bold"
+                    aria-label="Inventario final calculado"
+                  >
+                    {finalStock}
+                  </div>
+                  <span className="text-xs text-neutral-400 font-mono">Kg/u.</span>
                 </div>
               </div>
             </div>
@@ -286,7 +307,7 @@ export const CampoInventario: React.FC<{ activePromoterName?: string }> = ({
               <div className="p-2.5 bg-red-950/60 border border-red-500/50 rounded-xl text-red-300 text-xs flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
                 <span>
-                  Bloqueo: El inventario final ({finalStock}) no puede exceder al inicial ({initialStock}).
+                  Bloqueo: Las ventas ({salesGiven}) + muestras ({tastingsGiven}) no pueden exceder el inventario inicial ({initialStock}).
                 </span>
               </div>
             )}

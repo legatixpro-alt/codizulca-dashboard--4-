@@ -236,7 +236,8 @@ export const DashboardOverview: React.FC = () => {
   const [historicalData, setHistoricalData] = useState<any[]>(() => {
     try {
       localStorage.removeItem('app_historical_sales_cache'); // Purge stale un-ordered cache
-      const cached = localStorage.getItem('app_historical_sales_cache_v3');
+      localStorage.removeItem('app_historical_sales_cache_v3'); // Purge pre-September sync cache
+      const cached = localStorage.getItem('app_historical_sales_cache_v4');
       if (cached) {
         const parsed = JSON.parse(cached);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
@@ -355,13 +356,20 @@ export const DashboardOverview: React.FC = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const combinedProductData = React.useMemo(() => {
+    const histWithoutDuplicateOct = rawProductData.length > 0
+      ? historicalData.filter(h => !String(h.date || '').startsWith('2026-10'))
+      : historicalData;
+    return [...rawProductData, ...histWithoutDuplicateOct];
+  }, [rawProductData, historicalData]);
+
   const availableSkus = React.useMemo(() => {
     const pMap = new Map<string, string>();
-    [...rawProductData, ...historicalData].forEach(p => {
+    combinedProductData.forEach(p => {
         if (p.idArt && p.baseName) pMap.set(p.idArt, p.baseName);
     });
     return Array.from(pMap.entries()).sort((a, b) => a[1].localeCompare(b[1])); // [id, name][]
-  }, [rawProductData, historicalData]);
+  }, [combinedProductData]);
 
   const toggleSku = (id: string) => {
       setSelectedSkus(prev => {
@@ -387,8 +395,7 @@ export const DashboardOverview: React.FC = () => {
         });
       }
     } else {
-      const allData = [...rawProductData, ...historicalData];
-      allData.forEach(p => {
+      combinedProductData.forEach(p => {
         let groupDate = p.date;
         const dateParts = p.date.split('-');
         if (dateParts.length >= 2) {
@@ -399,7 +406,7 @@ export const DashboardOverview: React.FC = () => {
     }
     
     return Array.from(groups).sort((a, b) => b.localeCompare(a));
-  }, [rawProductData, historicalData, timeView]);
+  }, [rawProductData, historicalData, combinedProductData, timeView]);
 
   React.useEffect(() => {
      setSelectedTimeGroups([]);
@@ -436,7 +443,7 @@ export const DashboardOverview: React.FC = () => {
                   if (parsed.length > 0) {
                       setHistoricalData(parsed);
                       try {
-                        localStorage.setItem('app_historical_sales_cache_v3', JSON.stringify(parsed));
+                        localStorage.setItem('app_historical_sales_cache_v4', JSON.stringify(parsed));
                       } catch {
                         // ignore
                       }
@@ -530,7 +537,7 @@ export const DashboardOverview: React.FC = () => {
       let kg = 0;
         
         const trends = new Map<string, { date: string, ventas: number, kg: number, kgFacturado: number, kgDespachado: number }>();
-        const prodAgg = new Map<string, { idArt: string, date: string, facturado: number, despachado: number, kgFacturado: number, kgDespachado: number }>();
+        const prodAgg = new Map<string, { idArt: string, date: string, facturado: number, montoFA: number, montoDV: number, despachado: number, kgFacturado: number, kgDespachado: number }>();
         const factRows: Array<{
           fecha: string;
           idCliente: string;
@@ -621,64 +628,19 @@ export const DashboardOverview: React.FC = () => {
           if (idArt && dateOnly !== 'Sin Fecha') {
             const aggKey = `${idArt}|${dateOnly}`;
             if (!prodAgg.has(aggKey)) {
-              prodAgg.set(aggKey, { idArt, date: dateOnly, facturado: 0, despachado: 0, kgFacturado: 0, kgDespachado: 0 });
+              prodAgg.set(aggKey, { idArt, date: dateOnly, facturado: 0, montoFA: 0, montoDV: 0, despachado: 0, kgFacturado: 0, kgDespachado: 0 });
             }
             const p = prodAgg.get(aggKey)!;
             
             if (!isNaN(m)) {
                p.facturado += m;
+               if (m < 0) p.montoDV += m;
+               else p.montoFA += m;
             }
             if (!isNaN(k)) {
                p.kgFacturado += k;
                p.kgDespachado += k; 
             }
-          }
-        });
-        
-        // Fetch Despachos sheet
-        let despachosText = '';
-        try {
-          const dRes = await fetch(`/api/sheets?sheet=Despachos${forceRefresh ? '&refresh=true' : ''}`);
-          if (dRes.ok) despachosText = await dRes.text();
-          if (!despachosText) {
-             const dRes2 = await fetch('https://docs.google.com/spreadsheets/d/16pU4iEcNU_1j6sB7rZbshu2PM8OyH5hI7a24-vYO7P0/gviz/tq?tqx=out:csv&sheet=Despachos');
-             if (dRes2.ok) despachosText = await dRes2.text();
-          }
-        } catch (e) {
-          console.warn("Notice: Using despachos cache:", e);
-        }
-        const resultDespachos = despachosText ? Papa.parse(despachosText, { header: true, skipEmptyLines: true }) : { data: [] };
-
-        // Process Despachos
-        resultDespachos.data.forEach((row: any) => {
-          const mStr = row['Monto'] || '';
-          const kStr = row['Kg'] || '';
-          
-          let fStr = row['Fecha'] || '';
-          fStr = fStr.replace(/^["']|["']$/g, '').trim();
-          const dateOnly = fStr.split(' ')[0] || 'Sin Fecha';
-          
-          const idArt = String(row['Id Articulo'] || '').replace(/^["']|["']$/g, '').trim();
-
-          const m = parseFloat(mStr.replace(/["',]/g, ''));
-          const k = parseFloat(kStr.replace(/["',]/g, ''));
-
-          if (dateOnly !== 'Sin Fecha') {
-            if (!trends.has(dateOnly)) {
-              trends.set(dateOnly, { date: dateOnly, ventas: 0, kg: 0, kgFacturado: 0, kgDespachado: 0 });
-            }
-            const t = trends.get(dateOnly)!;
-            if (!isNaN(k)) t.kgDespachado += k;
-          }
-
-          if (idArt && dateOnly !== 'Sin Fecha') {
-            const aggKey = `${idArt}|${dateOnly}`;
-            if (!prodAgg.has(aggKey)) {
-              prodAgg.set(aggKey, { idArt, date: dateOnly, facturado: 0, despachado: 0, kgFacturado: 0, kgDespachado: 0 });
-            }
-            const p = prodAgg.get(aggKey)!;
-            
-            if (!isNaN(k)) p.kgDespachado += k;
           }
         });
 
@@ -696,6 +658,8 @@ export const DashboardOverview: React.FC = () => {
                 idArt: p.idArt,
                 baseName,
                 facturado: p.facturado,
+                montoFA: p.montoFA,
+                montoDV: p.montoDV,
                 despachado: p.kgDespachado,
                 kgFacturado: p.kgFacturado,
                 date: p.date
@@ -742,7 +706,7 @@ export const DashboardOverview: React.FC = () => {
   };
 
   const productData = React.useMemo(() => {
-    let filtered = [...rawProductData, ...historicalData];
+    let filtered = combinedProductData;
     
     // Apply top date range filter if active
     if (appliedFilters.startDate) {
@@ -974,7 +938,7 @@ export const DashboardOverview: React.FC = () => {
     }
     
     return result;
-  }, [rawProductData, historicalData, skuFilter, showTop5, timeView, selectedTimeGroups, availableGroups, selectedSkus, productSortMetric, appliedFilters]);
+  }, [combinedProductData, skuFilter, showTop5, timeView, selectedTimeGroups, availableGroups, selectedSkus, productSortMetric, appliedFilters]);
 
   // Dynamically filtered KPIs reflecting active filters (dates, vendor, client/search, time groups)
   const activeKpis = React.useMemo(() => {
@@ -1071,7 +1035,7 @@ export const DashboardOverview: React.FC = () => {
     // m1 is base period (older), m2 is target period (newer)
     const [m1, m2] = [...selectedTimeGroups].sort((a, b) => a.localeCompare(b));
     
-    const allData = [...rawProductData, ...historicalData];
+    const allData = combinedProductData;
     
     const mapGroupDate = (date: string) => {
       if (!date) return '';
@@ -1303,13 +1267,13 @@ export const DashboardOverview: React.FC = () => {
       allProducts,
       evaluatedCount: products.length
     };
-  }, [selectedTimeGroups, timeView, productData, rawProductData, historicalData]);
+  }, [selectedTimeGroups, timeView, productData, combinedProductData]);
 
   const topProductsAvailableMonths = React.useMemo(() => {
     const months = new Set<string>();
     
     // Include all months present in historicalData or rawProductData
-    [...rawProductData, ...historicalData].forEach(p => {
+    combinedProductData.forEach(p => {
       if (p.date) {
         const parts = p.date.split('-');
         if (parts.length >= 2) {
@@ -1326,7 +1290,7 @@ export const DashboardOverview: React.FC = () => {
     }
 
     return Array.from(months).sort((a, b) => b.localeCompare(a));
-  }, [rawProductData, historicalData]);
+  }, [combinedProductData]);
 
   const MONTH_NAMES_SPANISH: Record<string, string> = {
     '01': 'Enero', '02': 'Febrero', '03': 'Marzo', '04': 'Abril',
@@ -1345,7 +1309,7 @@ export const DashboardOverview: React.FC = () => {
   };
 
   const monthChartsData = React.useMemo(() => {
-    const allData = [...rawProductData, ...historicalData];
+    const allData = combinedProductData;
     const PIE_COLORS = ['#dc2626', '#991b1b', '#ffffff'];
 
     // If specific months are selected, show one chart for each selected month (newest to oldest)
@@ -1404,7 +1368,7 @@ export const DashboardOverview: React.FC = () => {
         products
       };
     });
-  }, [topProductsMonthFilters, rawProductData, historicalData]);
+  }, [topProductsMonthFilters, combinedProductData]);
 
   const topProductsPieData = React.useMemo(() => {
     return monthChartsData.length > 0 ? monthChartsData[0].products : [];

@@ -19,7 +19,7 @@ import {
   Clock,
   UserCheck
 } from 'lucide-react';
-import { campoService, PROMOTERS_LIST } from '../../lib/campoService';
+import { campoService, PROMOTERS_LIST, TRADE_COORDINATOR_PROFILE } from '../../lib/campoService';
 import { matchPromoterName } from '../../lib/degustacionesService';
 import { trazabilidadService } from '../../lib/trazabilidadService';
 import { FueraDeHorarioScreen } from '../mobile/FueraDeHorarioScreen';
@@ -42,6 +42,25 @@ export const CampoLayout: React.FC = () => {
 
   // 1. Detección Inteligente y Autenticación
   useEffect(() => {
+    // Si tiene sesión activa de Coordinación en el Dashboard, sincronizarla automáticamente con el Portal
+    if (!campoService.isAuthenticatedPromoter()) {
+      try {
+        const rawCorp = localStorage.getItem('codizulca_dashboard_profile');
+        if (rawCorp) {
+          const parsedCorp = JSON.parse(rawCorp);
+          if (parsedCorp?.roleKey === 'trade_marketing') {
+            campoService.setActivePromoter(TRADE_COORDINATOR_PROFILE);
+            localStorage.setItem('portal_auth_token', 'AUTH-COORD-' + Date.now().toString());
+            localStorage.setItem('portal_authenticated_user_id', TRADE_COORDINATOR_PROFILE.id);
+            setActivePromoter(TRADE_COORDINATOR_PROFILE);
+            setIsAuthenticated(true);
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+
     // Si no está autenticado, redirigir a login de promotoras
     if (!campoService.isAuthenticatedPromoter()) {
       setIsAuthenticated(false);
@@ -55,10 +74,12 @@ export const CampoLayout: React.FC = () => {
     const roleParam = searchParams.get('role');
 
     if (emailParam || userParam || roleParam) {
-      const found = PROMOTERS_LIST.find((p) => {
+      const allProfiles = [TRADE_COORDINATOR_PROFILE, ...PROMOTERS_LIST];
+      const found = allProfiles.find((p) => {
         if (emailParam && p.email.trim().toLowerCase() === emailParam.trim().toLowerCase()) return true;
         if (userParam && (p.email.trim().toLowerCase() === userParam.trim().toLowerCase() || matchPromoterName(p.name, userParam))) return true;
         if (roleParam?.toLowerCase() === 'merchandising' && p.role === 'Promotor Merchandising') return true;
+        if (roleParam?.toLowerCase().includes('coordinador') && p.role === 'Coordinadora Trade Marketing') return true;
         return false;
       });
 
@@ -162,11 +183,12 @@ export const CampoLayout: React.FC = () => {
   }
 
   // Si está fuera de horario y no tiene bypass activado
-  if (!isWithinHours) {
+  const isCoordinatorRole = activePromoter.role === 'Coordinadora Trade Marketing';
+  if (!isWithinHours && !isCoordinatorRole) {
     return <FueraDeHorarioScreen onBypass={() => setIsWithinHours(true)} />;
   }
 
-  const isMerchandisingRole = activePromoter.role === 'Promotor Merchandising';
+  const isMerchandisingRole = activePromoter.role === 'Promotor Merchandising' || isCoordinatorRole;
 
   // Configuración adaptativa de pestañas según rol:
   const tabs = [
@@ -200,11 +222,13 @@ export const CampoLayout: React.FC = () => {
                 </h1>
                 {/* Insignia de Rol Dinámico */}
                 <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider leading-none ${
-                  isMerchandisingRole
+                  isCoordinatorRole
+                    ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-500/40'
+                    : isMerchandisingRole
                     ? 'bg-red-600/20 text-red-400 border border-red-500/40'
                     : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
                 }`}>
-                  {isMerchandisingRole ? 'Merchandising' : 'Impulsadoras'}
+                  {isCoordinatorRole ? 'Coordinadora Trade' : isMerchandisingRole ? 'Merchandising' : 'Impulsadoras'}
                 </span>
               </div>
               <p className="text-[10px] text-neutral-400 font-mono leading-tight mt-0.5">
@@ -274,6 +298,14 @@ export const CampoLayout: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-1.5 shrink-0">
+              {isCoordinatorRole && (
+                <NavLink
+                  to="/dashboard/trade"
+                  className="px-2 py-0.5 rounded-lg bg-red-600 hover:bg-red-500 text-white text-[10px] font-black transition-colors cursor-pointer"
+                >
+                  Panel Trade ↗
+                </NavLink>
+              )}
               <NavLink
                 to="/portal/perfil"
                 className="px-2 py-0.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white text-[10px] font-bold transition-colors cursor-pointer"

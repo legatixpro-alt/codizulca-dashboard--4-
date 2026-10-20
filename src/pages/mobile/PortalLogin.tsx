@@ -17,7 +17,7 @@ import {
   ArrowRight,
   Info
 } from 'lucide-react';
-import { campoService, PROMOTERS_LIST, PromoterProfile } from '../../lib/campoService';
+import { campoService, PROMOTERS_LIST, TRADE_COORDINATOR_PROFILE, PromoterProfile } from '../../lib/campoService';
 import { staffService, StaffMember } from '../../lib/staffService';
 import { trazabilidadService } from '../../lib/trazabilidadService';
 
@@ -39,9 +39,13 @@ export const PortalLogin: React.FC = () => {
     if (emailParam) {
       setEmail(emailParam);
     } else if (userParam) {
-      const match = PROMOTERS_LIST.find(p => p.name.toLowerCase().includes(userParam.toLowerCase()));
-      if (match) {
-        setEmail(match.email);
+      if (userParam.toLowerCase().includes('grecia') || userParam.toLowerCase().includes('coordinador')) {
+        setEmail(TRADE_COORDINATOR_PROFILE.email);
+      } else {
+        const match = PROMOTERS_LIST.find(p => p.name.toLowerCase().includes(userParam.toLowerCase()));
+        if (match) {
+          setEmail(match.email);
+        }
       }
     }
   }, [searchParams]);
@@ -116,7 +120,7 @@ export const PortalLogin: React.FC = () => {
               <span className="text-red-500">Campo</span>
             </h1>
             <p className="text-xs text-zinc-400 font-medium">
-              Acceso Personal Exclusivo para Promotoras e Impulsadoras
+              Acceso Personal para Coordinación, Promotoras e Impulsadoras
             </p>
           </div>
         </div>

@@ -1,6 +1,7 @@
 import initSqlJs, { Database } from 'sql.js';
 import fs from 'fs';
 import path from 'path';
+import { getSellerMetadata } from '../components/cuotas/sellerSupervisorMap';
 
 let sqlDatabase: Database | null = null;
 let isInitializing = false;
@@ -36,8 +37,8 @@ export const CODIBOT_SCHEMAS: TableSchemaDef[] = [
       { name: 'id', type: 'TEXT', description: 'Identificador único del cliente', sample: '2719' },
       { name: 'codigo', type: 'TEXT', description: 'Código oficial con formato #ID', sample: '#2719' },
       { name: 'nombre', type: 'TEXT', description: 'Razón social o nombre comercial del cliente', sample: 'SUPERMERCADO DE CANDIDO' },
-      { name: 'vendedor', type: 'TEXT', description: 'Vendedor comercial asignado', sample: 'CARLOS MACHADO' },
-      { name: 'supervisor', type: 'TEXT', description: 'Supervisor a cargo (José Bravo o Néstor Rincón)', sample: 'José Bravo' },
+      { name: 'vendedor', type: 'TEXT', description: 'Vendedor comercial asignado', sample: 'MARIA BRICEÑO' },
+      { name: 'supervisor', type: 'TEXT', description: 'Supervisor a cargo (JOHNATAN SOTO, ALI PEREZ o NELSON FINOL)', sample: 'NELSON FINOL' },
       { name: 'sector', type: 'TEXT', description: 'Sector o zona geográfica de despacho', sample: 'Bella Vista / Santa Rita' },
       { name: 'zona', type: 'TEXT', description: 'Zona regional (Maracaibo, San Francisco, COL, Perijá, Falcón)', sample: 'Maracaibo' },
       { name: 'canal', type: 'TEXT', description: 'Canal de distribución (Supermercados, Tradicional, Mayoristas, etc.)', sample: 'Supermercados' },
@@ -58,8 +59,8 @@ export const CODIBOT_SCHEMAS: TableSchemaDef[] = [
       { name: 'ano', type: 'INTEGER', description: 'Año fiscal (2026)', sample: '2026' },
       { name: 'cliente', type: 'TEXT', description: 'Nombre del cliente', sample: 'FRIGORIFICO LA POLLERA, C.A.' },
       { name: 'cliente_id', type: 'TEXT', description: 'Código del cliente', sample: '29' },
-      { name: 'vendedor', type: 'TEXT', description: 'Vendedor asignado', sample: 'CARLOS MACHADO' },
-      { name: 'supervisor', type: 'TEXT', description: 'Supervisor de ruta', sample: 'José Bravo' },
+      { name: 'vendedor', type: 'TEXT', description: 'Vendedor asignado', sample: 'MARIA BRICEÑO' },
+      { name: 'supervisor', type: 'TEXT', description: 'Supervisor de ruta (JOHNATAN SOTO, ALI PEREZ o NELSON FINOL)', sample: 'NELSON FINOL' },
       { name: 'articulo', type: 'TEXT', description: 'Descripción comercial del producto', sample: 'MUSLO CUADRIL DESPRESADO POR KG' },
       { name: 'sku', type: 'TEXT', description: 'Código de producto SKU', sample: '629' },
       { name: 'categoria', type: 'TEXT', description: 'Categoría (AVÍCOLA, CHARCUTERÍA, LÁCTEOS, CÁRNICOS, VÍVERES)', sample: 'AVÍCOLA' },
@@ -239,15 +240,16 @@ export async function getCodibotDatabase(): Promise<Database> {
         const stmt = db.prepare('INSERT OR REPLACE INTO clientes VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
         for (const c of clients) {
           const monto = Number(c.monto || 0);
-          const supervisor = (c.vendedor || '').toUpperCase().includes('NESTOR') ? 'Néstor Rincón' : 'José Bravo';
+          const sellerMeta = getSellerMetadata(c.vendedor || '');
+          const supervisor = sellerMeta.supervisor || 'NELSON FINOL';
           const pareto = c.pareto || (monto > 50000 ? 'A' : monto > 10000 ? 'B' : 'C');
           stmt.run([
             String(c.id_cliente || ''),
             '#' + (c.id_cliente || ''),
             c.cliente || 'CLIENTE COMERCIAL',
-            c.vendedor || 'FUERZA DE VENTAS',
+            sellerMeta.vendedor || c.vendedor || 'FUERZA DE VENTAS',
             supervisor,
-            c.sector || 'Maracaibo Metropolitano',
+            c.sector || sellerMeta.zona || 'Maracaibo Metropolitano',
             c.region || 'Occidente',
             c.canal || 'Tradicional',
             monto,
@@ -315,9 +317,11 @@ export async function getCodibotDatabase(): Promise<Database> {
         const sData = JSON.parse(fs.readFileSync(sellersPath, 'utf8'));
         if (sData.sellerMonthlyData && Array.isArray(sData.sellerMonthlyData)) {
           for (const s of sData.sellerMonthlyData) {
-            const vName = s.vendedor || 'VENDEDOR';
-            const sup = vName.includes('NESTOR') ? 'Néstor Rincón' : 'José Bravo';
-            if (s.months) {
+            const rawVName = s.vendedor || 'VENDEDOR';
+            const sellerMeta = getSellerMetadata(rawVName);
+            const vName = sellerMeta.vendedor || rawVName;
+            const sup = sellerMeta.supervisor || 'NELSON FINOL';
+            if (s.months && typeof s.months === 'object') {
               for (const [mName, mVal] of Object.entries(s.months as Record<string, any>)) {
                 const fa = Number(mVal.montoFA || mVal.monto || 0);
                 const dv = Number(mVal.montoDV || 0);
@@ -344,6 +348,31 @@ export async function getCodibotDatabase(): Promise<Database> {
                   neto
                 ]);
               }
+            } else if (s.mes) {
+              const fa = Number(s.montoFA || s.montoNeto || 0);
+              const dv = Number(s.montoDV || 0);
+              const neto = Number(s.montoNeto ?? (fa + dv));
+              const cj = Number(s.cajas || 0);
+              const kg = Number(s.kgs || 0);
+
+              stmtVentas.run([
+                'FA',
+                String(s.mes).toUpperCase(),
+                Number(s.ano || 2026),
+                'CARTERA ' + vName,
+                'VEND-' + vName.slice(0, 8),
+                vName,
+                sup,
+                'PORTAFOLIO MULTIPRODUCTO',
+                'SKU-MULTI',
+                'GENERAL',
+                'MIXTO',
+                cj,
+                kg,
+                fa,
+                dv,
+                neto
+              ]);
             }
           }
         }
@@ -602,7 +631,7 @@ REGLAS DE NEGOCIO PARA SQL:
 2. En \`inventario\` y \`ventas\`, los productos con \`modalidad = 'PESABLE'\` (como muslo cuadril, pechugas y cortes cárnicos) se miden en Kilos (\`kilos\`, \`unidad_medida = 'KG'\`). Los productos empacados se miden en Cajas (\`cajas\`, \`unidad_medida = 'CJ'\`).
 3. En \`geocercas\` / \`encuestas\`, dispones de 1.761 encuestas registradas con 1.741 ubicaciones GPS exactas en 33 municipios (Maracaibo, San Francisco, Cabimas, Machiques, Punto Fijo, Coro, etc.).
 4. En \`clientes\`, la columna \`pareto\` clasifica a los clientes en 'A' (cuentas VIP líderes que concentran el 80% de ventas), 'B' y 'C'.
-5. Cada cliente tiene asignado su \`sector\`, \`vendedor\` y \`supervisor\` (José Bravo o Néstor Rincón).
+5. Cada cliente tiene asignado su \`sector\`, \`vendedor\` y \`supervisor\` (JOHNATAN SOTO, ALI PEREZ o NELSON FINOL).
 6. Las consultas deben ser siempre sentencias SELECT o WITH optimizadas y devolver solo las columnas necesarias.`;
 
   return text;
