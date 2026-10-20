@@ -165,7 +165,6 @@ export const SkuVolumeSubmodule: React.FC<SkuVolumeSubmoduleProps> = ({
   const [selectedSupervisor, setSelectedSupervisor] = useState<string>(initialSupervisor || 'TODOS');
   const [selectedCategory, setSelectedCategory] = useState<string>('TODAS');
   const [statusFilter, setStatusFilter] = useState<'TODOS' | 'VA_BIEN' | 'REGULAR' | 'VA_MAL' | 'SIN_VENTA'>('TODOS');
-  const [catalogScope, setCatalogScope] = useState<'ALL_DB' | 'OFFICIAL_SHEET' | 'EXTRA_DB'>('ALL_DB');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [focusMode, setFocusMode] = useState<boolean>(false);
   const [sortBy, setSortBy] = useState<'sheet' | 'cuota_desc' | 'kg_desc' | 'pct_desc' | 'pct_asc' | 'brecha_asc'>('sheet');
@@ -190,86 +189,15 @@ export const SkuVolumeSubmodule: React.FC<SkuVolumeSubmoduleProps> = ({
         }
       }
     } catch {
-      // Fallback to client-side merge if backend route is unreachable
+      // Fallback
     }
 
-    // Fallback: merge CUOTAS_VOLUMEN_CSV_SEED (49 rows) + /api/pareto-data (180+ products)
+    // Fallback: strictly the 49 official Google Sheet items from seed
     try {
       const baseSheetItems = parseCuotasVolumenCsv(CUOTAS_VOLUMEN_CSV_SEED);
-      const seenCodes = new Set<string>(
-        baseSheetItems.map((i) => i.rawCod).filter(Boolean)
-      );
-
-      const paretoRes = await fetch('/api/pareto-data');
-      if (paretoRes.ok) {
-        const paretoData = await paretoRes.json();
-        if (paretoData && Array.isArray(paretoData.products)) {
-          let orderIdx = baseSheetItems.length + 1;
-          const extraItems: SkuVolumeItem[] = [];
-
-          for (const p of paretoData.products) {
-            const idStr = String(p.id_articulo || '').trim();
-            if (!idStr) continue;
-            if (seenCodes.has(idStr)) {
-              const found = baseSheetItems.find((b) => b.rawCod === idStr);
-              if (found) {
-                found.totalHistKg = Number(p.kgs) || 0;
-                found.totalHistCajas = Number(p.cajas) || 0;
-                found.totalHistMonto = Number(p.monto) || 0;
-              }
-              continue;
-            }
-            seenCodes.add(idStr);
-
-            const histKg = Math.round((Number(p.kgs) || 0) * 100) / 100;
-            const histCajas = Math.round((Number(p.cajas) || 0) * 100) / 100;
-            const histMonto = Math.round((Number(p.monto) || 0) * 100) / 100;
-            const octKg = Math.round((Number(p.months?.OCTUBRE?.kgs) || 0) * 100) / 100;
-            const octCajas = Math.round((Number(p.months?.OCTUBRE?.cajas) || 0) * 100) / 100;
-            const octMonto = Math.round((Number(p.months?.OCTUBRE?.monto) || 0) * 100) / 100;
-            const refCuota = Math.round((histKg / 8) * 100) / 100;
-
-            const bySeller: SkuVolumeItem['bySeller'] = {};
-            const perSellerShare = 1 / OFFICIAL_SKU_SELLERS.length;
-            for (const s of OFFICIAL_SKU_SELLERS) {
-              bySeller[s.name] = {
-                cuotaKg: Math.round(refCuota * perSellerShare * 100) / 100,
-                ventaKg: Math.round(octKg * perSellerShare * 100) / 100,
-                cajas: Math.round(octCajas * perSellerShare * 100) / 100,
-                monto: Math.round(octMonto * perSellerShare * 100) / 100,
-                clientesCount: 0,
-                histKg: Math.round(histKg * perSellerShare * 100) / 100,
-                histCajas: Math.round(histCajas * perSellerShare * 100) / 100,
-                histMonto: Math.round(histMonto * perSellerShare * 100) / 100,
-              };
-            }
-
-            extraItems.push({
-              id: `DB-SKU-${idStr}`,
-              cod: idStr,
-              rawCod: idStr,
-              articulo: String(p.articulo || '').trim(),
-              categoria: classifySkuCategory(idStr, String(p.articulo || '')),
-              isMacroRubro: false,
-              isOfficialQuotaRow: false,
-              sheetOrder: orderIdx++,
-              totalCuotaKg: refCuota,
-              totalVentaKg: octKg,
-              totalCajas: octCajas,
-              totalMonto: octMonto,
-              totalClientesCount: 0,
-              totalHistKg: histKg,
-              totalHistCajas: histCajas,
-              totalHistMonto: histMonto,
-              bySeller,
-            });
-          }
-
-          setItems([...baseSheetItems, ...extraItems]);
-        }
-      }
+      setItems(baseSheetItems);
     } catch {
-      // Keep baseSheetItems
+      // Keep existing items
     } finally {
       setLoading(false);
       setIsRefreshing(false);
@@ -363,14 +291,11 @@ export const SkuVolumeSubmodule: React.FC<SkuVolumeSubmoduleProps> = ({
     });
   }, [items, selectedSeller, selectedSupervisor]);
 
-  // Apply Scope, Category, Search, Status, and Sort filters
+  // Apply Category, Search, Status, and Sort filters
   const filteredRows = useMemo<EvaluatedSkuRow[]>(() => {
     const q = searchQuery.trim().toLowerCase();
 
     const matching = evaluatedRows.filter((r) => {
-      if (catalogScope === 'OFFICIAL_SHEET' && !r.item.isOfficialQuotaRow) return false;
-      if (catalogScope === 'EXTRA_DB' && r.item.isOfficialQuotaRow) return false;
-
       if (selectedCategory !== 'TODAS' && r.item.categoria !== selectedCategory) return false;
 
       if (statusFilter === 'VA_BIEN' && r.status !== 'VA_BIEN' && r.status !== 'ACTIVO_SIN_META') {
@@ -408,27 +333,17 @@ export const SkuVolumeSubmodule: React.FC<SkuVolumeSubmoduleProps> = ({
     } else if (sortBy === 'brecha_asc') {
       sorted.sort((a, b) => a.brechaKg - b.brechaKg);
     } else {
-      // Default: Official Google Sheet rows ordered by Cuota desc (matching screenshot 2), followed by DB catalog ordered by volume
-      sorted.sort((a, b) => {
-        if (a.item.isOfficialQuotaRow !== b.item.isOfficialQuotaRow) {
-          return a.item.isOfficialQuotaRow ? -1 : 1;
-        }
-        if (a.item.isOfficialQuotaRow && b.item.isOfficialQuotaRow) {
-          return b.cuotaKg - a.cuotaKg || a.item.sheetOrder - b.item.sheetOrder;
-        }
-        return b.ventaKg - a.ventaKg || b.histKg - a.histKg;
-      });
+      // Default: exact order of the Google Sheet tab Cuotas Volumen (rows 1 to 49)
+      sorted.sort((a, b) => a.item.sheetOrder - b.item.sheetOrder);
     }
 
     return sorted;
-  }, [evaluatedRows, catalogScope, selectedCategory, statusFilter, searchQuery, sortBy]);
+  }, [evaluatedRows, selectedCategory, statusFilter, searchQuery, sortBy]);
 
   // Summary metrics & Seller SKU Diagnostic ("en qué SKU puntual va bien o va mal")
   const diagnosticSummary = useMemo(() => {
-    // Calculate on rows matching current scope & category
+    // Calculate on rows matching current category
     const baseRows = evaluatedRows.filter((r) => {
-      if (catalogScope === 'OFFICIAL_SHEET' && !r.item.isOfficialQuotaRow) return false;
-      if (catalogScope === 'EXTRA_DB' && r.item.isOfficialQuotaRow) return false;
       if (selectedCategory !== 'TODAS' && r.item.categoria !== selectedCategory) return false;
       return true;
     });
@@ -487,7 +402,7 @@ export const SkuVolumeSubmodule: React.FC<SkuVolumeSubmoduleProps> = ({
       topBienSkus,
       topMalSkus,
     };
-  }, [evaluatedRows, catalogScope, selectedCategory]);
+  }, [evaluatedRows, selectedCategory]);
 
   // Export PDF handler (also listens to global 'cuotas-export-pdf' event)
   const handleExportPdf = () => {
@@ -633,7 +548,7 @@ export const SkuVolumeSubmodule: React.FC<SkuVolumeSubmoduleProps> = ({
                 VOLUMEN POR SKU
               </h2>
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-red-600/20 text-red-400 border border-red-500/30">
-                {items.length} Productos en Base de Datos
+                {items.length} Productos Oficiales Cuotas Volumen
               </span>
               {selectedSeller !== 'TODOS' && (
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
@@ -743,7 +658,7 @@ export const SkuVolumeSubmodule: React.FC<SkuVolumeSubmoduleProps> = ({
           </div>
 
           {/* Filtro Supervisor */}
-          <div className="xl:col-span-2">
+          <div className="xl:col-span-3">
             <select
               value={selectedSupervisor}
               onChange={(e) => {
@@ -775,31 +690,14 @@ export const SkuVolumeSubmodule: React.FC<SkuVolumeSubmoduleProps> = ({
             </select>
           </div>
 
-          {/* Alcance de Productos (Base de Datos Completa vs Hoja de Cuotas) */}
-          <div className="xl:col-span-2">
-            <select
-              value={catalogScope}
-              onChange={(e) => setCatalogScope(e.target.value as any)}
-              className="w-full bg-[#171a21] border border-slate-700/80 rounded-lg px-2.5 py-2 text-xs font-bold text-amber-300 focus:outline-none focus:border-red-500 cursor-pointer"
-            >
-              <option value="ALL_DB">CATÁLOGO BD COMPLETO ({items.length} SKUs)</option>
-              <option value="OFFICIAL_SHEET">
-                METAS OFICIALES SHEET ({items.filter((i) => i.isOfficialQuotaRow).length} SKUs)
-              </option>
-              <option value="EXTRA_DB">
-                CATÁLOGO ADICIONAL BD ({items.filter((i) => !i.isOfficialQuotaRow).length} SKUs)
-              </option>
-            </select>
-          </div>
-
           {/* Ordenamiento */}
-          <div className="xl:col-span-2">
+          <div className="xl:col-span-3">
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
               className="w-full bg-[#171a21] border border-slate-700/80 rounded-lg px-2.5 py-2 text-xs font-bold text-slate-200 focus:outline-none focus:border-red-500 cursor-pointer"
             >
-              <option value="sheet">ORDEN: CUOTA / GOOGLE SHEETS</option>
+              <option value="sheet">ORDEN ORIGINAL SHEET (1 - 49)</option>
               <option value="pct_asc">ORDEN: PEOR % PRIMERO (VA MAL)</option>
               <option value="pct_desc">ORDEN: MEJOR % PRIMERO (VA BIEN)</option>
               <option value="brecha_asc">ORDEN: MAYOR BRECHA KG FALTANTE</option>
@@ -1065,7 +963,7 @@ export const SkuVolumeSubmodule: React.FC<SkuVolumeSubmoduleProps> = ({
               <tr className="bg-gradient-to-r from-[#881313] via-[#991b1b] to-[#7f1d1d] text-white text-[11px] font-black uppercase tracking-wider border-b border-red-700/60">
                 <th className="py-3.5 px-4 w-28">COD</th>
                 <th className="py-3.5 px-4">ARTICULO</th>
-                {!focusMode && <th className="py-3.5 px-3 text-center">ORIGEN / CAT.</th>}
+                {!focusMode && <th className="py-3.5 px-3 text-center">CATEGORÍA</th>}
                 <th className="py-3.5 px-4 text-right">CUOTA</th>
                 <th className="py-3.5 px-4 text-right">KG</th>
                 <th className="py-3.5 px-4 text-center w-36">%</th>
@@ -1120,23 +1018,12 @@ export const SkuVolumeSubmodule: React.FC<SkuVolumeSubmoduleProps> = ({
                         </div>
                       </td>
 
-                      {/* ORIGEN / CATEGORÍA (oculto en Modo Focus) */}
+                      {/* CATEGORÍA (oculto en Modo Focus) */}
                       {!focusMode && (
                         <td className="py-3 px-3 text-center whitespace-nowrap">
-                          <div className="inline-flex flex-col items-center gap-0.5">
-                            <span
-                              className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${
-                                item.isOfficialQuotaRow
-                                  ? 'bg-red-500/15 text-red-300 border border-red-500/30'
-                                  : 'bg-sky-500/15 text-sky-300 border border-sky-500/30'
-                              }`}
-                            >
-                              {item.isOfficialQuotaRow ? 'META SHEET' : 'CATÁLOGO BD'}
-                            </span>
-                            <span className="text-[9px] text-slate-500 font-semibold">
-                              {item.categoria}
-                            </span>
-                          </div>
+                          <span className="px-2.5 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-800/80 text-slate-300 border border-slate-700/60">
+                            {item.categoria}
+                          </span>
                         </td>
                       )}
 

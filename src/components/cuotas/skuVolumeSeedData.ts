@@ -64,11 +64,11 @@ export function resolveSheetDisplayCode(rawCod: string, rawArticulo: string): st
   if (a.includes('ACEITE')) return 'ACEITE';
   if (a.includes('FILET')) return 'FILET';
   if (a.includes('LECHE LIQUIDA')) return 'LECHE UTH';
-  if (a.includes('LECHE EN POLVO')) return 'LECHE POLVO';
+  if (a.includes('LECHE EN POLVO')) return 'LECHE EN POLVO';
   if (a.includes('ALAS')) return 'ALAS';
-  if (a.includes('QUESOS')) return 'QUESOS';
-  if (a.includes('JUGOS')) return 'JUGOS';
-  if (a.includes('CREMAS')) return 'CREMAS';
+  if (a.includes('QUESOS')) return 'QUESO';
+  if (a.includes('JUGOS')) return 'BEBIDAS';
+  if (a.includes('CREMAS')) return 'CREMA DE LECHE';
   return a.split(' ')[0] || 'RUBRO';
 }
 
@@ -213,6 +213,7 @@ export function classifySkuCategory(cod: string, articulo: string): string {
     c === 'ARROZ' ||
     c === 'ACEITE' ||
     c === 'PATATAS' ||
+    c === 'BEBIDAS' ||
     c === 'JUGOS' ||
     a.includes('AZUCAR') ||
     a.includes('AZÚCAR') ||
@@ -236,8 +237,11 @@ export function classifySkuCategory(cod: string, articulo: string): string {
   }
   if (
     c === 'LECHE UTH' ||
+    c === 'LECHE EN POLVO' ||
     c === 'LECHE POLVO' ||
+    c === 'QUESO' ||
     c === 'QUESOS' ||
+    c === 'CREMA DE LECHE' ||
     c === 'CREMAS' ||
     a.includes('LECHE') ||
     a.includes('QUESO') ||
@@ -271,13 +275,13 @@ export function resolveMacroRubroKeyForArticle(articulo: string): string | null 
   if (a.includes('PATATA') || a.includes('PAPA FRITA')) return 'PATATAS';
   if (a.includes('ACEITE')) return 'ACEITE';
   if (a.includes('FILET') || a.includes('PECHUGA S/HUESO')) return 'FILET';
-  if (a.includes('LECHE') && (a.includes('POLVO') || a.includes('400G') || a.includes('900G') || a.includes('1KG'))) return 'LECHE POLVO';
+  if (a.includes('LECHE') && (a.includes('POLVO') || a.includes('400G') || a.includes('900G') || a.includes('1KG'))) return 'LECHE EN POLVO';
   if (a.includes('LECHE') && (a.includes('LIQUIDA') || a.includes('UHT') || a.includes('UTH') || a.includes('1L') || a.includes('LITRO'))) return 'LECHE UTH';
-  if (a.includes('ALAS ')) return 'ALAS';
-  if (a.includes('QUESO')) return 'QUESOS';
-  if (a.includes('JUGO') || a.includes('NECTAR')) return 'JUGOS';
-  if (a.includes('CREMA DE LECHE') || a.includes('CREMAS DE LECHE')) return 'CREMAS';
-  if (a.includes('POLLO BENEFICIADO') || a.includes('POLLO ENTERO') || a.includes('POLLO CONGELADO')) return 'POLLO';
+  if (a.includes('ALAS')) return 'ALAS';
+  if (a.includes('QUESO')) return 'QUESO';
+  if (a.includes('JUGO') || a.includes('NECTAR')) return 'BEBIDAS';
+  if (a.includes('CREMA DE LECHE') || a.includes('CREMAS DE LECHE')) return 'CREMA DE LECHE';
+  if (a.includes('POLLO BENEFICIADO') || a.includes('POLLO ENTERO') || a.includes('POLLO CONGELADO') || a.includes('POLLO BRASA')) return 'POLLO';
   return null;
 }
 

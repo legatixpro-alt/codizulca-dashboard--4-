@@ -757,11 +757,11 @@ function resolveSheetDisplayCode(rawCod, rawArticulo) {
   if (a.includes("ACEITE")) return "ACEITE";
   if (a.includes("FILET")) return "FILET";
   if (a.includes("LECHE LIQUIDA")) return "LECHE UTH";
-  if (a.includes("LECHE EN POLVO")) return "LECHE POLVO";
+  if (a.includes("LECHE EN POLVO")) return "LECHE EN POLVO";
   if (a.includes("ALAS")) return "ALAS";
-  if (a.includes("QUESOS")) return "QUESOS";
-  if (a.includes("JUGOS")) return "JUGOS";
-  if (a.includes("CREMAS")) return "CREMAS";
+  if (a.includes("QUESOS")) return "QUESO";
+  if (a.includes("JUGOS")) return "BEBIDAS";
+  if (a.includes("CREMAS")) return "CREMA DE LECHE";
   return a.split(" ")[0] || "RUBRO";
 }
 var OFFICIAL_SKU_SELLERS = [
@@ -813,10 +813,10 @@ function classifySkuCategory(cod, articulo) {
   if (a.includes("MORT") || a.includes("JAMON") || a.includes("SALCHICHA") || a.includes("ESPALDA") || a.includes("ESPAL.") || a.includes("ESPAL ") || a.includes("TOCINETA") || a.includes("CHORIZO") || a.includes("SALAMI") || a.includes("PEPERONI") || a.includes("FIAMBRE") || a.includes("BOLOGNA")) {
     return "CHARCUTER\xCDA";
   }
-  if (c === "AZUCAR" || c === "ARROZ" || c === "ACEITE" || c === "PATATAS" || c === "JUGOS" || a.includes("AZUCAR") || a.includes("AZ\xDACAR") || a.includes("ARROZ") || a.includes("ACEITE") || a.includes("PATATA") || a.includes("PAPA") || a.includes("JUGO") || a.includes("NECTAR") || a.includes("HARINA") || a.includes("PASTA") || a.includes("CAFE") || a.includes("GRANO") || a.includes("SALSA") || a.includes("MAYONESA") || a.includes("MARGARINA") || a.includes("ATUN") || a.includes("SARDINA")) {
+  if (c === "AZUCAR" || c === "ARROZ" || c === "ACEITE" || c === "PATATAS" || c === "BEBIDAS" || c === "JUGOS" || a.includes("AZUCAR") || a.includes("AZ\xDACAR") || a.includes("ARROZ") || a.includes("ACEITE") || a.includes("PATATA") || a.includes("PAPA") || a.includes("JUGO") || a.includes("NECTAR") || a.includes("HARINA") || a.includes("PASTA") || a.includes("CAFE") || a.includes("GRANO") || a.includes("SALSA") || a.includes("MAYONESA") || a.includes("MARGARINA") || a.includes("ATUN") || a.includes("SARDINA")) {
     return "V\xCDVERES & ALIMENTOS";
   }
-  if (c === "LECHE UTH" || c === "LECHE POLVO" || c === "QUESOS" || c === "CREMAS" || a.includes("LECHE") || a.includes("QUESO") || a.includes("MANTEQUILLA") || a.includes("CREMA") || a.includes("SUERO") || a.includes("YOGURT") || a.includes("LACTEO")) {
+  if (c === "LECHE UTH" || c === "LECHE EN POLVO" || c === "LECHE POLVO" || c === "QUESO" || c === "QUESOS" || c === "CREMA DE LECHE" || c === "CREMAS" || a.includes("LECHE") || a.includes("QUESO") || a.includes("MANTEQUILLA") || a.includes("CREMA") || a.includes("SUERO") || a.includes("YOGURT") || a.includes("LACTEO")) {
     return "L\xC1CTEOS & DERIVADOS";
   }
   if (a.includes("CHULETA") || a.includes("TOCINO") || a.includes("CERDO") || a.includes("COSTILLA") || a.includes("CARNE") || a.includes("RES") || a.includes("PERNIL")) {
@@ -832,13 +832,13 @@ function resolveMacroRubroKeyForArticle(articulo) {
   if (a.includes("PATATA") || a.includes("PAPA FRITA")) return "PATATAS";
   if (a.includes("ACEITE")) return "ACEITE";
   if (a.includes("FILET") || a.includes("PECHUGA S/HUESO")) return "FILET";
-  if (a.includes("LECHE") && (a.includes("POLVO") || a.includes("400G") || a.includes("900G") || a.includes("1KG"))) return "LECHE POLVO";
+  if (a.includes("LECHE") && (a.includes("POLVO") || a.includes("400G") || a.includes("900G") || a.includes("1KG"))) return "LECHE EN POLVO";
   if (a.includes("LECHE") && (a.includes("LIQUIDA") || a.includes("UHT") || a.includes("UTH") || a.includes("1L") || a.includes("LITRO"))) return "LECHE UTH";
-  if (a.includes("ALAS ")) return "ALAS";
-  if (a.includes("QUESO")) return "QUESOS";
-  if (a.includes("JUGO") || a.includes("NECTAR")) return "JUGOS";
-  if (a.includes("CREMA DE LECHE") || a.includes("CREMAS DE LECHE")) return "CREMAS";
-  if (a.includes("POLLO BENEFICIADO") || a.includes("POLLO ENTERO") || a.includes("POLLO CONGELADO")) return "POLLO";
+  if (a.includes("ALAS")) return "ALAS";
+  if (a.includes("QUESO")) return "QUESO";
+  if (a.includes("JUGO") || a.includes("NECTAR")) return "BEBIDAS";
+  if (a.includes("CREMA DE LECHE") || a.includes("CREMAS DE LECHE")) return "CREMA DE LECHE";
+  if (a.includes("POLLO BENEFICIADO") || a.includes("POLLO ENTERO") || a.includes("POLLO CONGELADO") || a.includes("POLLO BRASA")) return "POLLO";
   return null;
 }
 function parseSheetNum(val) {
@@ -1764,96 +1764,13 @@ async function startServer() {
         item.totalHistCajas = Math.round(totHistCajas * 100) / 100;
         item.totalHistMonto = Math.round(totHistMonto * 100) / 100;
       }
-      const catalogItems = [];
-      let orderIdx = sheetItems.length + 1;
-      const sortedDbProducts = [...baseAgg.allDbProducts].sort((a, b) => b.kgs - a.kgs || b.monto - a.monto);
-      for (const dbProd of sortedDbProducts) {
-        const idStr = String(dbProd.id_articulo || "").trim();
-        if (!idStr || seenProductCodes.has(idStr)) continue;
-        seenProductCodes.add(idStr);
-        const octMap = baseAgg.octBySkuSeller.get(idStr);
-        const histMap = baseAgg.histBySkuSeller.get(idStr);
-        const bySeller = {};
-        let totalCuotaKg = 0;
-        let totalVentaKg = 0;
-        let totalCajas = 0;
-        let totalMonto = 0;
-        let totalClientesCount = 0;
-        let totalHistKg = 0;
-        let totalHistCajas = 0;
-        let totalHistMonto = 0;
-        for (const s of OFFICIAL_SKU_SELLERS) {
-          const sName = s.name;
-          const octSeller = octMap?.get(sName);
-          const histSeller = histMap?.get(sName);
-          const octKg = octSeller ? Math.round(octSeller.kgs * 100) / 100 : 0;
-          const octCj = octSeller ? Math.round(octSeller.cajas * 100) / 100 : 0;
-          const octMto = octSeller ? Math.round(octSeller.monto * 100) / 100 : 0;
-          const octCli = octSeller ? octSeller.clients.size : 0;
-          const hKg = histSeller ? histSeller.kgs : 0;
-          const hCj = histSeller ? histSeller.cajas : 0;
-          const hMto = histSeller ? histSeller.monto : 0;
-          const activeMonths = histSeller ? histSeller.monthsCount : 6;
-          const refCuotaKg = hKg > 0 ? Math.round(hKg / Math.max(1, activeMonths) * 100) / 100 : octKg > 0 ? Math.round(octKg * 1.15 * 100) / 100 : 0;
-          bySeller[sName] = {
-            cuotaKg: refCuotaKg,
-            ventaKg: octKg,
-            cajas: octCj,
-            monto: octMto,
-            clientesCount: octCli,
-            histKg: hKg,
-            histCajas: hCj,
-            histMonto: hMto
-          };
-          totalCuotaKg += refCuotaKg;
-          totalVentaKg += octKg;
-          totalCajas += octCj;
-          totalMonto += octMto;
-          totalClientesCount += octCli;
-          totalHistKg += hKg;
-          totalHistCajas += hCj;
-          totalHistMonto += hMto;
-        }
-        if (dbProd.kgs > totalHistKg) {
-          totalHistKg = Math.round(dbProd.kgs * 100) / 100;
-        }
-        if (dbProd.cajas > totalHistCajas) {
-          totalHistCajas = Math.round(dbProd.cajas * 100) / 100;
-        }
-        if (dbProd.monto > totalHistMonto) {
-          totalHistMonto = Math.round(dbProd.monto * 100) / 100;
-        }
-        if (totalCuotaKg === 0 && totalHistKg > 0) {
-          totalCuotaKg = Math.round(totalHistKg / 8 * 100) / 100;
-        }
-        catalogItems.push({
-          id: `DB-SKU-${idStr}`,
-          cod: idStr,
-          rawCod: idStr,
-          articulo: dbProd.articulo,
-          categoria: classifySkuCategory(idStr, dbProd.articulo),
-          isMacroRubro: false,
-          isOfficialQuotaRow: false,
-          sheetOrder: orderIdx++,
-          totalCuotaKg: Math.round(totalCuotaKg * 100) / 100,
-          totalVentaKg: Math.round(totalVentaKg * 100) / 100,
-          totalCajas: Math.round(totalCajas * 100) / 100,
-          totalMonto: Math.round(totalMonto * 100) / 100,
-          totalClientesCount,
-          totalHistKg: Math.round(totalHistKg * 100) / 100,
-          totalHistCajas: Math.round(totalHistCajas * 100) / 100,
-          totalHistMonto: Math.round(totalHistMonto * 100) / 100,
-          bySeller
-        });
-      }
-      const allItems = [...sheetItems, ...catalogItems];
       const payload = {
         lastSync: (/* @__PURE__ */ new Date()).toISOString(),
-        totalItemsCount: allItems.length,
+        totalItemsCount: sheetItems.length,
         officialQuotaCount: sheetItems.length,
-        databaseCatalogCount: catalogItems.length,
+        databaseCatalogCount: 0,
         sellers: OFFICIAL_SKU_SELLERS,
-        items: allItems
+        items: sheetItems
       };
       skuVolumeResponseCache = { payload, timestamp: now };
       res.json(payload);

@@ -987,116 +987,14 @@ async function startServer() {
         item.totalHistMonto = Math.round(totHistMonto * 100) / 100;
       }
 
-      // 3. Add ALL remaining products from the database (pareto_products_complete.json + october_sales_rows.json)
-      const catalogItems: SkuVolumeItem[] = [];
-      let orderIdx = sheetItems.length + 1;
-
-      const sortedDbProducts = [...baseAgg.allDbProducts].sort((a, b) => b.kgs - a.kgs || b.monto - a.monto);
-      for (const dbProd of sortedDbProducts) {
-        const idStr = String(dbProd.id_articulo || '').trim();
-        if (!idStr || seenProductCodes.has(idStr)) continue;
-        seenProductCodes.add(idStr);
-
-        const octMap = baseAgg.octBySkuSeller.get(idStr);
-        const histMap = baseAgg.histBySkuSeller.get(idStr);
-        const bySeller: Record<string, SellerSkuMetrics> = {};
-
-        let totalCuotaKg = 0;
-        let totalVentaKg = 0;
-        let totalCajas = 0;
-        let totalMonto = 0;
-        let totalClientesCount = 0;
-        let totalHistKg = 0;
-        let totalHistCajas = 0;
-        let totalHistMonto = 0;
-
-        for (const s of OFFICIAL_SKU_SELLERS) {
-          const sName = s.name;
-          const octSeller = octMap?.get(sName);
-          const histSeller = histMap?.get(sName);
-
-          const octKg = octSeller ? Math.round(octSeller.kgs * 100) / 100 : 0;
-          const octCj = octSeller ? Math.round(octSeller.cajas * 100) / 100 : 0;
-          const octMto = octSeller ? Math.round(octSeller.monto * 100) / 100 : 0;
-          const octCli = octSeller ? octSeller.clients.size : 0;
-
-          const hKg = histSeller ? histSeller.kgs : 0;
-          const hCj = histSeller ? histSeller.cajas : 0;
-          const hMto = histSeller ? histSeller.monto : 0;
-          const activeMonths = histSeller ? histSeller.monthsCount : 6;
-
-          // Reference monthly target based on historical rhythm when not in the 49 sheet rows
-          const refCuotaKg =
-            hKg > 0
-              ? Math.round((hKg / Math.max(1, activeMonths)) * 100) / 100
-              : octKg > 0
-              ? Math.round(octKg * 1.15 * 100) / 100
-              : 0;
-
-          bySeller[sName] = {
-            cuotaKg: refCuotaKg,
-            ventaKg: octKg,
-            cajas: octCj,
-            monto: octMto,
-            clientesCount: octCli,
-            histKg: hKg,
-            histCajas: hCj,
-            histMonto: hMto,
-          };
-
-          totalCuotaKg += refCuotaKg;
-          totalVentaKg += octKg;
-          totalCajas += octCj;
-          totalMonto += octMto;
-          totalClientesCount += octCli;
-          totalHistKg += hKg;
-          totalHistCajas += hCj;
-          totalHistMonto += hMto;
-        }
-
-        // If global historical kgs from pareto_products_complete is higher than seller-mapped subset, preserve global historical reference
-        if (dbProd.kgs > totalHistKg) {
-          totalHistKg = Math.round(dbProd.kgs * 100) / 100;
-        }
-        if (dbProd.cajas > totalHistCajas) {
-          totalHistCajas = Math.round(dbProd.cajas * 100) / 100;
-        }
-        if (dbProd.monto > totalHistMonto) {
-          totalHistMonto = Math.round(dbProd.monto * 100) / 100;
-        }
-        if (totalCuotaKg === 0 && totalHistKg > 0) {
-          totalCuotaKg = Math.round((totalHistKg / 8) * 100) / 100;
-        }
-
-        catalogItems.push({
-          id: `DB-SKU-${idStr}`,
-          cod: idStr,
-          rawCod: idStr,
-          articulo: dbProd.articulo,
-          categoria: classifySkuCategory(idStr, dbProd.articulo),
-          isMacroRubro: false,
-          isOfficialQuotaRow: false,
-          sheetOrder: orderIdx++,
-          totalCuotaKg: Math.round(totalCuotaKg * 100) / 100,
-          totalVentaKg: Math.round(totalVentaKg * 100) / 100,
-          totalCajas: Math.round(totalCajas * 100) / 100,
-          totalMonto: Math.round(totalMonto * 100) / 100,
-          totalClientesCount,
-          totalHistKg: Math.round(totalHistKg * 100) / 100,
-          totalHistCajas: Math.round(totalHistCajas * 100) / 100,
-          totalHistMonto: Math.round(totalHistMonto * 100) / 100,
-          bySeller,
-        });
-      }
-
-      const allItems = [...sheetItems, ...catalogItems];
+      // Retornar EXCLUSIVAMENTE los 49 productos oficiales de la hoja Google Sheets "Cuotas Volumen"
       const payload = {
         lastSync: new Date().toISOString(),
-        totalItemsCount: allItems.length,
+        totalItemsCount: sheetItems.length,
         officialQuotaCount: sheetItems.length,
-        databaseCatalogCount: catalogItems.length,
+        databaseCatalogCount: 0,
         sellers: OFFICIAL_SKU_SELLERS,
-        items: allItems,
+        items: sheetItems,
       };
 
       skuVolumeResponseCache = { payload, timestamp: now };
