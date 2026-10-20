@@ -6,8 +6,8 @@ export interface SellerMetadata {
   isSupervisorRoute?: boolean;
 }
 
-// Lista oficial exacta de las 23 carteras activas de la Fuerza de Ventas (Octubre 2026)
-// Nota: Johnatan Soto y Nelson Finol son Supervisores sin cartera propia; los clientes de Johnatan Soto pasaron a Mikelangelo Diaz. Alí Pérez es Supervisor y mantiene su cartera propia.
+// Lista oficial exacta de las 25 carteras activas de la Fuerza de Ventas (Octubre 2026)
+// Nota: Johnatan Soto, Ali Perez y Nelson Finol son exclusivamente Supervisores Comerciales sin cartera propia; los clientes de Johnatan Soto pasaron a Mikelangelo Diaz y los clientes de Ali Perez pasaron a Angel Navarro, Mariangel Gonzalez y Victor Campos.
 export const OFFICIAL_SELLERS_LIST = [
   'MARIA BRICEÑO',
   'MARIANA CHACIN',
@@ -24,7 +24,9 @@ export const OFFICIAL_SELLERS_LIST = [
   'YOLEIDA LUGO',
   'SAIRU VALLES',
   'ELISA SOLER',
-  'ALI PEREZ',
+  'ANGEL NAVARRO',
+  'MARIANGEL GONZALEZ',
+  'VICTOR CAMPOS',
   'J PABLO ARAUJO',
   'EDUARDO PIÑA',
   'LEONARDO RIOS',
@@ -34,7 +36,7 @@ export const OFFICIAL_SELLERS_LIST = [
   'OSCAR ORTIZ',
 ] as const;
 
-// Vendedores comerciales activos sincronizados exactamente con la Maestra de Clientes Octubre 2026 (23 carteras activas)
+// Vendedores comerciales activos sincronizados exactamente con la Maestra de Clientes Octubre 2026 (25 carteras activas)
 export const VALID_VOLUME_SELLERS = new Set<string>(OFFICIAL_SELLERS_LIST);
 
 // Los 3 Supervisores Comerciales Oficiales de Codizulca
@@ -55,11 +57,14 @@ export const SELLER_METADATA_MAP: Record<string, { supervisor: string; zona: str
   'JOHNATAN SOTO VILLA DEL ROS': { supervisor: 'JOHNATAN SOTO', zona: 'La Villa del Rosario / Perijá', region: 'Supervisión Johnatan Soto', isSupervisorRoute: true },
 
   // ==========================================
-  // SUPERVISOR: ALI PEREZ (5 Carteras: 1 propia de supervisión + 4 vendedores)
+  // SUPERVISOR: ALI PEREZ (7 Vendedores — Clientes de Ali Perez pasaron a Angel Navarro, Mariangel Gonzalez y Victor Campos)
   // ==========================================
-  'ALI PEREZ': { supervisor: 'ALI PEREZ', zona: 'Maracaibo / Supervisión', region: 'Supervisión Ali Perez', isSupervisorRoute: true },
-  'ELISA SOLER': { supervisor: 'ALI PEREZ', zona: 'Maracaibo', region: 'Supervisión Ali Perez' },
-  'LEONARDO RIOS': { supervisor: 'ALI PEREZ', zona: 'Maracaibo / San Francisco', region: 'Supervisión Ali Perez' },
+  'ALI PEREZ': { supervisor: 'ALI PEREZ', zona: 'Punto Fijo / Supervisión', region: 'Supervisión Ali Perez', isSupervisorRoute: true },
+  'ANGEL NAVARRO': { supervisor: 'ALI PEREZ', zona: 'Punto Fijo / Paraguaná', region: 'Supervisión Ali Perez' },
+  'MARIANGEL GONZALEZ': { supervisor: 'ALI PEREZ', zona: 'Punto Fijo / Paraguaná', region: 'Supervisión Ali Perez' },
+  'VICTOR CAMPOS': { supervisor: 'ALI PEREZ', zona: 'Punto Fijo / Paraguaná', region: 'Supervisión Ali Perez' },
+  'ELISA SOLER': { supervisor: 'ALI PEREZ', zona: 'Punto Fijo / Paraguaná', region: 'Supervisión Ali Perez' },
+  'LEONARDO RIOS': { supervisor: 'ALI PEREZ', zona: 'Punto Fijo / Paraguaná', region: 'Supervisión Ali Perez' },
   'LUIS GUANIPA': { supervisor: 'ALI PEREZ', zona: 'Coro / Falcón', region: 'Supervisión Ali Perez' },
   'OSCAR ORTIZ': { supervisor: 'ALI PEREZ', zona: 'Coro / La Costa', region: 'Supervisión Ali Perez' },
 
@@ -97,8 +102,6 @@ export const EXCLUDED_VOLUME_SELLERS = new Set<string>([
   'JOSE G. ESPINOZA',
   'LUIS F. SIMOSA',
   'GELSON CASTILLO',
-  'VICTOR CAMPOS',
-  'MARIANGEL GONZALEZ',
   'JAIDER MEDINA - FOOD SERVICE NORTE',
   'FOOD SERVICE NORTE',
   'FOOD SERVICE SUR',
@@ -131,6 +134,7 @@ export const normalizeSellerName = (vendedorName: string): string => {
     .replace(/GARCÍA\b/, 'GARCIA')
     .replace(/RÍOS\b/, 'RIOS')
     .replace(/ANGÉLICA\b/, 'ANGELICA')
+    .replace(/VÍCTOR\b/, 'VICTOR')
     .replace(/JOSÉ\b/, 'JOSE');
 
   if (
@@ -160,6 +164,10 @@ export const normalizeSellerName = (vendedorName: string): string => {
     n === 'JOHNATAN SOTO - VILLA DEL ROS'
   ) {
     return 'MIKELANGELO DIAZ';
+  }
+  // Ali Perez pasó exclusivamente a Supervisor; su código de ruta 29 anterior pasa a Angel Navarro
+  if (n === 'ALI PEREZ' || n === 'ANGEL NAVARRO') {
+    return 'ANGEL NAVARRO';
   }
   if (
     n === 'OSCAR ORTIZ' ||

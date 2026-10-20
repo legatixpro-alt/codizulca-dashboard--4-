@@ -83,7 +83,10 @@ export const CampoLayout: React.FC = () => {
         return false;
       });
 
-      if (found) {
+      // Seguridad: los parámetros de URL NUNCA permiten cambiar de identidad; solo se aplican
+      // si corresponden exactamente al usuario autenticado en esta sesión.
+      const authenticatedId = localStorage.getItem('portal_authenticated_user_id');
+      if (found && found.id === authenticatedId) {
         campoService.setActivePromoter(found);
         setActivePromoter(found);
         currentProfile = found;

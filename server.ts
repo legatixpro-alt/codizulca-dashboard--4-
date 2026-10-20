@@ -194,7 +194,7 @@ async function startServer() {
   // Sellers monthly volume endpoints (with Supabase and Google Sheets sync)
   const sellersVolumeCachePath = path.join(process.cwd(), 'sellers_monthly_volume_cache.json');
 
-  // Lista oficial exacta de las 23 carteras activas de la Fuerza de Ventas (Octubre 2026)
+  // Lista oficial exacta de las 25 carteras activas de la Fuerza de Ventas (Octubre 2026)
   const OFFICIAL_SELLERS_LIST = [
     'MARIA BRICEÑO',
     'MARIANA CHACIN',
@@ -211,7 +211,9 @@ async function startServer() {
     'YOLEIDA LUGO',
     'SAIRU VALLES',
     'ELISA SOLER',
-    'ALI PEREZ',
+    'ANGEL NAVARRO',
+    'MARIANGEL GONZALEZ',
+    'VICTOR CAMPOS',
     'J PABLO ARAUJO',
     'EDUARDO PIÑA',
     'LEONARDO RIOS',
@@ -243,6 +245,7 @@ async function startServer() {
       .replace(/GARCÍA\b/, 'GARCIA')
       .replace(/RÍOS\b/, 'RIOS')
       .replace(/ANGÉLICA\b/, 'ANGELICA')
+      .replace(/VÍCTOR\b/, 'VICTOR')
       .replace(/JOSÉ\b/, 'JOSE');
 
     if (
@@ -271,6 +274,9 @@ async function startServer() {
       n === 'JOHNATAN SOTO - VILLA DEL ROS'
     ) {
       return 'MIKELANGELO DIAZ';
+    }
+    if (n === 'ALI PEREZ' || n === 'ANGEL NAVARRO') {
+      return 'ANGEL NAVARRO';
     }
     if (
       n === 'OSCAR ORTIZ' ||
@@ -315,6 +321,9 @@ async function startServer() {
 
   const ALI_PEREZ_SELLERS = new Set<string>([
     'ALI PEREZ',
+    'ANGEL NAVARRO',
+    'MARIANGEL GONZALEZ',
+    'VICTOR CAMPOS',
     'ELISA SOLER',
     'LEONARDO RIOS',
     'LUIS GUANIPA',
@@ -1459,7 +1468,8 @@ Responde EXCLUSIVAMENTE con un objeto JSON válido con la siguiente estructura (
         const norm = normalizeSellerName(v);
         if (norm === 'MARIANA CHACIN') return ['MARIANA CHACIN', 'CUENTAS CLAVE 1 - MC', 'CUENTAS CLAVE 1'];
         if (norm === 'SAIRU VALLES') return ['SAIRU VALLES', 'CUENTAS CLAVE 2 - SV', 'CUENTAS CLAVE 2'];
-        if (norm === 'JOHNATAN SOTO VILLA DEL ROS') return ['JOHNATAN SOTO VILLA DEL ROS', 'MIKELANGELO DIAZ - VILLA DEL ROS'];
+        if (norm === 'MIKELANGELO DIAZ') return ['MIKELANGELO DIAZ', 'MIKELANGELO DIAZ1', 'MIKELANGELO DIAZ - VILLA DEL ROS', 'JOHNATAN SOTO', 'JOHNATAN SOTO VILLA DEL ROS'];
+        if (norm === 'ANGEL NAVARRO') return ['ANGEL NAVARRO', 'ALI PEREZ'];
         if (norm === 'OSCAR ORTIZ') return ['OSCAR ORTIZ', 'OSCAR ORTIZ- CORO', 'OSCAR ORTIZ - CORO', 'OSCAR ORTIZ- LA COSTA', 'OSCAR ORTIZ - LA COSTA'];
         return [norm];
       };
@@ -2891,7 +2901,7 @@ ${mesTable}
 
       return `### 🏆 Ranking de la Fuerza de Ventas Comercial — CODIZULCA
 
-Codizulca cuenta con **23 carteras comerciales activas** distribuidas en Maracaibo, San Francisco, Costa Oriental del Lago, Perijá, Sur del Lago y Falcón, bajo la supervisión de **Johnatan Soto**, **Alí Pérez** y **Nelson Finol**.
+Codizulca cuenta con **25 carteras comerciales activas** distribuidas en Maracaibo, San Francisco, Costa Oriental del Lago, Perijá, Sur del Lago y Falcón, bajo la supervisión de **Johnatan Soto**, **Alí Pérez** y **Nelson Finol**.
 
 #### 🥇 Top 10 Vendedores con Mayor Facturación Neta (Acumulado 2026):
 | Pos | Vendedor | Venta Neta ($ USD) | Facturado (FA) | Cajas | Kilos | % Devolución |

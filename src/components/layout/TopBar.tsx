@@ -46,7 +46,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onMenuToggle }) => {
            <span className="hidden sm:block text-xs font-bold text-zinc-500 tracking-[0.2em] uppercase">SECTOR ASIGNADO</span>
            <div className="flex items-center gap-2 sm:mt-0.5">
              <div className="w-2 h-2 rounded-full bg-red-600 animate-pulse shadow-[0_0_8px_rgba(220,38,38,0.8)]"></div>
-             <span className="text-sm sm:text-base font-bold text-white tracking-wide">{profile?.zone || corporateProfile?.zone || 'Zulia Corporativo'}</span>
+             <span className="text-sm sm:text-base font-bold text-white tracking-wide">{corporateProfile?.zone || profile?.zone || 'Zulia Corporativo'}</span>
            </div>
         </div>
       </div>
@@ -62,13 +62,13 @@ export const TopBar: React.FC<TopBarProps> = ({ onMenuToggle }) => {
         <div className="flex items-center gap-3 sm:border-l sm:border-white/10 sm:pl-4">
           <div className="hidden md:block text-right">
             <p className="text-sm font-bold text-zinc-200 leading-none mb-1">
-              {profile?.full_name || corporateProfile?.name || 'Admin'}
+              {corporateProfile?.name || profile?.full_name || 'Usuario'}
             </p>
             <p className="text-xs text-red-500 font-medium tracking-wider uppercase leading-none">
-              {profile?.role || corporateProfile?.roleLabel || 'Gerencia'}
+              {corporateProfile?.roleLabel || profile?.role || 'Sin perfil'}
             </p>
           </div>
-          {profile?.avatar_url ? (
+          {profile?.avatar_url && profile.full_name === corporateProfile?.name ? (
             <img 
               src={profile.avatar_url} 
               alt={profile.full_name} 

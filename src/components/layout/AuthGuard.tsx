@@ -1,9 +1,9 @@
 import React from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import { useAuth } from '../../lib/auth';
+import { canAccessDashboardRoute, useAuth } from '../../lib/auth';
 
 export const AuthGuard: React.FC = () => {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, corporateProfile } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
@@ -17,9 +17,14 @@ export const AuthGuard: React.FC = () => {
     );
   }
 
+  // Sin sesión con perfil asignado: siempre se muestra la pantalla de login
   if (!user) {
-    // TEMPORARY: Bypass login screen while editing
-    // return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // Con sesión, cada perfil solo accede a los módulos que tiene asignados
+  if (!canAccessDashboardRoute(corporateProfile, location.pathname)) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <Outlet />;

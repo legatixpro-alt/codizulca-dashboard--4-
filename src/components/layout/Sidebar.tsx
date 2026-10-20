@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { useAuth } from '../../lib/auth';
+import { useAuth, canAccessModule } from '../../lib/auth';
 import { 
   LayoutDashboard, 
   Users, 
@@ -19,9 +19,9 @@ import { cn } from '../../lib/utils';
 import { Badge } from '../ui/badge';
 
 export const Sidebar: React.FC = () => {
-  const { signOut, canAccessTrazabilidad } = useAuth();
+  const { signOut, canAccessTrazabilidad, corporateProfile } = useAuth();
 
-  const links = [
+  const allLinks = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Resumen Ejecutivo', exact: true },
     { to: '/dashboard/cuotas', icon: Target, label: 'Cuotas & Metas' },
     { to: '/dashboard/ventas', icon: ShoppingCart, label: 'Ventas & Facturación' },
@@ -34,6 +34,11 @@ export const Sidebar: React.FC = () => {
       ? [{ to: '/dashboard/trazabilidad', icon: Activity, label: 'Trazabilidad', badge: { text: 'EN VIVO', color: 'text-emerald-400', bg: 'bg-emerald-950/50 border-emerald-900/50' } }]
       : []),
   ];
+
+  // Cada perfil solo ve los módulos que tiene asignados (Trazabilidad se controla con canAccessTrazabilidad)
+  const links = allLinks.filter(
+    (link) => link.label === 'Trazabilidad' || canAccessModule(corporateProfile, link.label)
+  );
 
   return (
     <aside className="flex w-72 flex-col border-r border-white/5 bg-[#0a0a0a]">

@@ -211,7 +211,7 @@
   },
   {
     "id": "954",
-    "nombre": "COMERCIAL YULY-RICH, COMPAÑIA ANONIMA",
+    "nombre": "\"COMERCIAL YULY-RICH, COMPAÑIA ANONIMA\"",
     "rif": "J-402374259",
     "vendedor": "MARIA BRICEÑO",
     "canal": "CHARCUTERIA/QUESERIA",
@@ -471,7 +471,7 @@
   },
   {
     "id": "3109",
-    "nombre": "INVERSIONES JL & RS, C.A",
+    "nombre": "INVERSIONES  JL & RS, C.A",
     "rif": "J-500859660",
     "vendedor": "MARIA BRICEÑO",
     "canal": "PANADERIA",
@@ -610,6 +610,16 @@
     "activo": true
   },
   {
+    "id": "5010",
+    "nombre": "INVERSIONES ADONAI T&Q 1, C.A.",
+    "rif": "J-503625619",
+    "vendedor": "MARIA BRICEÑO",
+    "canal": "PANADERIA",
+    "zona": "Maracaibo",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
     "id": "5029",
     "nombre": "CARNICOS DOBLE AA, C.A.",
     "rif": "J-503386053",
@@ -681,7 +691,7 @@
   },
   {
     "id": "5822",
-    "nombre": "COMERCIALIZADORA E INVERSIONES LUZMER MMXXL, C.A",
+    "nombre": "COMERCIALIZADORA E INVERSIONES  LUZMER MMXXL, C.A",
     "rif": "J-501221820",
     "vendedor": "MARIA BRICEÑO",
     "canal": "ABASTOS Y BODEGAS",
@@ -761,7 +771,7 @@
   },
   {
     "id": "6272",
-    "nombre": "INVERSIONES LA GRACIA DE DIOS A&D, C.A",
+    "nombre": "INVERSIONES LA GRACIA DE DIOS  A&D, C.A",
     "rif": "J-504126691",
     "vendedor": "MARIA BRICEÑO",
     "canal": "ABASTOS Y BODEGAS",
@@ -1270,6 +1280,26 @@
     "activo": true
   },
   {
+    "id": "8359",
+    "nombre": "PANADERIA Y PASTELERIA PINAR DON RIO, C.A.",
+    "rif": "#N/A",
+    "vendedor": "MARIA BRICEÑO",
+    "canal": "#N/A",
+    "zona": "Maracaibo",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "8389",
+    "nombre": "MARIA GABRIELA SIRIT MEDINA",
+    "rif": "#N/A",
+    "vendedor": "MARIA BRICEÑO",
+    "canal": "#N/A",
+    "zona": "Maracaibo",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
     "id": "1497",
     "nombre": "SUPERMERCADO BUENO MUNDO, C.A.",
     "rif": "J-317292340",
@@ -1391,7 +1421,7 @@
   },
   {
     "id": "1650",
-    "nombre": "COMERCIAL HERMANOS \"\"MORILLO\"\", C.A.",
+    "nombre": "COMERCIAL HERMANOS \"MORILLO\", C.A.",
     "rif": "J-500408234",
     "vendedor": "MIKELANGELO DIAZ",
     "canal": "MAYORISTA",
@@ -1521,7 +1551,7 @@
   },
   {
     "id": "2652",
-    "nombre": "SUPER COMERCIAL Y CARNICERIA EL CARMEN , C.A",
+    "nombre": "SUPER COMERCIAL Y CARNICERIA  EL CARMEN , C.A",
     "rif": "J-310773858",
     "vendedor": "MIKELANGELO DIAZ",
     "canal": "CARNICERIA/FRIGORIFICO",
@@ -1781,7 +1811,7 @@
   },
   {
     "id": "6486",
-    "nombre": "BENNO INVERSIONES 2023, C.A",
+    "nombre": "BENNO INVERSIONES  2023, C.A",
     "rif": "J-503391570",
     "vendedor": "MIKELANGELO DIAZ",
     "canal": "ABASTOS Y BODEGAS",
@@ -1881,7 +1911,7 @@
   },
   {
     "id": "7614",
-    "nombre": "DEIBIS GREGORIO ROMERO \"\"ABASTO SAN RAFAEL N1 DEIBIS ROMERO,F.P",
+    "nombre": "DEIBIS GREGORIO ROMERO \"ABASTO SAN RAFAEL N1 DEIBIS ROMERO,F.P\"",
     "rif": "V-252019630",
     "vendedor": "MIKELANGELO DIAZ",
     "canal": "ABASTOS Y BODEGAS",
@@ -2360,6 +2390,16 @@
     "activo": true
   },
   {
+    "id": "6958",
+    "nombre": "SUPER ABASTOS LAS CUMBRES, C.A",
+    "rif": "J-500038534",
+    "vendedor": "HERNAN PAZ",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Perijá",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
     "id": "6997",
     "nombre": "EL MESIAS PERIJANERO, C.A",
     "rif": "J-503572779",
@@ -2541,7 +2581,7 @@
   },
   {
     "id": "8151",
-    "nombre": "LAURYMAR CHIQUINQUIRA FERRER URDANETA \"\"NATI DISTRIBUCIONES LN DE LAURYMAR FERRER F.P",
+    "nombre": "LAURYMAR CHIQUINQUIRA FERRER URDANETA \"NATI DISTRIBUCIONES LN DE LAURYMAR FERRER F.P\"",
     "rif": "V-198083700",
     "vendedor": "HERNAN PAZ",
     "canal": "ABASTOS Y BODEGAS",
@@ -2691,7 +2731,7 @@
   },
   {
     "id": "626",
-    "nombre": "PANADERIA Y CHARCUTERIA SAN JOSE, C.A.",
+    "nombre": "\"PANADERIA Y CHARCUTERIA SAN JOSE, C.A.\"",
     "rif": "J-295938780",
     "vendedor": "OSWALDO CHURION",
     "canal": "PANADERIA",
@@ -2791,7 +2831,7 @@
   },
   {
     "id": "3994",
-    "nombre": "SUPER TIENDA Y VARIEDADES 3D, C.A",
+    "nombre": "SUPER  TIENDA Y VARIEDADES  3D, C.A",
     "rif": "J-410966980",
     "vendedor": "OSWALDO CHURION",
     "canal": "MAYORISTA",
@@ -2931,7 +2971,7 @@
   },
   {
     "id": "5618",
-    "nombre": "MINI MARKET LA REINA 2024, C.A",
+    "nombre": "MINI MARKET  LA REINA 2024, C.A",
     "rif": "J-504753670",
     "vendedor": "OSWALDO CHURION",
     "canal": "CARNICERIA/FRIGORIFICO",
@@ -2971,7 +3011,7 @@
   },
   {
     "id": "6068",
-    "nombre": "DELVIS ENRIQUE VILLALOBOS VILLALOBOS",
+    "nombre": "DELVIS ENRIQUE  VILLALOBOS VILLALOBOS",
     "rif": "V-213571300",
     "vendedor": "OSWALDO CHURION",
     "canal": "ABASTOS Y BODEGAS",
@@ -3211,7 +3251,7 @@
   },
   {
     "id": "7207",
-    "nombre": "A QUE SHAROL, C.A",
+    "nombre": "SHAROL PROMAX, C.A",
     "rif": "J-000041161",
     "vendedor": "OSWALDO CHURION",
     "canal": "FAST FOOD",
@@ -3345,6 +3385,26 @@
     "rif": "J-506547368",
     "vendedor": "OSWALDO CHURION",
     "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Sur",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "8353",
+    "nombre": "NORBELIS COROMOTO BRACHO ATENCIO",
+    "rif": "#N/A",
+    "vendedor": "OSWALDO CHURION",
+    "canal": "#N/A",
+    "zona": "Maracaibo / Sur",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "8391",
+    "nombre": "KENNY ALBERT GUTIERREZ FERNANDEZ",
+    "rif": "#N/A",
+    "vendedor": "OSWALDO CHURION",
+    "canal": "#N/A",
     "zona": "Maracaibo / Sur",
     "region": "OCCIDENTE",
     "activo": true
@@ -3620,8 +3680,58 @@
     "activo": true
   },
   {
+    "id": "8373",
+    "nombre": "PANADERIA Y PASTELERIA JEHOVA JIREH, C.A.",
+    "rif": "#N/A",
+    "vendedor": "OSCAR ORTIZ",
+    "canal": "#N/A",
+    "zona": "Coro / La Costa",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "8374",
+    "nombre": "INVERSIONES JOSLYANNIS,C.A.",
+    "rif": "#N/A",
+    "vendedor": "OSCAR ORTIZ",
+    "canal": "#N/A",
+    "zona": "Coro / La Costa",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "8375",
+    "nombre": "CHIQUENPOLLO R&J, C.A",
+    "rif": "#N/A",
+    "vendedor": "OSCAR ORTIZ",
+    "canal": "#N/A",
+    "zona": "Coro / La Costa",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "8376",
+    "nombre": "COMERCIALIZADORA Y DISTRIBUIDORA NJ C.A.",
+    "rif": "#N/A",
+    "vendedor": "OSCAR ORTIZ",
+    "canal": "#N/A",
+    "zona": "Coro / La Costa",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "8377",
+    "nombre": "HUSSEIN ATTA ABDUL KAREEM (FIT FOOT 1 DE HUSSEIN ATTA, F.P)",
+    "rif": "#N/A",
+    "vendedor": "OSCAR ORTIZ",
+    "canal": "#N/A",
+    "zona": "Coro / La Costa",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
     "id": "1926",
-    "nombre": "PANADERIA, PASTELERIA Y CAFETERIA \"\"LARA\"\" C.A",
+    "nombre": "PANADERIA, PASTELERIA Y CAFETERIA \"LARA\" C.A",
     "rif": "J-305205590",
     "vendedor": "OSCAR ORTIZ",
     "canal": "PANADERIA",
@@ -3821,7 +3931,7 @@
   },
   {
     "id": "4512",
-    "nombre": "MUNIR YUSEUF MOHAMAD CALRIZIO ( VARIEDADES JAIME 2022 DEMUNIR MOHAMAD F. P. )",
+    "nombre": "MUNIR YUSEUF MOHAMAD CALRIZIO ( VARIEDADES JAIME 2022 DEMUNIR  MOHAMAD F. P. )",
     "rif": "V-111379978",
     "vendedor": "OSCAR ORTIZ",
     "canal": "ABASTOS Y BODEGAS",
@@ -4940,6 +5050,16 @@
     "activo": true
   },
   {
+    "id": "3556",
+    "nombre": "\"VIVERES Y ABASTOS PA´ QUE DAVID, C.A.\"",
+    "rif": "J-404521062",
+    "vendedor": "CARLOS FUENMAYOR",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
     "id": "3570",
     "nombre": "BLUE JJ INVERSIONES, C.A",
     "rif": "J-409303837",
@@ -4971,7 +5091,7 @@
   },
   {
     "id": "3710",
-    "nombre": "INVERSIONES CIELOS ABIERTOS A & K, C.A",
+    "nombre": "INVERSIONES CIELOS ABIERTOS  A & K, C.A",
     "rif": "J-409235998",
     "vendedor": "CARLOS FUENMAYOR",
     "canal": "SUPERMERCADOS",
@@ -5021,7 +5141,7 @@
   },
   {
     "id": "3822",
-    "nombre": "FARMACIA CINERA, C.A",
+    "nombre": "FARMACIA  CINERA, C.A",
     "rif": "J-501209979",
     "vendedor": "CARLOS FUENMAYOR",
     "canal": "FARMACIAS",
@@ -5261,7 +5381,7 @@
   },
   {
     "id": "6136",
-    "nombre": "DISTRIBUIDORA DE ALIMENTOS JEHOVA ES MI PASTOR 2023, C,A",
+    "nombre": "DISTRIBUIDORA  DE ALIMENTOS JEHOVA  ES MI PASTOR 2023, C,A",
     "rif": "J-503306939",
     "vendedor": "CARLOS FUENMAYOR",
     "canal": "MAYORISTA",
@@ -5801,7 +5921,7 @@
   },
   {
     "id": "271",
-    "nombre": "PANADERIA SUPER SAGRESS 2007, C.A",
+    "nombre": "PANADERIA  SUPER SAGRESS 2007, C.A",
     "rif": "J-293679958",
     "vendedor": "SARAH REYES",
     "canal": "PANADERIA",
@@ -6331,7 +6451,7 @@
   },
   {
     "id": "5298",
-    "nombre": "INVERSIONES CORONA & CELEDON, C.A",
+    "nombre": "INVERSIONES CORONA  & CELEDON, C.A",
     "rif": "J-412879367",
     "vendedor": "SARAH REYES",
     "canal": "ABASTOS Y BODEGAS",
@@ -6421,7 +6541,7 @@
   },
   {
     "id": "5870",
-    "nombre": "COMERCIALIZADORA L & M 2014, C.A",
+    "nombre": "COMERCIALIZADORA  L & M 2014, C.A",
     "rif": "J-403283923",
     "vendedor": "SARAH REYES",
     "canal": "PANADERIA",
@@ -6481,7 +6601,7 @@
   },
   {
     "id": "6150",
-    "nombre": "INVERSIONES W & W 2017, C.A",
+    "nombre": "INVERSIONES  W & W 2017, C.A",
     "rif": "J-410485957",
     "vendedor": "SARAH REYES",
     "canal": "ABASTOS Y BODEGAS",
@@ -7820,6 +7940,26 @@
     "activo": true
   },
   {
+    "id": "8349",
+    "nombre": "JULIO CESAR BRACHO RIVAS COMERCIALIZADORA Y DISTRIBUIDORA LOS SOBRINOS DE JULIO CESAR BRACHO RIVAS, F.P",
+    "rif": "#N/A",
+    "vendedor": "J PABLO ARAUJO - CAB/OJE",
+    "canal": "#N/A",
+    "zona": "Cabimas / Ciudad Ojeda",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "8370",
+    "nombre": "COMERCIALIZADORA DE ALIMENTOS ZULIANOS, C.A.",
+    "rif": "#N/A",
+    "vendedor": "J PABLO ARAUJO - CAB/OJE",
+    "canal": "#N/A",
+    "zona": "Cabimas / Ciudad Ojeda",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
     "id": "1695",
     "nombre": "SUPERMERCADO EL PRIMERO 888, C.A",
     "rif": "J-500232659",
@@ -7901,7 +8041,7 @@
   },
   {
     "id": "4707",
-    "nombre": "ALFONSO ANTONIO MONTILLA ( INVERSIONES LA PROPIA DE ALFONSO MONTILLA F.P )",
+    "nombre": "ALFONSO ANTONIO MONTILLA  ( INVERSIONES LA PROPIA DE ALFONSO MONTILLA F.P )",
     "rif": "V-049227279",
     "vendedor": "JOSE G. GONZALEZ",
     "canal": "ABASTOS Y BODEGAS",
@@ -7911,7 +8051,7 @@
   },
   {
     "id": "4712",
-    "nombre": "FAUSTINO TORRES PALMA ( REPRESENTACIONES SAN MARTIN DE LOBA )",
+    "nombre": "FAUSTINO TORRES PALMA  ( REPRESENTACIONES SAN MARTIN DE LOBA )",
     "rif": "V-032134870",
     "vendedor": "JOSE G. GONZALEZ",
     "canal": "ABASTOS Y BODEGAS",
@@ -7921,7 +8061,7 @@
   },
   {
     "id": "4716",
-    "nombre": "OCTAVIO DE JESUS TERAN PEÑA ( INVERSIONES EL TREBOL DE OCTAVIO DE JESUS TERAN PEÑA, F.P )",
+    "nombre": "OCTAVIO DE JESUS TERAN PEÑA  ( INVERSIONES EL TREBOL DE OCTAVIO DE JESUS TERAN PEÑA, F.P )",
     "rif": "V-178658472",
     "vendedor": "JOSE G. GONZALEZ",
     "canal": "ABASTOS Y BODEGAS",
@@ -7941,7 +8081,7 @@
   },
   {
     "id": "4741",
-    "nombre": "ELVIN JESUS URDANETA VILLAR ( COMERCIALIZADORA MOVIL NOVILLO GRIL )",
+    "nombre": "ELVIN JESUS URDANETA VILLAR  ( COMERCIALIZADORA MOVIL NOVILLO GRIL )",
     "rif": "V-184988786",
     "vendedor": "JOSE G. GONZALEZ",
     "canal": "SUPERMERCADOS",
@@ -8010,6 +8150,16 @@
     "activo": true
   },
   {
+    "id": "4835",
+    "nombre": "EL RINCON ANDINO DE TIMOTES, C,A",
+    "rif": "J-500647131",
+    "vendedor": "JOSE G. GONZALEZ",
+    "canal": "SUPERMERCADOS",
+    "zona": "Maracaibo",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
     "id": "4881",
     "nombre": "MARCOS ANTONIO HERNANDEZ MORILLO",
     "rif": "V-117061457",
@@ -8061,7 +8211,7 @@
   },
   {
     "id": "4949",
-    "nombre": "JESUS ORANGEL VALERA DUDAMEL (CHARCUTERIA LA ENTRADA DE JESUS)",
+    "nombre": "JESUS ORANGEL VALERA DUDAMEL (CHARCUTERIA LA ENTRADA  DE JESUS)",
     "rif": "V-142930303",
     "vendedor": "JOSE G. GONZALEZ",
     "canal": "CHARCUTERIA/QUESERIA",
@@ -8081,7 +8231,7 @@
   },
   {
     "id": "4977",
-    "nombre": "NELSON ANTONIO TORRES DURAN (INV. TORRES DURAN)",
+    "nombre": "NELSON ANTONIO TORRES DURAN  (INV. TORRES DURAN)",
     "rif": "V-087196620",
     "vendedor": "JOSE G. GONZALEZ",
     "canal": "ABASTOS Y BODEGAS",
@@ -8641,7 +8791,7 @@
   },
   {
     "id": "7232",
-    "nombre": "INVERSIONES Y COMERCIALIZADORA LA \"\"Y\"\" DE YUSMAIRA VASQUEZ F.P",
+    "nombre": "INVERSIONES Y COMERCIALIZADORA LA \"Y\" DE YUSMAIRA VASQUEZ F.P",
     "rif": "V-143106477",
     "vendedor": "JOSE G. GONZALEZ",
     "canal": "ABASTOS Y BODEGAS",
@@ -8681,7 +8831,7 @@
   },
   {
     "id": "7367",
-    "nombre": "ANTONIO RAMON TORRES PACHECO( ALIMENTOS LOS ANDES DE ANTONIO TORRES F.P)",
+    "nombre": "ANTONIO RAMON TORRES PACHECO( ALIMENTOS LOS ANDES  DE ANTONIO TORRES F.P)",
     "rif": "V-173915647",
     "vendedor": "JOSE G. GONZALEZ",
     "canal": "MINIMARKET",
@@ -8711,7 +8861,7 @@
   },
   {
     "id": "7428",
-    "nombre": "MERCEDES DEL CARMEN DABOIN ARAUJO ( COMERCIALIZADORA DABOIN F.P)",
+    "nombre": "MERCEDES DEL CARMEN DABOIN ARAUJO  ( COMERCIALIZADORA DABOIN F.P)",
     "rif": "V-145577213",
     "vendedor": "JOSE G. GONZALEZ",
     "canal": "ABASTOS Y BODEGAS",
@@ -8861,7 +9011,7 @@
   },
   {
     "id": "7595",
-    "nombre": "KARINA DEL VALLE TERAN BRICEÑO (INVERSIONES TERAN 2020 DE KARINA TERAN F.P)",
+    "nombre": "KARINA DEL VALLE TERAN BRICEÑO  (INVERSIONES TERAN 2020 DE KARINA TERAN F.P)",
     "rif": "V-183762970",
     "vendedor": "JOSE G. GONZALEZ",
     "canal": "ABASTOS Y BODEGAS",
@@ -8910,6 +9060,16 @@
     "activo": true
   },
   {
+    "id": "7638",
+    "nombre": "GRECIA ANDREINA LINARES VALDERRAMA  (INVERSIONES Y COMERCIALIZADORA LINARES  DE GRECIA LINARES F.P)",
+    "rif": "V-173476546",
+    "vendedor": "JOSE G. GONZALEZ",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
     "id": "7644",
     "nombre": "ORLANDO ANTONIO DURAN CASERES (DISTRIBUIDORA DE ALIMENTOS ORLANDO DURAN F.P)",
     "rif": "V-141515922",
@@ -8943,6 +9103,16 @@
     "id": "7684",
     "nombre": "INVERSIONES Y PANADERIA ISANK,C.A",
     "rif": "J-506161664",
+    "vendedor": "JOSE G. GONZALEZ",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "7719",
+    "nombre": "EMPRENDIMIENTO JUNIOR MONSALVE",
+    "rif": "J-504463981",
     "vendedor": "JOSE G. GONZALEZ",
     "canal": "ABASTOS Y BODEGAS",
     "zona": "Maracaibo",
@@ -9001,7 +9171,7 @@
   },
   {
     "id": "7847",
-    "nombre": "PARRA ALICE DE JESUS ( MARIA DELFINA SANTIAGO SANTIAGO )",
+    "nombre": "PARRA ALICE DE JESUS  ( MARIA DELFINA SANTIAGO SANTIAGO )",
     "rif": "V-103991451",
     "vendedor": "JOSE G. GONZALEZ",
     "canal": "ABASTOS Y BODEGAS",
@@ -9051,7 +9221,7 @@
   },
   {
     "id": "7928",
-    "nombre": "LEOMAR ESPINOZA LINARES ( INVERSIONES LEOMAR DE LEOMAR ESPINOZ LINARES F.P)",
+    "nombre": "LEOMAR ESPINOZA LINARES   ( INVERSIONES LEOMAR DE LEOMAR ESPINOZ LINARES F.P)",
     "rif": "V-147180361",
     "vendedor": "JOSE G. GONZALEZ",
     "canal": "FAST FOOD",
@@ -10481,7 +10651,7 @@
   },
   {
     "id": "3025",
-    "nombre": "LUIS ENRIQUE ANDRADE REYES",
+    "nombre": "LUIS ENRIQUE  ANDRADE REYES",
     "rif": "V-194391940",
     "vendedor": "ADEL JARABA",
     "canal": "ABASTOS Y BODEGAS",
@@ -10491,7 +10661,7 @@
   },
   {
     "id": "3130",
-    "nombre": "INVERSIONES SIERRA MIA, C,A",
+    "nombre": "INVERSIONES SIERRA  MIA, C,A",
     "rif": "J-403195120",
     "vendedor": "ADEL JARABA",
     "canal": "SUPERMERCADOS",
@@ -10521,7 +10691,7 @@
   },
   {
     "id": "3397",
-    "nombre": "ASTRID MARBELIS FERNANDEZ GONZALEZ ( INVERSIONES Y FRUTERIAS ASTRID FERNANDEZ, F.P )",
+    "nombre": "ASTRID MARBELIS FERNANDEZ GONZALEZ  ( INVERSIONES Y FRUTERIAS  ASTRID FERNANDEZ, F.P )",
     "rif": "V-194134122",
     "vendedor": "ADEL JARABA",
     "canal": "ABASTOS Y BODEGAS",
@@ -10781,7 +10951,7 @@
   },
   {
     "id": "6556",
-    "nombre": "LUIS ENRIQUE LEON ACOSTA",
+    "nombre": "LUIS ENRIQUE  LEON ACOSTA",
     "rif": "V-174799233",
     "vendedor": "ADEL JARABA",
     "canal": "ABASTOS Y BODEGAS",
@@ -10871,7 +11041,7 @@
   },
   {
     "id": "7137",
-    "nombre": "COMERCIALIZADORA ORLANDO J&J, C.A (COMERCIALIZADORA ORLANDO J&J, C.A.)",
+    "nombre": "COMERCIALIZADORA ORLANDO J&J, C.A  (COMERCIALIZADORA ORLANDO J&J, C.A.)",
     "rif": "J-403220077",
     "vendedor": "ADEL JARABA",
     "canal": "ABASTOS Y BODEGAS",
@@ -11052,7 +11222,7 @@
   {
     "id": "8046",
     "nombre": "KATY DEL CARMEN ROMERO RAMIREZ",
-    "rif": "V-11722409",
+    "rif": "V- 11722409",
     "vendedor": "ADEL JARABA",
     "canal": "ABASTOS Y BODEGAS",
     "zona": "Mayoristas / Maracaibo",
@@ -11360,6 +11530,16 @@
     "activo": true
   },
   {
+    "id": "2021",
+    "nombre": "SUPER TIENDA AMISTAD, C.A",
+    "rif": "J-406297852",
+    "vendedor": "JUAN HERNANDEZ",
+    "canal": "SUPERMERCADOS",
+    "zona": "Sur del Lago / El Chivo",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
     "id": "2254",
     "nombre": "INVERSIONES PAUL, C.A",
     "rif": "J-307354232",
@@ -11445,6 +11625,16 @@
     "rif": "J-403230340",
     "vendedor": "JUAN HERNANDEZ",
     "canal": "SUPERMERCADOS",
+    "zona": "Sur del Lago / El Chivo",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "2682",
+    "nombre": "SUPER CARNES EL CUCHILLO SUCURSAL I, C.A.",
+    "rif": "J-500478208",
+    "vendedor": "JUAN HERNANDEZ",
+    "canal": "CARNICERIA/FRIGORIFICO",
     "zona": "Sur del Lago / El Chivo",
     "region": "OCCIDENTE",
     "activo": true
@@ -11651,7 +11841,7 @@
   },
   {
     "id": "4519",
-    "nombre": "PROMOCIONES TURISTICAS, C.A",
+    "nombre": "PROMOCIONES TURISTICAS,  C.A",
     "rif": "J-304917384",
     "vendedor": "JUAN HERNANDEZ",
     "canal": "HOTELES",
@@ -11701,7 +11891,7 @@
   },
   {
     "id": "4968",
-    "nombre": "SUPERTIENDA BELLOSO 2023, C.A",
+    "nombre": "SUPERTIENDA  BELLOSO 2023, C.A",
     "rif": "J-503507420",
     "vendedor": "JUAN HERNANDEZ",
     "canal": "SUPERMERCADOS",
@@ -11841,7 +12031,7 @@
   },
   {
     "id": "5885",
-    "nombre": "DISTRIBUIDORA E INVERIONES C.A.T.A, C.A",
+    "nombre": "DISTRIBUIDORA  E INVERIONES C.A.T.A, C.A",
     "rif": "J-504844772",
     "vendedor": "JUAN HERNANDEZ",
     "canal": "DISTRIBUIDORES",
@@ -11921,7 +12111,7 @@
   },
   {
     "id": "6425",
-    "nombre": "PANIFICADORA E INVERSIONES TAPIA, C.A",
+    "nombre": "PANIFICADORA E INVERSIONES  TAPIA, C.A",
     "rif": "J-503773537",
     "vendedor": "JUAN HERNANDEZ",
     "canal": "PANADERIA",
@@ -12711,7 +12901,7 @@
   },
   {
     "id": "4536",
-    "nombre": "ADRIANA CARMEN GUERRA RINCON ( INVERSIONES Y SERVICIOS TECNICOS GUERRA, FP )",
+    "nombre": "ADRIANA CARMEN GUERRA RINCON  ( INVERSIONES Y SERVICIOS TECNICOS GUERRA, FP )",
     "rif": "V-130239885",
     "vendedor": "YOLEIDA LUGO",
     "canal": "ABASTOS Y BODEGAS",
@@ -13161,7 +13351,7 @@
   },
   {
     "id": "7641",
-    "nombre": "JHONATHAN DAVID RIVERA SOTOMAYOR (COMERCIALIZADORA J & Y DE JHONATHAN RIVERA FP\"\")",
+    "nombre": "JHONATHAN DAVID RIVERA SOTOMAYOR (COMERCIALIZADORA J & Y DE JHONATHAN RIVERA FP\")",
     "rif": "V-114558326",
     "vendedor": "YOLEIDA LUGO",
     "canal": "ABASTOS Y BODEGAS",
@@ -13281,7 +13471,7 @@
   },
   {
     "id": "8050",
-    "nombre": "LUIS MIGUEL MANZANO TORRES \"\"MARKET 24 HORAS DE LUIS MIGUEL MANZANO, F.P",
+    "nombre": "LUIS MIGUEL MANZANO TORRES \"MARKET 24 HORAS DE LUIS MIGUEL MANZANO, F.P\"",
     "rif": "V-260560332",
     "vendedor": "YOLEIDA LUGO",
     "canal": "ABASTOS Y BODEGAS",
@@ -13345,6 +13535,16 @@
     "rif": "V-210430223",
     "vendedor": "YOLEIDA LUGO",
     "canal": "PANADERIA",
+    "zona": "Maracaibo",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "8361",
+    "nombre": "KEYLA MARIA GONZALEZ BERMUDEZ",
+    "rif": "#N/A",
+    "vendedor": "YOLEIDA LUGO",
+    "canal": "#N/A",
     "zona": "Maracaibo",
     "region": "OCCIDENTE",
     "activo": true
@@ -13421,7 +13621,7 @@
   },
   {
     "id": "1237",
-    "nombre": "MYARKA INVERSIONES, C.A.",
+    "nombre": "\"MYARKA INVERSIONES, C.A.\"",
     "rif": "J-298705377",
     "vendedor": "ELISA SOLER",
     "canal": "CARNICERIA/FRIGORIFICO",
@@ -13771,7 +13971,7 @@
   },
   {
     "id": "2907",
-    "nombre": "HOTEL, FUENTE DE SODA Y RESTAURANT EL GRAN 1RO DER MAYO",
+    "nombre": "HOTEL, FUENTE DE SODA  Y RESTAURANT EL GRAN 1RO DER MAYO",
     "rif": "J-310822794",
     "vendedor": "ELISA SOLER",
     "canal": "HOTELES",
@@ -13961,7 +14161,7 @@
   },
   {
     "id": "5580",
-    "nombre": "IGNACIO CONSEPCION FUGUET CASTRO",
+    "nombre": "IGNACIO CONSEPCION  FUGUET CASTRO",
     "rif": "V-189793401",
     "vendedor": "ELISA SOLER",
     "canal": "ABASTOS Y BODEGAS",
@@ -14001,7 +14201,7 @@
   },
   {
     "id": "5923",
-    "nombre": "INVERSIONES EL EDEN DE DIOS 1991, C.A",
+    "nombre": "INVERSIONES EL EDEN  DE DIOS 1991, C.A",
     "rif": "J-410614293",
     "vendedor": "ELISA SOLER",
     "canal": "ABASTOS Y BODEGAS",
@@ -15000,21 +15200,21 @@
     "activo": true
   },
   {
-    "id": "3557",
-    "nombre": "INVERSIONES PRECIO VIEJO C.A.",
-    "rif": "J-410956585",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
+    "id": "8369",
+    "nombre": "BODEGON UNION J. Y.J. CA",
+    "rif": "#N/A",
+    "vendedor": "ELISA SOLER",
+    "canal": "#N/A",
+    "zona": "Punto Fijo / Paraguaná",
     "region": "OCCIDENTE",
     "activo": true
   },
   {
-    "id": "3573",
-    "nombre": "LAVAME, C.A.",
-    "rif": "J-294015808",
-    "vendedor": "ALI PEREZ",
-    "canal": "PANADERIA",
+    "id": "3557",
+    "nombre": "INVERSIONES PRECIO VIEJO C.A.",
+    "rif": "J-410956585",
+    "vendedor": "ANGEL NAVARRO",
+    "canal": "ABASTOS Y BODEGAS",
     "zona": "Maracaibo / Supervisión",
     "region": "OCCIDENTE",
     "activo": true
@@ -15023,29 +15223,19 @@
     "id": "3574",
     "nombre": "INVERSIONES MIS TRES HERMANAS, C.A.",
     "rif": "J-309716212",
-    "vendedor": "ALI PEREZ",
+    "vendedor": "ANGEL NAVARRO",
     "canal": "SUPERMERCADOS",
     "zona": "Maracaibo / Supervisión",
     "region": "OCCIDENTE",
     "activo": true
   },
   {
-    "id": "3579",
-    "nombre": "MUNDO WEN MAYORISTA, C.A.",
-    "rif": "J-500726597",
-    "vendedor": "ALI PEREZ",
-    "canal": "MAYORISTA",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "3581",
-    "nombre": "DISTRIBUIDORA ALTA MAR DE PARAGUANA, C.A",
-    "rif": "J-411871346",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
+    "id": "3577",
+    "nombre": "INVERSIONES Y REPRESENTACIONES CHADIÑA I, C.A.",
+    "rif": "J-411223972",
+    "vendedor": "ANGEL NAVARRO",
+    "canal": "CARNICERIA/FRIGORIFICO",
+    "zona": "Coro / Falcón",
     "region": "OCCIDENTE",
     "activo": true
   },
@@ -15053,28 +15243,8 @@
     "id": "3582",
     "nombre": "MI PANADERIA, C.A.",
     "rif": "J-310774196",
-    "vendedor": "ALI PEREZ",
+    "vendedor": "ANGEL NAVARRO",
     "canal": "PANADERIA",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "3584",
-    "nombre": "COMERCIAL AVANCE 888, C.A.",
-    "rif": "J-402315830",
-    "vendedor": "ALI PEREZ",
-    "canal": "MAYORISTA",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "3585",
-    "nombre": "IMPORTACIONES N & S ZONA LIBRE, C.A.",
-    "rif": "J-314309757",
-    "vendedor": "ALI PEREZ",
-    "canal": "MAYORISTA",
     "zona": "Maracaibo / Supervisión",
     "region": "OCCIDENTE",
     "activo": true
@@ -15083,18 +15253,8 @@
     "id": "3587",
     "nombre": "YUDHIT LOPEZ (DULCESYAI Y ALGO MAS, F.P.)",
     "rif": "V-075650309",
-    "vendedor": "ALI PEREZ",
+    "vendedor": "ANGEL NAVARRO",
     "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "3594",
-    "nombre": "FRUTAS Y HORTALIZAS DON LUIS, C.A.",
-    "rif": "J-408086174",
-    "vendedor": "ALI PEREZ",
-    "canal": "SUPERMERCADOS",
     "zona": "Maracaibo / Supervisión",
     "region": "OCCIDENTE",
     "activo": true
@@ -15103,39 +15263,19 @@
     "id": "3604",
     "nombre": "LUCILYN DEL CARMEN GUTIERREZ GONZALEZ",
     "rif": "V-243065948",
-    "vendedor": "ALI PEREZ",
+    "vendedor": "ANGEL NAVARRO",
     "canal": "ABASTOS Y BODEGAS",
     "zona": "Maracaibo / Supervisión",
     "region": "OCCIDENTE",
     "activo": true
   },
   {
-    "id": "3622",
-    "nombre": "CARNICERIA BRASIL C.A.",
-    "rif": "J-317311523",
-    "vendedor": "ALI PEREZ",
-    "canal": "CARNICERIA/FRIGORIFICO",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "3623",
-    "nombre": "LUCKY CONFITES C.A.",
-    "rif": "J-400049571",
-    "vendedor": "ALI PEREZ",
-    "canal": "MAYORISTA",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "3638",
-    "nombre": "NEGOCIOS INVERSIONES REALES (N.I.R), C.A.",
-    "rif": "J-412011138",
-    "vendedor": "ALI PEREZ",
-    "canal": "CARNICERIA/FRIGORIFICO",
-    "zona": "Maracaibo / Supervisión",
+    "id": "3639",
+    "nombre": "ANDRES JOSE VILLAVICENCIO SIERRAALTA (COMERCIAL PROVIDENCIA DE PARAGUANA)",
+    "rif": "V-098022526",
+    "vendedor": "ANGEL NAVARRO",
+    "canal": "SUPERMERCADOS",
+    "zona": "Coro / Falcón",
     "region": "OCCIDENTE",
     "activo": true
   },
@@ -15143,7 +15283,7 @@
     "id": "3640",
     "nombre": "INVERSIONES MAAS, C.A.",
     "rif": "J-410567015",
-    "vendedor": "ALI PEREZ",
+    "vendedor": "ANGEL NAVARRO",
     "canal": "MAYORISTA",
     "zona": "Maracaibo / Supervisión",
     "region": "OCCIDENTE",
@@ -15153,139 +15293,39 @@
     "id": "3641",
     "nombre": "JASMIN ELENA RINCON VILLAMIZAR (VARIEDADES JHONYASH, F.P.)",
     "rif": "V-134906347",
-    "vendedor": "ALI PEREZ",
+    "vendedor": "ANGEL NAVARRO",
     "canal": "ABASTOS Y BODEGAS",
     "zona": "Maracaibo / Supervisión",
     "region": "OCCIDENTE",
     "activo": true
   },
   {
-    "id": "3648",
-    "nombre": "SUPERMERCADO MUNDO ASIATICO 2020, C.A.",
-    "rif": "J-500169221",
-    "vendedor": "ALI PEREZ",
-    "canal": "SUPERMERCADOS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "3656",
-    "nombre": "COMERCIAL ZAMORA DE PARAGUANA, C.A.",
-    "rif": "J-402136188",
-    "vendedor": "ALI PEREZ",
-    "canal": "CHARCUTERIA/QUESERIA",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "3669",
-    "nombre": "CAY CORNER, C.A",
-    "rif": "J-406240370",
-    "vendedor": "ALI PEREZ",
-    "canal": "CHARCUTERIA/QUESERIA",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "3691",
-    "nombre": "VARIEDADES POMARY, C.A.",
-    "rif": "J-401713300",
-    "vendedor": "ALI PEREZ",
+    "id": "3661",
+    "nombre": "INVERSIONES EL MANSO TORO, C.A",
+    "rif": "J-412678973",
+    "vendedor": "ANGEL NAVARRO",
     "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
+    "zona": "Coro / Falcón",
     "region": "OCCIDENTE",
     "activo": true
   },
   {
-    "id": "3714",
-    "nombre": "INVERSIONES ALL-IN, C.A",
-    "rif": "J-412661582",
-    "vendedor": "ALI PEREZ",
-    "canal": "CARNICERIA/FRIGORIFICO",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "3725",
-    "nombre": "DISTRIBUIDORA MELENDEZ & HIDALGO, C.A",
-    "rif": "J-299679208",
-    "vendedor": "ALI PEREZ",
-    "canal": "CARNICERIA/FRIGORIFICO",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "3726",
-    "nombre": "COMERCIALIZADORA SANCHEZ MONFRINO, C.A",
-    "rif": "J-411194808",
-    "vendedor": "ALI PEREZ",
-    "canal": "PANADERIA",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "3729",
-    "nombre": "IYAD NASSER ( LAYSAOMAR F.P)",
-    "rif": "V-332519812",
-    "vendedor": "ALI PEREZ",
-    "canal": "SUPERMERCADOS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "3730",
-    "nombre": "COMERCIAL YE ZENG, C.A",
-    "rif": "J-412823400",
-    "vendedor": "ALI PEREZ",
-    "canal": "MAYORISTA",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "3736",
-    "nombre": "A Q PRADA EXPRESS, C.A.",
-    "rif": "J-507271323",
-    "vendedor": "ALI PEREZ",
+    "id": "3728",
+    "nombre": "COMERCIALIZADORA EMO, CA",
+    "rif": "J-409857999",
+    "vendedor": "ANGEL NAVARRO",
     "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
+    "zona": "Coro / Falcón",
     "region": "OCCIDENTE",
     "activo": true
   },
   {
-    "id": "3739",
-    "nombre": "CARNICERIA Y CHARCUTERIA PILI, C.A.",
-    "rif": "J-407136259",
-    "vendedor": "ALI PEREZ",
-    "canal": "CHARCUTERIA/QUESERIA",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "3742",
-    "nombre": "MINI MARKET AURORA, C.A.",
-    "rif": "J-412235265",
-    "vendedor": "ALI PEREZ",
+    "id": "3752",
+    "nombre": "COMERCIAL EL UNIVERSITARIO, C.A",
+    "rif": "J-305927928",
+    "vendedor": "ANGEL NAVARRO",
     "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "3781",
-    "nombre": "HORTICARNES EL MARQUEZ, C.A",
-    "rif": "J-500441932",
-    "vendedor": "ALI PEREZ",
-    "canal": "SUPERMERCADOS",
-    "zona": "Maracaibo / Supervisión",
+    "zona": "Coro / Falcón",
     "region": "OCCIDENTE",
     "activo": true
   },
@@ -15293,38 +15333,8 @@
     "id": "3806",
     "nombre": "EVENT SPECIAL, C.A",
     "rif": "J-306009965",
-    "vendedor": "ALI PEREZ",
+    "vendedor": "ANGEL NAVARRO",
     "canal": "RESTAURANTES/TASCAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "3856",
-    "nombre": "MAGALI JOSEFINA GONZALEZ LUGO",
-    "rif": "V-265988357",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "3858",
-    "nombre": "BODEGON RODRIGUES 2013, C.A",
-    "rif": "J-403406715",
-    "vendedor": "ALI PEREZ",
-    "canal": "SUPERMERCADOS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "3859",
-    "nombre": "DISTRIBUIDORA RODRIGUEZ, C.A",
-    "rif": "J-303677576",
-    "vendedor": "ALI PEREZ",
-    "canal": "SUPERMERCADOS",
     "zona": "Maracaibo / Supervisión",
     "region": "OCCIDENTE",
     "activo": true
@@ -15333,299 +15343,19 @@
     "id": "3880",
     "nombre": "INVERSIONES GALICIA GONZALEZ, C.A",
     "rif": "J-412678434",
-    "vendedor": "ALI PEREZ",
+    "vendedor": "ANGEL NAVARRO",
     "canal": "ABASTOS Y BODEGAS",
     "zona": "Maracaibo / Supervisión",
     "region": "OCCIDENTE",
     "activo": true
   },
   {
-    "id": "3904",
-    "nombre": "FARY GHANNAM GHANNAM ( GRUPO LA BAGUETTE F.P)",
-    "rif": "V-095828180",
-    "vendedor": "ALI PEREZ",
-    "canal": "CHARCUTERIA/QUESERIA",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "3922",
-    "nombre": "INVERSIONES MI ANGEL MARIA LUISA, C.A",
-    "rif": "J-406237370",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "3938",
-    "nombre": "INGRID YLIANELA PEÑA CASTILLO DE GARCIA",
-    "rif": "V-135541245",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "3939",
-    "nombre": "YRAMELYS MARBEL DERCE COLINA",
-    "rif": "V-109721316",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "3940",
-    "nombre": "JOSE GREGORIO FLORES PIMENTEL",
-    "rif": "V-124972457",
-    "vendedor": "ALI PEREZ",
-    "canal": "MAYORISTA",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "3941",
-    "nombre": "INVERSIONES JOCHAKAT, C.A",
-    "rif": "J-413036380",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "3950",
-    "nombre": "INVERSIONES DIEGO. COM, C.A",
-    "rif": "J-296665915",
-    "vendedor": "ALI PEREZ",
-    "canal": "PANADERIA",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "3976",
-    "nombre": "JOSE GREGORIO CHIRINO AGUIRRE ( ROHOBOT 2021 F.P. )",
-    "rif": "V-259864557",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "3977",
-    "nombre": "MAC BURGUER MAC, C.A",
-    "rif": "J-405276207",
-    "vendedor": "ALI PEREZ",
-    "canal": "CHARCUTERIA/QUESERIA",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4005",
-    "nombre": "VARIEDADES S&S, C.A",
-    "rif": "J-408435977",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4006",
-    "nombre": "EDENYS JACKELINE RAMIREZ PELAYO ( INVERSIONES ER & AJ, FP )",
-    "rif": "V-121761544",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4013",
-    "nombre": "INVERSIONES NET SPEED, C.A",
-    "rif": "J-408476304",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4016",
-    "nombre": "TORNADO ELECTRONIC, C.A",
-    "rif": "J-317654668",
-    "vendedor": "ALI PEREZ",
+    "id": "4168",
+    "nombre": "SALSA Y SABOR, C.A",
+    "rif": "J-406252174",
+    "vendedor": "ANGEL NAVARRO",
     "canal": "SUPERMERCADOS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4020",
-    "nombre": "INVERSIONES RODRIGUEZ MARIN, C.A",
-    "rif": "J-412350323",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4026",
-    "nombre": "FROILEN ANTONIO GOMEZ GONZALEZ",
-    "rif": "V-010546723",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4048",
-    "nombre": "COMERCIO CICLO CHINA, C.A",
-    "rif": "J-317330579",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4050",
-    "nombre": "MEGA HAMBURGUESAS, C.A",
-    "rif": "J-316877353",
-    "vendedor": "ALI PEREZ",
-    "canal": "RESTAURANTES/TASCAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4052",
-    "nombre": "SUPERMERCADO VICTORI LIN 2012, C.A",
-    "rif": "J-401584926",
-    "vendedor": "ALI PEREZ",
-    "canal": "SUPERMERCADOS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4065",
-    "nombre": "COMERCIAL KEYI 2020, C.A",
-    "rif": "J-413023563",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4069",
-    "nombre": "WILKER JOSE VERA GARCIA",
-    "rif": "V-247064121",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4071",
-    "nombre": "KATYS COROMOTO PEROZO DE ALVARADO",
-    "rif": "V-095807107",
-    "vendedor": "ALI PEREZ",
-    "canal": "PANADERIA",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4072",
-    "nombre": "SUPERMERCADO PUEBLO NUEVO PARAGUANA, C.A",
-    "rif": "J-403447969",
-    "vendedor": "ALI PEREZ",
-    "canal": "SUPERMERCADOS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4083",
-    "nombre": "HIPERMERCADO E IMPORTADORA AL AMIR, C.A",
-    "rif": "J-401547583",
-    "vendedor": "ALI PEREZ",
-    "canal": "SUPERMERCADOS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4089",
-    "nombre": "DISTRIBUIDORA LUGO MAYOR, C.A",
-    "rif": "J-412657089",
-    "vendedor": "ALI PEREZ",
-    "canal": "SUPERMERCADOS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4098",
-    "nombre": "DISTRIBUIDORA ANTON HNOS, C.A",
-    "rif": "J-412612026",
-    "vendedor": "ALI PEREZ",
-    "canal": "CHARCUTERIA/QUESERIA",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4112",
-    "nombre": "HORTALIZAS EL PARAMO, C.A",
-    "rif": "J-412555464",
-    "vendedor": "ALI PEREZ",
-    "canal": "SUPERMERCADOS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4135",
-    "nombre": "PLASVIMAR, C.A",
-    "rif": "J-413046520",
-    "vendedor": "ALI PEREZ",
-    "canal": "DISTRIBUIDORES",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4156",
-    "nombre": "FRANKLIN JESUS COLINA GUIGÑAN",
-    "rif": "V-281778702",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4174",
-    "nombre": "INSSACA, C.A",
-    "rif": "J-412316974",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
+    "zona": "Coro / Falcón",
     "region": "OCCIDENTE",
     "activo": true
   },
@@ -15633,109 +15363,29 @@
     "id": "4246",
     "nombre": "PANADERIA SUPER NUEVO MUNDO 2021, C.A.",
     "rif": "J-502386998",
-    "vendedor": "ALI PEREZ",
+    "vendedor": "ANGEL NAVARRO",
     "canal": "PANADERIA",
     "zona": "Maracaibo / Supervisión",
     "region": "OCCIDENTE",
     "activo": true
   },
   {
-    "id": "4287",
-    "nombre": "COMERCIAL MAXIOFERTAS LIANG 186, C.A.",
-    "rif": "J-317224272",
-    "vendedor": "ALI PEREZ",
-    "canal": "MAYORISTA",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4338",
-    "nombre": "CARNICERIA CARNE HOUSE, C.A.",
-    "rif": "J-312646322",
-    "vendedor": "ALI PEREZ",
-    "canal": "CARNICERIA/FRIGORIFICO",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4365",
-    "nombre": "FRANKLIN ROBERTO MUSETT LUGO",
-    "rif": "V-140743301",
-    "vendedor": "ALI PEREZ",
-    "canal": "SUPERMERCADOS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4368",
-    "nombre": "SUPER MARKET MURALLA CHINA, C.A",
-    "rif": "J-502396748",
-    "vendedor": "ALI PEREZ",
-    "canal": "CARNICERIA/FRIGORIFICO",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4381",
-    "nombre": "MERCADO NUEVO FUTURO S III, C.A",
-    "rif": "J-312536470",
-    "vendedor": "ALI PEREZ",
-    "canal": "MAYORISTA",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4458",
-    "nombre": "COMERCIAL HP1, C.A",
-    "rif": "J-412729870",
-    "vendedor": "ALI PEREZ",
+    "id": "4350",
+    "nombre": "PA QUE ESPERANZA, C.A",
+    "rif": "J-501151067",
+    "vendedor": "ANGEL NAVARRO",
     "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
+    "zona": "Coro / Falcón",
     "region": "OCCIDENTE",
     "activo": true
   },
   {
-    "id": "4473",
-    "nombre": "HORTALIZAS MI PUEBLITO, C.A",
-    "rif": "J-413176823",
-    "vendedor": "ALI PEREZ",
-    "canal": "MERCADOS POPULARES",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4483",
-    "nombre": "INVERSIONES EDUGEN, C.A",
-    "rif": "J-294405967",
-    "vendedor": "ALI PEREZ",
-    "canal": "CARNICERIA/FRIGORIFICO",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4514",
-    "nombre": "GLEXI COROMOTO JORDAN DE PEREZ ( ABASTO Y LICORES COSTA PARAGUANERA, F.P)",
-    "rif": "V-047876032",
-    "vendedor": "ALI PEREZ",
+    "id": "4506",
+    "nombre": "UNIDAD PRODUCTIVA FAMILIAR INVERSIONES J Y D",
+    "rif": "C-500989776",
+    "vendedor": "ANGEL NAVARRO",
     "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4516",
-    "nombre": "BARBACOA RANCH 2021, C.A",
-    "rif": "J-502400419",
-    "vendedor": "ALI PEREZ",
-    "canal": "CARNICERIA/FRIGORIFICO",
-    "zona": "Maracaibo / Supervisión",
+    "zona": "Coro / Falcón",
     "region": "OCCIDENTE",
     "activo": true
   },
@@ -15743,49 +15393,19 @@
     "id": "4522",
     "nombre": "CORPORACION MEGACENTRO VENEZUELA, C.A",
     "rif": "J-501482276",
-    "vendedor": "ALI PEREZ",
+    "vendedor": "ANGEL NAVARRO",
     "canal": "SUPERMERCADOS",
     "zona": "Maracaibo / Supervisión",
     "region": "OCCIDENTE",
     "activo": true
   },
   {
-    "id": "4555",
-    "nombre": "SUPERMARKET LA MURALLA PF, C.A",
-    "rif": "J-503076186",
-    "vendedor": "ALI PEREZ",
-    "canal": "SUPERMERCADOS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4577",
-    "nombre": "INVERSIONES EL FUAD, C.A",
-    "rif": "J-411981342",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4863",
-    "nombre": "EL PALACIO DE LOS LICORES, C.A",
-    "rif": "J-085044183",
-    "vendedor": "ALI PEREZ",
-    "canal": "SUPERMERCADOS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4903",
-    "nombre": "AMERICAN FOOD PF, C.A",
-    "rif": "J-405287713",
-    "vendedor": "ALI PEREZ",
-    "canal": "RESTAURANTES/TASCAS",
-    "zona": "Maracaibo / Supervisión",
+    "id": "4692",
+    "nombre": "PANADERIA RAYSOL 202, C.A",
+    "rif": "J-311687580",
+    "vendedor": "ANGEL NAVARRO",
+    "canal": "PANADERIA",
+    "zona": "Coro / Falcón",
     "region": "OCCIDENTE",
     "activo": true
   },
@@ -15793,28 +15413,8 @@
     "id": "4971",
     "nombre": "LLANO BLANCO GROUP, C.A.",
     "rif": "J-503262834",
-    "vendedor": "ALI PEREZ",
+    "vendedor": "ANGEL NAVARRO",
     "canal": "CHARCUTERIA/QUESERIA",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "5054",
-    "nombre": "LA PRADERA, C.A",
-    "rif": "J-502717960",
-    "vendedor": "ALI PEREZ",
-    "canal": "SUPERMERCADOS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "5126",
-    "nombre": "PANADERIA Y CHARCUTERIA NUMBER ONE-1, C.A",
-    "rif": "J-297266712",
-    "vendedor": "ALI PEREZ",
-    "canal": "PANADERIA",
     "zona": "Maracaibo / Supervisión",
     "region": "OCCIDENTE",
     "activo": true
@@ -15823,189 +15423,49 @@
     "id": "5175",
     "nombre": "SIRIA SPORT, C.A",
     "rif": "J-294178812",
-    "vendedor": "ALI PEREZ",
+    "vendedor": "ANGEL NAVARRO",
     "canal": "ABASTOS Y BODEGAS",
     "zona": "Maracaibo / Supervisión",
     "region": "OCCIDENTE",
     "activo": true
   },
   {
-    "id": "5178",
-    "nombre": "HOTEL TURISTICO CASA BLANCA, C.A",
-    "rif": "J-085207783",
-    "vendedor": "ALI PEREZ",
-    "canal": "HOTELES",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "5188",
-    "nombre": "COMERCIAL AHORRO 2020, C.A",
-    "rif": "J-501012865",
-    "vendedor": "ALI PEREZ",
-    "canal": "MAYORISTA",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "5225",
-    "nombre": "MINIMARKET GONZALEZ 2020, C.A",
-    "rif": "J-413137259",
-    "vendedor": "ALI PEREZ",
+    "id": "5491",
+    "nombre": "ELIZABET DA COSTA DE MORENO",
+    "rif": "V-114732202",
+    "vendedor": "ANGEL NAVARRO",
     "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
+    "zona": "Coro / Falcón",
     "region": "OCCIDENTE",
     "activo": true
   },
   {
-    "id": "5250",
-    "nombre": "HERPERNOMIKO 808, C.A",
-    "rif": "J-503790873",
-    "vendedor": "ALI PEREZ",
-    "canal": "SUPERMERCADOS",
-    "zona": "Maracaibo / Supervisión",
+    "id": "5494",
+    "nombre": "EL MUNDO DEL POLLO DE PARAGUANA M&A, C.A",
+    "rif": "J-501363064",
+    "vendedor": "ANGEL NAVARRO",
+    "canal": "CARNICERIA/FRIGORIFICO",
+    "zona": "Coro / Falcón",
     "region": "OCCIDENTE",
     "activo": true
   },
   {
-    "id": "5300",
-    "nombre": "QINQIANG WU",
-    "rif": "E-844831253",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "5326",
-    "nombre": "ELIZABETH MARIA IRAUSQUIN URBINA",
-    "rif": "V-161980052",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "5355",
-    "nombre": "INVERSIONES TROPILICOR, C.A",
-    "rif": "J-503538660",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "5421",
-    "nombre": "CORPORACION HERMANOS MONCADA, C.A",
-    "rif": "J-500910401",
-    "vendedor": "ALI PEREZ",
-    "canal": "CHARCUTERIA/QUESERIA",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "5476",
-    "nombre": "SUPERMARKET 688, C.A",
-    "rif": "J-504319481",
-    "vendedor": "ALI PEREZ",
-    "canal": "MAYORISTA",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "5530",
-    "nombre": "SILVIA PATRICIA HERNANDEZ LEONES \"\"INVERSIONES TROPIGOLLO DE SILVIA HERNANDEZ F. P",
-    "rif": "V-190070332",
-    "vendedor": "ALI PEREZ",
-    "canal": "FAST FOOD",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "5572",
-    "nombre": "DANIEL LORENZO LOPEZ",
-    "rif": "V-121033395",
-    "vendedor": "ALI PEREZ",
+    "id": "5591",
+    "nombre": "JENIFER MARIA WU ROSALES",
+    "rif": "V-272309082",
+    "vendedor": "ANGEL NAVARRO",
     "canal": "RESTAURANTES/TASCAS",
-    "zona": "Maracaibo / Supervisión",
+    "zona": "Coro / Falcón",
     "region": "OCCIDENTE",
     "activo": true
   },
   {
-    "id": "5574",
-    "nombre": "PATRIZA LINA SPITALE TERNULLO",
-    "rif": "V-211563687",
-    "vendedor": "ALI PEREZ",
-    "canal": "CHARCUTERIA/QUESERIA",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "5614",
-    "nombre": "CONSORCIO DIGITAL, C.A",
-    "rif": "J-313272248",
-    "vendedor": "ALI PEREZ",
-    "canal": "SUPERMERCADOS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "5615",
-    "nombre": "INVERSIONES PETIT & SEQUERA, C.A",
-    "rif": "J-412168134",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "5669",
-    "nombre": "JOSE JESUS FONSECA CESPEDES",
-    "rif": "V-095823790",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "5681",
-    "nombre": "RAMON ANTONIO PETIT PRIMERA",
-    "rif": "V-036818111",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "5763",
-    "nombre": "SALLY IMPORT ZONA LIBRE, C.A",
-    "rif": "J-295620373",
-    "vendedor": "ALI PEREZ",
-    "canal": "SUPERMERCADOS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "5790",
-    "nombre": "YALITZA RAQUEL PETIT DE RUJANO",
-    "rif": "V-117719550",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
+    "id": "5787",
+    "nombre": "PANADERIA Y PASTELERIA 222, C.A",
+    "rif": "J-409071367",
+    "vendedor": "ANGEL NAVARRO",
+    "canal": "PANADERIA",
+    "zona": "Coro / Falcón",
     "region": "OCCIDENTE",
     "activo": true
   },
@@ -16013,68 +15473,8 @@
     "id": "5804",
     "nombre": "EL PALACIO DEL PAN, C.A",
     "rif": "J-308739588",
-    "vendedor": "ALI PEREZ",
+    "vendedor": "ANGEL NAVARRO",
     "canal": "PANADERIA",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "5827",
-    "nombre": "MEGAMAET LOS TAQUES, C.A",
-    "rif": "J-504803200",
-    "vendedor": "ALI PEREZ",
-    "canal": "SUPERMERCADOS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "5840",
-    "nombre": "MINIMARKET JEMMAS, C.A",
-    "rif": "J-504304689",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "6037",
-    "nombre": "JONATHAN FABIAN LOPEZ ALBA",
-    "rif": "E-844047935",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "6210",
-    "nombre": "TU CARNE L & M, C.A",
-    "rif": "J-504357960",
-    "vendedor": "ALI PEREZ",
-    "canal": "SUPERMERCADOS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "6227",
-    "nombre": "ROMAN OSWALDO JORDAN RAMONEZ",
-    "rif": "V-095868700",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "6238",
-    "nombre": "DISTRIBUIDORA ALIANS, C..A",
-    "rif": "J-500393148",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
     "zona": "Maracaibo / Supervisión",
     "region": "OCCIDENTE",
     "activo": true
@@ -16083,57 +15483,7 @@
     "id": "6268",
     "nombre": "RUTH DEL VALLE DIAZ DE PERNIA",
     "rif": "V-164388294",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "6286",
-    "nombre": "JOHANNA CAROLINA GUANIPA ZARRAGA",
-    "rif": "V-207968702",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "6316",
-    "nombre": "IBRAHIM ATTA \"\"ATTA.2020, F.P",
-    "rif": "V-306752908",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "6357",
-    "nombre": "COMERCIAL LA PERFECTA VOLUNTAD DE DIOS, C.A",
-    "rif": "J-401779204",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "6387",
-    "nombre": "DENISSE JAIBET DAVALILLO GUANIPA ( INVERSIONES DD $ D, F.P. )",
-    "rif": "V-267305400",
-    "vendedor": "ALI PEREZ",
-    "canal": "CARNICERIA/FRIGORIFICO",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "6403",
-    "nombre": "OLGIANY MAYERLING RODRIGUEZ BRACHO ( INVERSIONES MAYSHADD, F.P )",
-    "rif": "V-146464404",
-    "vendedor": "ALI PEREZ",
+    "vendedor": "ANGEL NAVARRO",
     "canal": "ABASTOS Y BODEGAS",
     "zona": "Maracaibo / Supervisión",
     "region": "OCCIDENTE",
@@ -16143,69 +15493,19 @@
     "id": "6417",
     "nombre": "SUCESIÓN FELIX MANUEL GOITIA PETIT",
     "rif": "J-309378457",
-    "vendedor": "ALI PEREZ",
+    "vendedor": "ANGEL NAVARRO",
     "canal": "ABASTOS Y BODEGAS",
     "zona": "Maracaibo / Supervisión",
     "region": "OCCIDENTE",
     "activo": true
   },
   {
-    "id": "6419",
-    "nombre": "POSADA ECOTURISTICA 30 NUDOS, C.A.",
-    "rif": "J-408788659",
-    "vendedor": "ALI PEREZ",
-    "canal": "HOTELES",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "6552",
-    "nombre": "MERCADO MAYORISTA 77 PARAGUANA C,A",
-    "rif": "J-503917083",
-    "vendedor": "ALI PEREZ",
-    "canal": "MAYORISTA",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "6749",
-    "nombre": "351 EUROMARKET, C.A",
-    "rif": "J-500247800",
-    "vendedor": "ALI PEREZ",
-    "canal": "SUPERMERCADOS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "6836",
-    "nombre": "INVERSIONES A.F PARAGUANA, C.A",
-    "rif": "J-501525641",
-    "vendedor": "ALI PEREZ",
+    "id": "6703",
+    "nombre": "INVERSIONES EL GUAMACHE PUNTA DE PIEDRA, C.A",
+    "rif": "J-500233884",
+    "vendedor": "ANGEL NAVARRO",
     "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "6853",
-    "nombre": "BODEGON Y MINIMARKET SAMY 2021, C.A",
-    "rif": "J-500688555",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "6951",
-    "nombre": "NEIMARLY DEL VALLE ACOSTA SMITH",
-    "rif": "V-164379767",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
+    "zona": "Coro / Falcón",
     "region": "OCCIDENTE",
     "activo": true
   },
@@ -16213,77 +15513,37 @@
     "id": "6994",
     "nombre": "EMPRENDIEMIENTO LIMA MONTAÑO",
     "rif": "J-506364930",
-    "vendedor": "ALI PEREZ",
+    "vendedor": "ANGEL NAVARRO",
     "canal": "ABASTOS Y BODEGAS",
     "zona": "Maracaibo / Supervisión",
     "region": "OCCIDENTE",
     "activo": true
   },
   {
-    "id": "6999",
-    "nombre": "COMERCIAL MUNDO WEN II, C.A",
-    "rif": "J-500302983",
-    "vendedor": "ALI PEREZ",
+    "id": "7075",
+    "nombre": "LILIBETH AREVALO SALCEDO",
+    "rif": "V-297220027",
+    "vendedor": "ANGEL NAVARRO",
     "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
+    "zona": "Coro / Falcón",
     "region": "OCCIDENTE",
     "activo": true
   },
   {
-    "id": "7100",
-    "nombre": "MARIO ALIMENTOS, C.A",
-    "rif": "J-410049241",
-    "vendedor": "ALI PEREZ",
-    "canal": "FAST FOOD",
-    "zona": "Maracaibo / Supervisión",
+    "id": "7125",
+    "nombre": "9 ELEVEN, C.A.",
+    "rif": "J-504638749",
+    "vendedor": "ANGEL NAVARRO",
+    "canal": "SUPERMERCADOS",
+    "zona": "Coro / Falcón",
     "region": "OCCIDENTE",
     "activo": true
   },
   {
     "id": "7479",
-    "nombre": "ADRIANA CAROLINA GONZÁLEZ DA SILVA \"\"MT INVERSIONES 2022, F.P",
+    "nombre": "ADRIANA CAROLINA GONZÁLEZ DA SILVA \"MT INVERSIONES 2022, F.P\"",
     "rif": "V-184474081",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "7648",
-    "nombre": "COMERCIALIZADORA MORDI, C.A.",
-    "rif": "J-411635642",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "7697",
-    "nombre": "EDIR REYES REYES, C.A",
-    "rif": "J-410251620",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "7763",
-    "nombre": "INVERSIONES LOS MUCHACHOS DE PARAGUANA R.R., C.A.",
-    "rif": "J-411889547",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "7791",
-    "nombre": "PUNTO ARAUCA 2025, C.A.",
-    "rif": "J-507173607",
-    "vendedor": "ALI PEREZ",
+    "vendedor": "ANGEL NAVARRO",
     "canal": "ABASTOS Y BODEGAS",
     "zona": "Maracaibo / Supervisión",
     "region": "OCCIDENTE",
@@ -16293,57 +15553,7 @@
     "id": "7833",
     "nombre": "CRIS ALEXANDRA MARIN DE ISEA",
     "rif": "V-148025386",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "7835",
-    "nombre": "ALEXIS ENRIQUE SAEZ VILLALOBOS \"\"ALEXIS SAEZ PANADERIA LA CAPINA 2025",
-    "rif": "V-078753907",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "7861",
-    "nombre": "JESSICA ELIZABETH HURTADO ROJAS",
-    "rif": "V-280392126",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "7862",
-    "nombre": "ANRUBI NATHALY MORILLO PEÑA \"\"INVERSIONES UBIMOR F.P",
-    "rif": "V-207959045",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "7864",
-    "nombre": "TIENDA MIS TRES D, C.A",
-    "rif": "J-505510029",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "7865",
-    "nombre": "JAIRO ANTONIO LOZANO ESCORCIA \"\"JAIRO LOZANO, F.P",
-    "rif": "V-153682603",
-    "vendedor": "ALI PEREZ",
+    "vendedor": "ANGEL NAVARRO",
     "canal": "ABASTOS Y BODEGAS",
     "zona": "Maracaibo / Supervisión",
     "region": "OCCIDENTE",
@@ -16353,99 +15563,19 @@
     "id": "7868",
     "nombre": "DISTRIBUIDORA LA NUEVA TRUJILLANA DE PARAGUANA,C.A",
     "rif": "J-507831027",
-    "vendedor": "ALI PEREZ",
+    "vendedor": "ANGEL NAVARRO",
     "canal": "ABASTOS Y BODEGAS",
     "zona": "Maracaibo / Supervisión",
     "region": "OCCIDENTE",
     "activo": true
   },
   {
-    "id": "7902",
-    "nombre": "LUSNALI NAIROVI MORALES PERNALTE",
-    "rif": "V-175000085",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "7960",
-    "nombre": "INVERSIONES ANA ISABEL PF , C.A",
-    "rif": "J-507844706",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "7996",
-    "nombre": "INVERSIONES CARLA CARLOTA, C.A",
-    "rif": "J-500219881",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "8012",
-    "nombre": "LAS GRACIAS A TI JEHOVA, C,A",
-    "rif": "J-402560710",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "8020",
-    "nombre": "MINI MARKET LA PERSEVERANCIA, C.A",
-    "rif": "J-500918690",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "8080",
-    "nombre": "PANIFICADORA GEREMIAS 33 C.A",
-    "rif": "J-403216258",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "8113",
-    "nombre": "SHENZHEN EXPRESS COMPAÑIA ANONIMA",
-    "rif": "J-508429109",
-    "vendedor": "ALI PEREZ",
-    "canal": "RESTAURANTES/TASCAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "8116",
-    "nombre": "DISTRIBUIDORA LA TRUJILLANA 2, C.A",
-    "rif": "J-508207858",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "8232",
-    "nombre": "ABASTO Y CARNICERIA ANAYA 2025, C.A.",
-    "rif": "J-507695786",
-    "vendedor": "ALI PEREZ",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Maracaibo / Supervisión",
+    "id": "8220",
+    "nombre": "INVERSIONES SUPER ANGELO 2024, C.A.",
+    "rif": "J-506707772",
+    "vendedor": "ANGEL NAVARRO",
+    "canal": "SUPERMERCADOS",
+    "zona": "Coro / Falcón",
     "region": "OCCIDENTE",
     "activo": true
   },
@@ -16611,7 +15741,7 @@
   },
   {
     "id": "1480",
-    "nombre": "VARIEDADES YURY 2015, C.A",
+    "nombre": "VARIEDADES  YURY 2015, C.A",
     "rif": "J-409890627",
     "vendedor": "J PABLO ARAUJO",
     "canal": "SUPERMERCADOS",
@@ -16631,7 +15761,7 @@
   },
   {
     "id": "1551",
-    "nombre": "NELLY LISBET TORREALBA PAEZ",
+    "nombre": "NELLY LISBET  TORREALBA PAEZ",
     "rif": "V-123268543",
     "vendedor": "J PABLO ARAUJO",
     "canal": "ABASTOS Y BODEGAS",
@@ -17021,7 +16151,7 @@
   },
   {
     "id": "3851",
-    "nombre": "MAGGIOLA LEJANDRA ALVAREZ MELENDEZ ( INVERSIONES M&A DE MAGGIOLA ALVAREZ FP)",
+    "nombre": "MAGGIOLA LEJANDRA ALVAREZ MELENDEZ  ( INVERSIONES M&A DE MAGGIOLA ALVAREZ FP)",
     "rif": "V-197495860",
     "vendedor": "J PABLO ARAUJO",
     "canal": "ABASTOS Y BODEGAS",
@@ -17311,7 +16441,7 @@
   },
   {
     "id": "5582",
-    "nombre": "PANADERIA Y PASTELERIA LA PAEZ, C.A",
+    "nombre": "PANADERIA Y PASTELERIA  LA PAEZ, C.A",
     "rif": "J-406983527",
     "vendedor": "J PABLO ARAUJO",
     "canal": "PANADERIA",
@@ -18061,7 +17191,7 @@
   },
   {
     "id": "8267",
-    "nombre": "COMERCIALIZADORA A&S FORTALEZA, CA",
+    "nombre": "COMERCIALIZADORA  A&S  FORTALEZA, CA",
     "rif": "J-507584410",
     "vendedor": "J PABLO ARAUJO",
     "canal": "DISTRIBUIDORES",
@@ -18080,6 +17210,16 @@
     "activo": true
   },
   {
+    "id": "8368",
+    "nombre": "MINI MARKET B&M 2023, CA",
+    "rif": "#N/A",
+    "vendedor": "J PABLO ARAUJO",
+    "canal": "#N/A",
+    "zona": "Costa Oriental del Lago",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
     "id": "20",
     "nombre": "SUPERTIENDA LUCKY, C.A.",
     "rif": "J-298271744",
@@ -18091,7 +17231,7 @@
   },
   {
     "id": "50",
-    "nombre": "COMERCIAL AMIGO, COMPAÑIA ANONIMA",
+    "nombre": "\"COMERCIAL AMIGO, COMPAÑIA ANONIMA\"",
     "rif": "J-402674961",
     "vendedor": "EDUARDO PIÑA",
     "canal": "ABASTOS Y BODEGAS",
@@ -18311,7 +17451,7 @@
   },
   {
     "id": "2210",
-    "nombre": "PANADERIA PASTELERIA Y CHARCUTERIA NUEVA CABIMAS, C.A",
+    "nombre": "PANADERIA  PASTELERIA Y CHARCUTERIA NUEVA CABIMAS, C.A",
     "rif": "J-309510371",
     "vendedor": "EDUARDO PIÑA",
     "canal": "PANADERIA",
@@ -18581,7 +17721,7 @@
   },
   {
     "id": "2539",
-    "nombre": "PANADERIA PASTELERIA Y CHARCUTERIA LA NUEVA ROSITA,C.A",
+    "nombre": "PANADERIA  PASTELERIA Y CHARCUTERIA  LA NUEVA ROSITA,C.A",
     "rif": "J-294113923",
     "vendedor": "EDUARDO PIÑA",
     "canal": "PANADERIA",
@@ -18831,7 +17971,7 @@
   },
   {
     "id": "4041",
-    "nombre": "MAHOLY CRISTINA SANCHEZ UZCATEGUI",
+    "nombre": "MAHOLY CRISTINA SANCHEZ  UZCATEGUI",
     "rif": "V-178216160",
     "vendedor": "EDUARDO PIÑA",
     "canal": "ABASTOS Y BODEGAS",
@@ -18871,7 +18011,7 @@
   },
   {
     "id": "4131",
-    "nombre": "ABASTO Y CARNICERIA CARNICOLCA I, C.A",
+    "nombre": "ABASTO Y CARNICERIA  CARNICOLCA I, C.A",
     "rif": "J-501216681",
     "vendedor": "EDUARDO PIÑA",
     "canal": "CARNICERIA/FRIGORIFICO",
@@ -18931,7 +18071,7 @@
   },
   {
     "id": "4321",
-    "nombre": "RAMON ANTONIO FANEITE COLINA ( BODEGA LUZ DEL MUNDO )",
+    "nombre": "RAMON ANTONIO FANEITE COLINA  ( BODEGA LUZ DEL MUNDO )",
     "rif": "V-118916472",
     "vendedor": "EDUARDO PIÑA",
     "canal": "ABASTOS Y BODEGAS",
@@ -19321,7 +18461,7 @@
   },
   {
     "id": "6168",
-    "nombre": "JEAN CARLOS CAMACHO MORENO",
+    "nombre": "JEAN CARLOS  CAMACHO MORENO",
     "rif": "V-118907236",
     "vendedor": "EDUARDO PIÑA",
     "canal": "ABASTOS Y BODEGAS",
@@ -19411,7 +18551,7 @@
   },
   {
     "id": "6565",
-    "nombre": "CARNES & CORTES CARNICERIA\"\", C.A",
+    "nombre": "CARNES & CORTES CARNICERIA\", C.A",
     "rif": "J-506183390",
     "vendedor": "EDUARDO PIÑA",
     "canal": "CARNICERIA/FRIGORIFICO",
@@ -19920,6 +19060,16 @@
     "activo": true
   },
   {
+    "id": "8367",
+    "nombre": "DISTRIBUCIONES TAYAS.C,A",
+    "rif": "#N/A",
+    "vendedor": "EDUARDO PIÑA",
+    "canal": "#N/A",
+    "zona": "Maracaibo",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
     "id": "43",
     "nombre": "SUPER PANADERIA ANDINA, C.A",
     "rif": "J-400175712",
@@ -20111,7 +19261,7 @@
   },
   {
     "id": "5878",
-    "nombre": "INVERSIONES ANA YSOLINA GUTIERREZ, C.A",
+    "nombre": "INVERSIONES  ANA  YSOLINA GUTIERREZ, C.A",
     "rif": "J-405739240",
     "vendedor": "MIKELANGELO DIAZ",
     "canal": "ABASTOS Y BODEGAS",
@@ -20551,7 +19701,7 @@
   },
   {
     "id": "3834",
-    "nombre": "YUSEF ATA MENDEZ ( COMERCIAL RAMI )",
+    "nombre": "YUSEF ATA MENDEZ    ( COMERCIAL RAMI )",
     "rif": "V-168304923",
     "vendedor": "LEONARDO RIOS",
     "canal": "MAYORISTA",
@@ -20761,7 +19911,7 @@
   },
   {
     "id": "4980",
-    "nombre": "IVONNE MARGARITA GARCIA ACOSTA",
+    "nombre": "IVONNE  MARGARITA GARCIA ACOSTA",
     "rif": "V-132036124",
     "vendedor": "LEONARDO RIOS",
     "canal": "ABASTOS Y BODEGAS",
@@ -20931,7 +20081,7 @@
   },
   {
     "id": "6550",
-    "nombre": "YOHANA DEL CARMEM LOPEZ GUTIERREZ",
+    "nombre": "YOHANA DEL CARMEM  LOPEZ GUTIERREZ",
     "rif": "V-335273873",
     "vendedor": "LEONARDO RIOS",
     "canal": "ABASTOS Y BODEGAS",
@@ -21121,10 +20271,10 @@
   },
   {
     "id": "7856",
-    "nombre": "COMERCIALIZADORA YUSI 600",
-    "rif": "C.A.",
+    "nombre": "COMERCIALIZADORA YUSI 600; C.A.",
+    "rif": "J-507625117",
     "vendedor": "LEONARDO RIOS",
-    "canal": "J-507625117",
+    "canal": "SUPERMERCADOS",
     "zona": "Maracaibo / San Francisco",
     "region": "OCCIDENTE",
     "activo": true
@@ -21161,7 +20311,7 @@
   },
   {
     "id": "8030",
-    "nombre": "RAULYS JESUS RODRIGUEZ GARCIA \"\"COMERCIALIZADORA DE RAULYS RODRIGUEZ, F.P.",
+    "nombre": "RAULYS JESUS RODRIGUEZ GARCIA \"COMERCIALIZADORA DE RAULYS RODRIGUEZ, F.P.\"",
     "rif": "V-243070208",
     "vendedor": "LEONARDO RIOS",
     "canal": "ABASTOS Y BODEGAS",
@@ -21441,7 +20591,7 @@
   },
   {
     "id": "3534",
-    "nombre": "PANADERIA LOS HERMANOS, C.A",
+    "nombre": "PANADERIA  LOS HERMANOS, C.A",
     "rif": "J-316656357",
     "vendedor": "MARYERY GARCIA",
     "canal": "PANADERIA",
@@ -21471,7 +20621,7 @@
   },
   {
     "id": "3611",
-    "nombre": "COMERCIAL COLMENARES, C.A.",
+    "nombre": "\"COMERCIAL COLMENARES, C.A.\"",
     "rif": "J-297642412",
     "vendedor": "MARYERY GARCIA",
     "canal": "CARNICERIA/FRIGORIFICO",
@@ -21840,16 +20990,6 @@
     "activo": true
   },
   {
-    "id": "5244",
-    "nombre": "INVERSIONES EL MUNDO DE LAS CARNES, C.A",
-    "rif": "J-402055175",
-    "vendedor": "MARYERY GARCIA",
-    "canal": "CARNICERIA/FRIGORIFICO",
-    "zona": "Ciudad Ojeda / COL",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
     "id": "5292",
     "nombre": "FREDDY JAVIER TORRES ISAAC",
     "rif": "V-155520260",
@@ -21941,7 +21081,7 @@
   },
   {
     "id": "5635",
-    "nombre": "DISTRIBUIDORA & MARKET SAN ANTONIO , C.A",
+    "nombre": "DISTRIBUIDORA  & MARKET SAN ANTONIO , C.A",
     "rif": "J-407949306",
     "vendedor": "MARYERY GARCIA",
     "canal": "ABASTOS Y BODEGAS",
@@ -21975,16 +21115,6 @@
     "rif": "V-204551924",
     "vendedor": "MARYERY GARCIA",
     "canal": "CARNICERIA/FRIGORIFICO",
-    "zona": "Ciudad Ojeda / COL",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "5736",
-    "nombre": "ASOCIACION COOPERATIVA JIREH 2, R.S.",
-    "rif": "J-404414681",
-    "vendedor": "MARYERY GARCIA",
-    "canal": "MAYORISTA",
     "zona": "Ciudad Ojeda / COL",
     "region": "OCCIDENTE",
     "activo": true
@@ -22050,16 +21180,6 @@
     "activo": true
   },
   {
-    "id": "6182",
-    "nombre": "ABASTO E INVERSIONES 3 A, C.A",
-    "rif": "J-411263400",
-    "vendedor": "MARYERY GARCIA",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Ciudad Ojeda / COL",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
     "id": "6216",
     "nombre": "JEFERSON ELIAS HERNANDEZ ROBLES (INVERSIONES JH CON LA BENDICION DE MIS PADRES LJ DE JEFERSON ELIAS HERNANDEZ ROBLES, F.",
     "rif": "V-254927194",
@@ -22071,7 +21191,7 @@
   },
   {
     "id": "6224",
-    "nombre": "DISTRIBUIDORA HERMANOS BARUJ, C.A",
+    "nombre": "DISTRIBUIDORA  HERMANOS BARUJ, C.A",
     "rif": "J-505185624",
     "vendedor": "MARYERY GARCIA",
     "canal": "ABASTOS Y BODEGAS",
@@ -22181,7 +21301,7 @@
   },
   {
     "id": "6311",
-    "nombre": "DARIO ENRIQUE GARCIA BARRIOS (MERCADITO D Y R)",
+    "nombre": "DARIO ENRIQUE GARCIA BARRIOS   (MERCADITO D Y R)",
     "rif": "V-208591815",
     "vendedor": "MARYERY GARCIA",
     "canal": "ABASTOS Y BODEGAS",
@@ -22231,7 +21351,7 @@
   },
   {
     "id": "6470",
-    "nombre": "NEDIOBER JESUS LUGO COLINA",
+    "nombre": "NEDIOBER JESUS  LUGO COLINA",
     "rif": "V-130246377",
     "vendedor": "MARYERY GARCIA",
     "canal": "ABASTOS Y BODEGAS",
@@ -22561,7 +21681,7 @@
   },
   {
     "id": "7569",
-    "nombre": "ANUAR ANTONIO HAMDAN CASTILLO (AUTO MERCADO EL POPULAR\"\" DE ANUAR ANTONIO HADAM CASTILLO)",
+    "nombre": "ANUAR ANTONIO HAMDAN CASTILLO (AUTO MERCADO EL POPULAR\" DE ANUAR ANTONIO HADAM CASTILLO)",
     "rif": "V-171850963",
     "vendedor": "MARYERY GARCIA",
     "canal": "ABASTOS Y BODEGAS",
@@ -22695,16 +21815,6 @@
     "rif": "V-266536514",
     "vendedor": "MARYERY GARCIA",
     "canal": "ABASTOS Y BODEGAS",
-    "zona": "Ciudad Ojeda / COL",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "7883",
-    "nombre": "INVERSIONES JARBER C.A",
-    "rif": "J-409466132",
-    "vendedor": "MARYERY GARCIA",
-    "canal": "CARNICERIA/FRIGORIFICO",
     "zona": "Ciudad Ojeda / COL",
     "region": "OCCIDENTE",
     "activo": true
@@ -22900,32 +22010,22 @@
     "activo": true
   },
   {
-    "id": "3577",
-    "nombre": "INVERSIONES Y REPRESENTACIONES CHADIÑA I, C.A.",
-    "rif": "J-411223972",
-    "vendedor": "LUIS GUANIPA",
-    "canal": "CARNICERIA/FRIGORIFICO",
-    "zona": "Coro / Falcón",
+    "id": "8352",
+    "nombre": "PANTTONE PANADERIA,C.A.",
+    "rif": "#N/A",
+    "vendedor": "MARYERY GARCIA",
+    "canal": "#N/A",
+    "zona": "Ciudad Ojeda / COL",
     "region": "OCCIDENTE",
     "activo": true
   },
   {
-    "id": "3639",
-    "nombre": "ANDRES JOSE VILLAVICENCIO SIERRAALTA (COMERCIAL PROVIDENCIA DE PARAGUANA)",
-    "rif": "V-098022526",
+    "id": "3669",
+    "nombre": "CAY CORNER, C.A",
+    "rif": "J-406240370",
     "vendedor": "LUIS GUANIPA",
-    "canal": "SUPERMERCADOS",
-    "zona": "Coro / Falcón",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "3661",
-    "nombre": "INVERSIONES EL MANSO TORO, C.A",
-    "rif": "J-412678973",
-    "vendedor": "LUIS GUANIPA",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Coro / Falcón",
+    "canal": "CHARCUTERIA/QUESERIA",
+    "zona": "Maracaibo / Supervisión",
     "region": "OCCIDENTE",
     "activo": true
   },
@@ -22960,12 +22060,42 @@
     "activo": true
   },
   {
-    "id": "3728",
-    "nombre": "COMERCIALIZADORA EMO, CA",
-    "rif": "J-409857999",
+    "id": "3714",
+    "nombre": "INVERSIONES ALL-IN, C.A",
+    "rif": "J-412661582",
     "vendedor": "LUIS GUANIPA",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Coro / Falcón",
+    "canal": "CARNICERIA/FRIGORIFICO",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "3725",
+    "nombre": "DISTRIBUIDORA MELENDEZ & HIDALGO, C.A",
+    "rif": "J-299679208",
+    "vendedor": "LUIS GUANIPA",
+    "canal": "CARNICERIA/FRIGORIFICO",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "3726",
+    "nombre": "COMERCIALIZADORA SANCHEZ MONFRINO, C.A",
+    "rif": "J-411194808",
+    "vendedor": "LUIS GUANIPA",
+    "canal": "PANADERIA",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "3729",
+    "nombre": "IYAD NASSER ( LAYSAOMAR F.P)",
+    "rif": "V-332519812",
+    "vendedor": "LUIS GUANIPA",
+    "canal": "SUPERMERCADOS",
+    "zona": "Maracaibo / Supervisión",
     "region": "OCCIDENTE",
     "activo": true
   },
@@ -22980,22 +22110,42 @@
     "activo": true
   },
   {
-    "id": "3752",
-    "nombre": "COMERCIAL EL UNIVERSITARIO, C.A",
-    "rif": "J-305927928",
+    "id": "3739",
+    "nombre": "CARNICERIA Y CHARCUTERIA PILI, C.A.",
+    "rif": "J-407136259",
     "vendedor": "LUIS GUANIPA",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Coro / Falcón",
+    "canal": "CHARCUTERIA/QUESERIA",
+    "zona": "Maracaibo / Supervisión",
     "region": "OCCIDENTE",
     "activo": true
   },
   {
-    "id": "3861",
-    "nombre": "COMERCIAL DRAGON ORIENTAL PARAGUANA, C.A",
-    "rif": "J-400614759",
+    "id": "4016",
+    "nombre": "TORNADO ELECTRONIC, C.A",
+    "rif": "J-317654668",
+    "vendedor": "LUIS GUANIPA",
+    "canal": "SUPERMERCADOS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4048",
+    "nombre": "COMERCIO CICLO CHINA, C.A",
+    "rif": "J-317330579",
     "vendedor": "LUIS GUANIPA",
     "canal": "ABASTOS Y BODEGAS",
-    "zona": "Coro / Falcón",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4083",
+    "nombre": "HIPERMERCADO E IMPORTADORA AL AMIR, C.A",
+    "rif": "J-401547583",
+    "vendedor": "LUIS GUANIPA",
+    "canal": "SUPERMERCADOS",
+    "zona": "Maracaibo / Supervisión",
     "region": "OCCIDENTE",
     "activo": true
   },
@@ -23003,26 +22153,6 @@
     "id": "4088",
     "nombre": "EL BODEGON DE LA PUERTA, C.A",
     "rif": "J-307374772",
-    "vendedor": "LUIS GUANIPA",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Coro / Falcón",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4168",
-    "nombre": "SALSA Y SABOR, C.A",
-    "rif": "J-406252174",
-    "vendedor": "LUIS GUANIPA",
-    "canal": "SUPERMERCADOS",
-    "zona": "Coro / Falcón",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4350",
-    "nombre": "PA QUE ESPERANZA, C.A",
-    "rif": "J-501151067",
     "vendedor": "LUIS GUANIPA",
     "canal": "ABASTOS Y BODEGAS",
     "zona": "Coro / Falcón",
@@ -23040,26 +22170,6 @@
     "activo": true
   },
   {
-    "id": "4371",
-    "nombre": "PANADERIA EL ENCANTO, C.A",
-    "rif": "J-317344456",
-    "vendedor": "LUIS GUANIPA",
-    "canal": "PANADERIA",
-    "zona": "Coro / Falcón",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4375",
-    "nombre": "PANADERIA Y PASTELERIA MAGESTIK, C.A",
-    "rif": "J-303860109",
-    "vendedor": "LUIS GUANIPA",
-    "canal": "PANADERIA",
-    "zona": "Coro / Falcón",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
     "id": "4378",
     "nombre": "ALEXANDER ANTONIO PACHANO HERRERA",
     "rif": "V-161980400",
@@ -23070,62 +22180,12 @@
     "activo": true
   },
   {
-    "id": "4384",
-    "nombre": "ATI IMPORT, C.A",
-    "rif": "J-403304769",
+    "id": "4473",
+    "nombre": "HORTALIZAS MI PUEBLITO, C.A",
+    "rif": "J-413176823",
     "vendedor": "LUIS GUANIPA",
-    "canal": "PANADERIA",
-    "zona": "Coro / Falcón",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4394",
-    "nombre": "COMERCIAL MUNDO BUENO, C.A",
-    "rif": "J-500115253",
-    "vendedor": "LUIS GUANIPA",
-    "canal": "MAYORISTA",
-    "zona": "Coro / Falcón",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4398",
-    "nombre": "FERRETERIA Y QUINCALLERIA CASA WU, C.A",
-    "rif": "J-402002726",
-    "vendedor": "LUIS GUANIPA",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Coro / Falcón",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4404",
-    "nombre": "OCEAN`S IMPORT, C.A",
-    "rif": "J-317373960",
-    "vendedor": "LUIS GUANIPA",
-    "canal": "SUPERMERCADOS",
-    "zona": "Coro / Falcón",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4424",
-    "nombre": "COMERCIALIZADORA Y DISTRIBUIDORA ZC VENEZOLANA, C.A",
-    "rif": "J-411016519",
-    "vendedor": "LUIS GUANIPA",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Coro / Falcón",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4477",
-    "nombre": "MARIELA CRISTINA RAMIREZ SULBARAN",
-    "rif": "V-184482440",
-    "vendedor": "LUIS GUANIPA",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Coro / Falcón",
+    "canal": "MERCADOS POPULARES",
+    "zona": "Maracaibo / Supervisión",
     "region": "OCCIDENTE",
     "activo": true
   },
@@ -23135,36 +22195,6 @@
     "rif": "J-315197367",
     "vendedor": "LUIS GUANIPA",
     "canal": "SUPERMERCADOS",
-    "zona": "Coro / Falcón",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4491",
-    "nombre": "JHON BILLY VIVAS NIÑO",
-    "rif": "V-187003942",
-    "vendedor": "LUIS GUANIPA",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Coro / Falcón",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4506",
-    "nombre": "UNIDAD PRODUCTIVA FAMILIAR INVERSIONES J Y D",
-    "rif": "C-500989776",
-    "vendedor": "LUIS GUANIPA",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Coro / Falcón",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "4520",
-    "nombre": "DULCES AURORA TOPPERS",
-    "rif": "J-411643556",
-    "vendedor": "LUIS GUANIPA",
-    "canal": "PANADERIA",
     "zona": "Coro / Falcón",
     "region": "OCCIDENTE",
     "activo": true
@@ -23180,22 +22210,22 @@
     "activo": true
   },
   {
-    "id": "4691",
-    "nombre": "BUSSINESS LUICA, C.A",
-    "rif": "J-412857363",
+    "id": "4577",
+    "nombre": "INVERSIONES EL FUAD, C.A",
+    "rif": "J-411981342",
     "vendedor": "LUIS GUANIPA",
     "canal": "ABASTOS Y BODEGAS",
-    "zona": "Coro / Falcón",
+    "zona": "Maracaibo / Supervisión",
     "region": "OCCIDENTE",
     "activo": true
   },
   {
-    "id": "4692",
-    "nombre": "PANADERIA RAYSOL 202, C.A",
-    "rif": "J-311687580",
+    "id": "4903",
+    "nombre": "AMERICAN FOOD PF, C.A",
+    "rif": "J-405287713",
     "vendedor": "LUIS GUANIPA",
-    "canal": "PANADERIA",
-    "zona": "Coro / Falcón",
+    "canal": "RESTAURANTES/TASCAS",
+    "zona": "Maracaibo / Supervisión",
     "region": "OCCIDENTE",
     "activo": true
   },
@@ -23210,22 +22240,32 @@
     "activo": true
   },
   {
-    "id": "4970",
-    "nombre": "EDUARDO JESUS RAMONES CAYAMA",
-    "rif": "V-167003187",
+    "id": "5188",
+    "nombre": "COMERCIAL AHORRO 2020, C.A",
+    "rif": "J-501012865",
     "vendedor": "LUIS GUANIPA",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Coro / Falcón",
+    "canal": "MAYORISTA",
+    "zona": "Maracaibo / Supervisión",
     "region": "OCCIDENTE",
     "activo": true
   },
   {
-    "id": "5074",
-    "nombre": "LENNIN ESTIC CASTILLA GARCIA (COMERCIAL VALENTINA CASTILLA, F.P)",
-    "rif": "E-845882307",
+    "id": "5250",
+    "nombre": "HERPERNOMIKO 808, C.A",
+    "rif": "J-503790873",
     "vendedor": "LUIS GUANIPA",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Coro / Falcón",
+    "canal": "SUPERMERCADOS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "5421",
+    "nombre": "CORPORACION HERMANOS MONCADA, C.A",
+    "rif": "J-500910401",
+    "vendedor": "LUIS GUANIPA",
+    "canal": "CHARCUTERIA/QUESERIA",
+    "zona": "Maracaibo / Supervisión",
     "region": "OCCIDENTE",
     "activo": true
   },
@@ -23240,32 +22280,22 @@
     "activo": true
   },
   {
-    "id": "5491",
-    "nombre": "ELIZABET DA COSTA DE MORENO",
-    "rif": "V-114732202",
-    "vendedor": "LUIS GUANIPA",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Coro / Falcón",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "5494",
-    "nombre": "EL MUNDO DEL POLLO DE PARAGUANA M&A, C.A",
-    "rif": "J-501363064",
-    "vendedor": "LUIS GUANIPA",
-    "canal": "CARNICERIA/FRIGORIFICO",
-    "zona": "Coro / Falcón",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "5591",
-    "nombre": "JENIFER MARIA WU ROSALES",
-    "rif": "V-272309082",
+    "id": "5572",
+    "nombre": "DANIEL LORENZO LOPEZ",
+    "rif": "V-121033395",
     "vendedor": "LUIS GUANIPA",
     "canal": "RESTAURANTES/TASCAS",
-    "zona": "Coro / Falcón",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "5574",
+    "nombre": "PATRIZA LINA SPITALE TERNULLO",
+    "rif": "V-211563687",
+    "vendedor": "LUIS GUANIPA",
+    "canal": "CHARCUTERIA/QUESERIA",
+    "zona": "Maracaibo / Supervisión",
     "region": "OCCIDENTE",
     "activo": true
   },
@@ -23320,16 +22350,6 @@
     "activo": true
   },
   {
-    "id": "5787",
-    "nombre": "PANADERIA Y PASTELERIA 222, C.A",
-    "rif": "J-409071367",
-    "vendedor": "LUIS GUANIPA",
-    "canal": "PANADERIA",
-    "zona": "Coro / Falcón",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
     "id": "5789",
     "nombre": "RESTAURANTES GERALD S CAFE, CA (PUNTO FIJO)",
     "rif": "J-400591554",
@@ -23351,20 +22371,10 @@
   },
   {
     "id": "5838",
-    "nombre": "INVERSIONES EL SOL DE FALCON, C.A",
+    "nombre": "INVERSIONES  EL SOL DE FALCON, C.A",
     "rif": "J-504442402",
     "vendedor": "LUIS GUANIPA",
     "canal": "SUPERMERCADOS",
-    "zona": "Coro / Falcón",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "5893",
-    "nombre": "EXQUISITECES CASTELO, C.A",
-    "rif": "J-309084771",
-    "vendedor": "LUIS GUANIPA",
-    "canal": "ABASTOS Y BODEGAS",
     "zona": "Coro / Falcón",
     "region": "OCCIDENTE",
     "activo": true
@@ -23390,39 +22400,9 @@
     "activo": true
   },
   {
-    "id": "6079",
-    "nombre": "NUEVO SUPERMERCADO FAMILIA, CA",
-    "rif": "J-313352965",
-    "vendedor": "LUIS GUANIPA",
-    "canal": "SUPERMERCADOS",
-    "zona": "Coro / Falcón",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "6111",
-    "nombre": "COMERCIAL 6681, C.A",
-    "rif": "J-501093393",
-    "vendedor": "LUIS GUANIPA",
-    "canal": "CARNICERIA/FRIGORIFICO",
-    "zona": "Coro / Falcón",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
     "id": "6112",
     "nombre": "JJMARKET21, C.A",
     "rif": "J-502343253",
-    "vendedor": "LUIS GUANIPA",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Coro / Falcón",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "6223",
-    "nombre": "COMERCIAL JUAN 168, C.A",
-    "rif": "J-413249308",
     "vendedor": "LUIS GUANIPA",
     "canal": "ABASTOS Y BODEGAS",
     "zona": "Coro / Falcón",
@@ -23435,46 +22415,6 @@
     "rif": "J-504423378",
     "vendedor": "LUIS GUANIPA",
     "canal": "SUPERMERCADOS",
-    "zona": "Coro / Falcón",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "6437",
-    "nombre": "EL REY SUPERMARKET, C.A.",
-    "rif": "J-504335231",
-    "vendedor": "LUIS GUANIPA",
-    "canal": "SUPERMERCADOS",
-    "zona": "Coro / Falcón",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "6587",
-    "nombre": "ZAGHOUL PARAGUANA, C,A",
-    "rif": "J-504782394",
-    "vendedor": "LUIS GUANIPA",
-    "canal": "SUPERMERCADOS",
-    "zona": "Coro / Falcón",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "6632",
-    "nombre": "EL ANDINO COMERCIALIZADORA, C.A",
-    "rif": "J-505256700",
-    "vendedor": "LUIS GUANIPA",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Coro / Falcón",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "6703",
-    "nombre": "INVERSIONES EL GUAMACHE PUNTA DE PIEDRA, C.A",
-    "rif": "J-500233884",
-    "vendedor": "LUIS GUANIPA",
-    "canal": "ABASTOS Y BODEGAS",
     "zona": "Coro / Falcón",
     "region": "OCCIDENTE",
     "activo": true
@@ -23510,42 +22450,12 @@
     "activo": true
   },
   {
-    "id": "7067",
-    "nombre": "MARKET SUPROMAX, C.A",
-    "rif": "J-506357011",
+    "id": "7100",
+    "nombre": "MARIO ALIMENTOS, C.A",
+    "rif": "J-410049241",
     "vendedor": "LUIS GUANIPA",
-    "canal": "SUPERMERCADOS",
-    "zona": "Coro / Falcón",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "7075",
-    "nombre": "LILIBETH AREVALO SALCEDO",
-    "rif": "V-297220027",
-    "vendedor": "LUIS GUANIPA",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Coro / Falcón",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "7120",
-    "nombre": "JOSE GREGORIO SIERRA SIERRA (INVERSIONES HAYJOS, F.P)",
-    "rif": "V-075682820",
-    "vendedor": "LUIS GUANIPA",
-    "canal": "ABASTOS Y BODEGAS",
-    "zona": "Coro / Falcón",
-    "region": "OCCIDENTE",
-    "activo": true
-  },
-  {
-    "id": "7125",
-    "nombre": "9 ELEVEN, C.A.",
-    "rif": "J-504638749",
-    "vendedor": "LUIS GUANIPA",
-    "canal": "SUPERMERCADOS",
-    "zona": "Coro / Falcón",
+    "canal": "FAST FOOD",
+    "zona": "Maracaibo / Supervisión",
     "region": "OCCIDENTE",
     "activo": true
   },
@@ -23560,22 +22470,32 @@
     "activo": true
   },
   {
-    "id": "7827",
-    "nombre": "ANGUS CARNICERIA Y CHARCUTERIA, C.A",
-    "rif": "J-505701240",
+    "id": "7648",
+    "nombre": "COMERCIALIZADORA MORDI, C.A.",
+    "rif": "J-411635642",
     "vendedor": "LUIS GUANIPA",
     "canal": "ABASTOS Y BODEGAS",
-    "zona": "Coro / Falcón",
+    "zona": "Maracaibo / Supervisión",
     "region": "OCCIDENTE",
     "activo": true
   },
   {
-    "id": "8082",
-    "nombre": "AHORRA MAS SUPERMARKET, C.A.",
-    "rif": "J-504354023",
+    "id": "8080",
+    "nombre": "PANIFICADORA GEREMIAS 33 C.A",
+    "rif": "J-403216258",
     "vendedor": "LUIS GUANIPA",
-    "canal": "SUPERMERCADOS",
-    "zona": "Coro / Falcón",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "8113",
+    "nombre": "SHENZHEN EXPRESS COMPAÑIA ANONIMA",
+    "rif": "J-508429109",
+    "vendedor": "LUIS GUANIPA",
+    "canal": "RESTAURANTES/TASCAS",
+    "zona": "Maracaibo / Supervisión",
     "region": "OCCIDENTE",
     "activo": true
   },
@@ -23610,18 +22530,48 @@
     "activo": true
   },
   {
-    "id": "8220",
-    "nombre": "INVERSIONES SUPER ANGELO 2024, C.A.",
-    "rif": "J-506707772",
+    "id": "8372",
+    "nombre": "JUNIOR RAFAEL ALVAREZ OTERO",
+    "rif": "#N/A",
     "vendedor": "LUIS GUANIPA",
-    "canal": "SUPERMERCADOS",
+    "canal": "#N/A",
+    "zona": "Coro / Falcón",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "8377",
+    "nombre": "HUSSEIN ATTA ABDUL KAREEM (FIT FOOT 1 DE HUSSEIN ATTA, F.P)",
+    "rif": "#N/A",
+    "vendedor": "LUIS GUANIPA",
+    "canal": "#N/A",
+    "zona": "Coro / Falcón",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "8387",
+    "nombre": "JORNSELINE, C.A",
+    "rif": "#N/A",
+    "vendedor": "LUIS GUANIPA",
+    "canal": "#N/A",
+    "zona": "Coro / Falcón",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "8388",
+    "nombre": "INVERSIONES SOFIJUAN, C.A",
+    "rif": "#N/A",
+    "vendedor": "LUIS GUANIPA",
+    "canal": "#N/A",
     "zona": "Coro / Falcón",
     "region": "OCCIDENTE",
     "activo": true
   },
   {
     "id": "1732",
-    "nombre": "WEICAO ZHOU (INVERSIONES LOS COMBOS DE ZHOU WEICAO F.P)",
+    "nombre": "WEICAO ZHOU  (INVERSIONES LOS COMBOS DE ZHOU WEICAO F.P)",
     "rif": "E-822898648",
     "vendedor": "PEDRO ABREU",
     "canal": "SUPERMERCADOS",
@@ -23631,7 +22581,7 @@
   },
   {
     "id": "4609",
-    "nombre": "PANADERIA Y PASTELERIA LA FLOR DE MENDOZA, C.A",
+    "nombre": "PANADERIA Y PASTELERIA  LA FLOR DE MENDOZA, C.A",
     "rif": "J-311543848",
     "vendedor": "PEDRO ABREU",
     "canal": "PANADERIA",
@@ -23661,7 +22611,7 @@
   },
   {
     "id": "4612",
-    "nombre": "MIGUEL ANGEL MARQUEZ LICITRA ( INVERSIONES & MARKETINBLOS ANGELES DE MIGUEL ANGEL MARQUEZ, F.P )",
+    "nombre": "MIGUEL ANGEL MARQUEZ  LICITRA  ( INVERSIONES & MARKETINBLOS ANGELES DE MIGUEL ANGEL MARQUEZ, F.P )",
     "rif": "V-145988620",
     "vendedor": "PEDRO ABREU",
     "canal": "PANADERIA",
@@ -23721,7 +22671,7 @@
   },
   {
     "id": "4911",
-    "nombre": "MADELINE COROMOTO ASENCIO MENDEZ (INV. ASENCIO, F.P.)",
+    "nombre": "MADELINE COROMOTO ASENCIO MENDEZ     (INV. ASENCIO, F.P.)",
     "rif": "V-191029867",
     "vendedor": "PEDRO ABREU",
     "canal": "SUPERMERCADOS",
@@ -23911,7 +22861,7 @@
   },
   {
     "id": "6912",
-    "nombre": "ANA KARINA GARCIA DAVILA (MERCA HOGAR GARCIA )",
+    "nombre": "ANA KARINA GARCIA DAVILA  (MERCA HOGAR GARCIA )",
     "rif": "V-237154734",
     "vendedor": "PEDRO ABREU",
     "canal": "ABASTOS Y BODEGAS",
@@ -24221,7 +23171,7 @@
   },
   {
     "id": "7841",
-    "nombre": "GLORIA AMPARO SARRIA (ABASTOS MI GRAN TESORO DE CIRURI\"\" DE GLORIA AMPAR)",
+    "nombre": "GLORIA AMPARO SARRIA  (ABASTOS MI GRAN TESORO DE CIRURI\" DE GLORIA AMPAR)",
     "rif": "E-814255150",
     "vendedor": "PEDRO ABREU",
     "canal": "ABASTOS Y BODEGAS",
@@ -24351,7 +23301,7 @@
   },
   {
     "id": "8260",
-    "nombre": "DAISIRELYS DEL CARMEN LEAL SALCEDO (CENTRO RECREACIONAL EL FOGON DE TEL O,F.P)",
+    "nombre": "DAISIRELYS DEL CARMEN LEAL SALCEDO  (CENTRO RECREACIONAL EL FOGON DE TEL O,F.P)",
     "rif": "V-169905165",
     "vendedor": "PEDRO ABREU",
     "canal": "ABASTOS Y BODEGAS",
@@ -24405,6 +23355,1496 @@
     "rif": "V-152933424",
     "vendedor": "PEDRO ABREU",
     "canal": "ABASTOS Y BODEGAS",
+    "zona": "Punto Fijo / Paraguaná",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "8390",
+    "nombre": "MIGUEL ANTHONY BALAGUERA PERNIA (ABASTO THONNY CENTER 2028 BALAGUERA)",
+    "rif": "#N/A",
+    "vendedor": "PEDRO ABREU",
+    "canal": "#N/A",
+    "zona": "Punto Fijo / Paraguaná",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "3742",
+    "nombre": "MINI MARKET AURORA, C.A.",
+    "rif": "J-412235265",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "3938",
+    "nombre": "INGRID YLIANELA PEÑA CASTILLO DE GARCIA",
+    "rif": "V-135541245",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "3939",
+    "nombre": "YRAMELYS MARBEL DERCE COLINA",
+    "rif": "V-109721316",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "3940",
+    "nombre": "JOSE GREGORIO FLORES PIMENTEL",
+    "rif": "V-124972457",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "MAYORISTA",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "3941",
+    "nombre": "INVERSIONES JOCHAKAT, C.A",
+    "rif": "J-413036380",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "3950",
+    "nombre": "INVERSIONES DIEGO. COM, C.A",
+    "rif": "J-296665915",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "PANADERIA",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4005",
+    "nombre": "VARIEDADES S&S, C.A",
+    "rif": "J-408435977",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4006",
+    "nombre": "EDENYS JACKELINE RAMIREZ PELAYO   ( INVERSIONES ER & AJ, FP )",
+    "rif": "V-121761544",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4013",
+    "nombre": "INVERSIONES NET SPEED, C.A",
+    "rif": "J-408476304",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4020",
+    "nombre": "INVERSIONES RODRIGUEZ MARIN, C.A",
+    "rif": "J-412350323",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4026",
+    "nombre": "FROILEN ANTONIO GOMEZ GONZALEZ",
+    "rif": "V-010546723",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4069",
+    "nombre": "WILKER JOSE VERA GARCIA",
+    "rif": "V-247064121",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4071",
+    "nombre": "KATYS COROMOTO PEROZO DE ALVARADO",
+    "rif": "V-095807107",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "PANADERIA",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4072",
+    "nombre": "SUPERMERCADO PUEBLO NUEVO PARAGUANA, C.A",
+    "rif": "J-403447969",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "SUPERMERCADOS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4156",
+    "nombre": "FRANKLIN JESUS COLINA GUIGÑAN",
+    "rif": "V-281778702",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4368",
+    "nombre": "SUPER MARKET MURALLA CHINA, C.A",
+    "rif": "J-502396748",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "CARNICERIA/FRIGORIFICO",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4458",
+    "nombre": "COMERCIAL  HP1, C.A",
+    "rif": "J-412729870",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4491",
+    "nombre": "JHON BILLY VIVAS NIÑO",
+    "rif": "V-187003942",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Coro / Falcón",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4514",
+    "nombre": "GLEXI COROMOTO JORDAN DE PEREZ  ( ABASTO Y LICORES COSTA PARAGUANERA, F.P)",
+    "rif": "V-047876032",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "5126",
+    "nombre": "PANADERIA Y CHARCUTERIA NUMBER ONE-1, C.A",
+    "rif": "J-297266712",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "PANADERIA",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "5178",
+    "nombre": "HOTEL TURISTICO CASA BLANCA, C.A",
+    "rif": "J-085207783",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "HOTELES",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "5300",
+    "nombre": "QINQIANG WU",
+    "rif": "E-844831253",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "5326",
+    "nombre": "ELIZABETH MARIA IRAUSQUIN URBINA",
+    "rif": "V-161980052",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "5530",
+    "nombre": "SILVIA PATRICIA HERNANDEZ LEONES \"INVERSIONES TROPIGOLLO DE SILVIA HERNANDEZ F. P\"",
+    "rif": "V-190070332",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "FAST FOOD",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "5615",
+    "nombre": "INVERSIONES PETIT & SEQUERA, C.A",
+    "rif": "J-412168134",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "5669",
+    "nombre": "JOSE JESUS FONSECA CESPEDES",
+    "rif": "V-095823790",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "5681",
+    "nombre": "RAMON ANTONIO PETIT PRIMERA",
+    "rif": "V-036818111",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "5790",
+    "nombre": "YALITZA RAQUEL PETIT DE RUJANO",
+    "rif": "V-117719550",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "5827",
+    "nombre": "MEGAMAET LOS TAQUES, C.A",
+    "rif": "J-504803200",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "SUPERMERCADOS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "6037",
+    "nombre": "JONATHAN FABIAN LOPEZ ALBA",
+    "rif": "E-844047935",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "6227",
+    "nombre": "ROMAN OSWALDO JORDAN RAMONEZ",
+    "rif": "V-095868700",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "6238",
+    "nombre": "DISTRIBUIDORA ALIANS, C..A",
+    "rif": "J-500393148",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "6357",
+    "nombre": "COMERCIAL LA PERFECTA VOLUNTAD DE DIOS, C.A",
+    "rif": "J-401779204",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "6387",
+    "nombre": "DENISSE JAIBET DAVALILLO GUANIPA ( INVERSIONES DD $ D, F.P. )",
+    "rif": "V-267305400",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "CARNICERIA/FRIGORIFICO",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "6403",
+    "nombre": "OLGIANY MAYERLING RODRIGUEZ BRACHO ( INVERSIONES MAYSHADD, F.P )",
+    "rif": "V-146464404",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "6419",
+    "nombre": "POSADA ECOTURISTICA 30 NUDOS, C.A.",
+    "rif": "J-408788659",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "HOTELES",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "6437",
+    "nombre": "EL REY SUPERMARKET, C.A.",
+    "rif": "J-504335231",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "SUPERMERCADOS",
+    "zona": "Coro / Falcón",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "6836",
+    "nombre": "INVERSIONES A.F PARAGUANA, C.A",
+    "rif": "J-501525641",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "6853",
+    "nombre": "BODEGON Y MINIMARKET SAMY 2021, C.A",
+    "rif": "J-500688555",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "6951",
+    "nombre": "NEIMARLY DEL VALLE ACOSTA SMITH",
+    "rif": "V-164379767",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "7835",
+    "nombre": "ALEXIS ENRIQUE SAEZ VILLALOBOS \"ALEXIS SAEZ PANADERIA LA CAPINA 2025\"",
+    "rif": "V-078753907",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "7861",
+    "nombre": "JESSICA ELIZABETH HURTADO ROJAS",
+    "rif": "V-280392126",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "7862",
+    "nombre": "ANRUBI NATHALY MORILLO PEÑA \"INVERSIONES UBIMOR F.P\"",
+    "rif": "V-207959045",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "7864",
+    "nombre": "TIENDA MIS TRES D, C.A",
+    "rif": "J-505510029",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "7902",
+    "nombre": "LUSNALI NAIROVI MORALES PERNALTE",
+    "rif": "V-175000085",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "7996",
+    "nombre": "INVERSIONES CARLA CARLOTA, C.A",
+    "rif": "J-500219881",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "8020",
+    "nombre": "MINI MARKET LA PERSEVERANCIA, C.A",
+    "rif": "J-500918690",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "8116",
+    "nombre": "DISTRIBUIDORA LA TRUJILLANA 2, C.A",
+    "rif": "J-508207858",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "8232",
+    "nombre": "ABASTO Y CARNICERIA ANAYA 2025, C.A.",
+    "rif": "J-507695786",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "8350",
+    "nombre": "DIST, SANTA ANA. C.A.",
+    "rif": "#N/A",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "#N/A",
+    "zona": "Punto Fijo / Paraguaná",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "8351",
+    "nombre": "INVERSIONES BENDECIDOS POR JESUS, C.A.",
+    "rif": "#N/A",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "#N/A",
+    "zona": "Punto Fijo / Paraguaná",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "8354",
+    "nombre": "SPORT BAR TERRAZA&CLUB, C.A.",
+    "rif": "#N/A",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "#N/A",
+    "zona": "Punto Fijo / Paraguaná",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "8355",
+    "nombre": "KG & HG INVERSIONES 2024, C.A.",
+    "rif": "#N/A",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "#N/A",
+    "zona": "Punto Fijo / Paraguaná",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "8356",
+    "nombre": "ROBERT RAMON COLINA MONTERO INVERSIONES ROISEB, FP",
+    "rif": "#N/A",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "#N/A",
+    "zona": "Punto Fijo / Paraguaná",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "8357",
+    "nombre": "ANDRES JESUS MUJICA FIERRO",
+    "rif": "#N/A",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "#N/A",
+    "zona": "Punto Fijo / Paraguaná",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "8358",
+    "nombre": "WILSON ANTONIO BARRENO CHIRINO. INVERSIONES BARRENO CASTILLO. F.P.",
+    "rif": "#N/A",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "#N/A",
+    "zona": "Punto Fijo / Paraguaná",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "8362",
+    "nombre": "JAIMARY CARHIL HURTADO PEREZ(CORPORACION VIRGEN DEL MONTE CARMELO) F.P",
+    "rif": "#N/A",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "#N/A",
+    "zona": "Punto Fijo / Paraguaná",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "8363",
+    "nombre": "GREGORIO JOSE VARGAS TREJO (PAPA GOLLITO INVERSIONES) F.P.",
+    "rif": "#N/A",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "#N/A",
+    "zona": "Punto Fijo / Paraguaná",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "8364",
+    "nombre": "JOSE ANGEL REYES MORILLO (MINIMARKET REYES & REYES) F.P.",
+    "rif": "#N/A",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "#N/A",
+    "zona": "Punto Fijo / Paraguaná",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "8365",
+    "nombre": "ARCADIA YUDITH RAMIREZ VARGAS (INVERSIONES LA PIEDRA AHOGADA) F.P.",
+    "rif": "#N/A",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "#N/A",
+    "zona": "Punto Fijo / Paraguaná",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "8366",
+    "nombre": "XIOMARA COROMOTO HERNANDEZ (COMERCIALIZADORA MAMA NACHA) F.P.",
+    "rif": "#N/A",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "#N/A",
+    "zona": "Punto Fijo / Paraguaná",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "8379",
+    "nombre": "ROSELVYS RAMON SANTOS COTYS (SANTOS ROSELVS MULTISUPPLYS) F.P.",
+    "rif": "#N/A",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "#N/A",
+    "zona": "Punto Fijo / Paraguaná",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "8381",
+    "nombre": "JESUS DANIEL GUARDIA LOPEZ",
+    "rif": "#N/A",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "#N/A",
+    "zona": "Punto Fijo / Paraguaná",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "8382",
+    "nombre": "JOHANNY CRISTINA NAVAS",
+    "rif": "#N/A",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "#N/A",
+    "zona": "Punto Fijo / Paraguaná",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "8383",
+    "nombre": "ENDRINA MARIA GARCIA NARANJO",
+    "rif": "#N/A",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "#N/A",
+    "zona": "Punto Fijo / Paraguaná",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "8384",
+    "nombre": "DONIS PLUS ULTRA, C.A.",
+    "rif": "#N/A",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "#N/A",
+    "zona": "Punto Fijo / Paraguaná",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "8385",
+    "nombre": "JULIO ALEXANDER COLMENARES YEPEZ",
+    "rif": "#N/A",
+    "vendedor": "MARIANGEL GONZALEZ",
+    "canal": "#N/A",
+    "zona": "Punto Fijo / Paraguaná",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "3573",
+    "nombre": "LAVAME, C.A.",
+    "rif": "J-294015808",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "PANADERIA",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "3579",
+    "nombre": "MUNDO WEN MAYORISTA, C.A.",
+    "rif": "J-500726597",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "MAYORISTA",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "3581",
+    "nombre": "DISTRIBUIDORA ALTA MAR DE PARAGUANA, C.A",
+    "rif": "J-411871346",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "3584",
+    "nombre": "COMERCIAL AVANCE 888, C.A.",
+    "rif": "J-402315830",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "MAYORISTA",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "3585",
+    "nombre": "IMPORTACIONES N & S ZONA LIBRE, C.A.",
+    "rif": "J-314309757",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "MAYORISTA",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "3594",
+    "nombre": "FRUTAS Y HORTALIZAS DON LUIS, C.A.",
+    "rif": "J-408086174",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "SUPERMERCADOS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "3622",
+    "nombre": "CARNICERIA BRASIL C.A.",
+    "rif": "J-317311523",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "CARNICERIA/FRIGORIFICO",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "3623",
+    "nombre": "LUCKY CONFITES C.A.",
+    "rif": "J-400049571",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "MAYORISTA",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "3638",
+    "nombre": "NEGOCIOS INVERSIONES REALES (N.I.R), C.A.",
+    "rif": "J-412011138",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "CARNICERIA/FRIGORIFICO",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "3648",
+    "nombre": "SUPERMERCADO MUNDO ASIATICO 2020, C.A.",
+    "rif": "J-500169221",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "SUPERMERCADOS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "3656",
+    "nombre": "COMERCIAL ZAMORA DE PARAGUANA, C.A.",
+    "rif": "J-402136188",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "CHARCUTERIA/QUESERIA",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "3691",
+    "nombre": "VARIEDADES POMARY, C.A.",
+    "rif": "J-401713300",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "3730",
+    "nombre": "COMERCIAL YE ZENG, C.A",
+    "rif": "J-412823400",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "MAYORISTA",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "3736",
+    "nombre": "A Q PRADA EXPRESS, C.A.",
+    "rif": "J-507271323",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "3781",
+    "nombre": "HORTICARNES EL MARQUEZ, C.A",
+    "rif": "J-500441932",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "SUPERMERCADOS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "3856",
+    "nombre": "MAGALI JOSEFINA GONZALEZ LUGO",
+    "rif": "V-265988357",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "3858",
+    "nombre": "BODEGON RODRIGUES 2013, C.A",
+    "rif": "J-403406715",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "SUPERMERCADOS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "3859",
+    "nombre": "DISTRIBUIDORA RODRIGUEZ, C.A",
+    "rif": "J-303677576",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "SUPERMERCADOS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "3861",
+    "nombre": "COMERCIAL DRAGON ORIENTAL PARAGUANA, C.A",
+    "rif": "J-400614759",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Coro / Falcón",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "3904",
+    "nombre": "FARY GHANNAM GHANNAM ( GRUPO LA BAGUETTE F.P)",
+    "rif": "V-095828180",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "CHARCUTERIA/QUESERIA",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "3922",
+    "nombre": "INVERSIONES MI ANGEL MARIA LUISA, C.A",
+    "rif": "J-406237370",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "3976",
+    "nombre": "JOSE GREGORIO CHIRINO AGUIRRE ( ROHOBOT 2021 F.P. )",
+    "rif": "V-259864557",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "3977",
+    "nombre": "MAC BURGUER MAC,  C.A",
+    "rif": "J-405276207",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "CHARCUTERIA/QUESERIA",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4050",
+    "nombre": "MEGA HAMBURGUESAS, C.A",
+    "rif": "J-316877353",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "RESTAURANTES/TASCAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4052",
+    "nombre": "SUPERMERCADO VICTORI LIN 2012, C.A",
+    "rif": "J-401584926",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "SUPERMERCADOS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4065",
+    "nombre": "COMERCIAL KEYI 2020,  C.A",
+    "rif": "J-413023563",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4089",
+    "nombre": "DISTRIBUIDORA LUGO MAYOR, C.A",
+    "rif": "J-412657089",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "SUPERMERCADOS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4098",
+    "nombre": "DISTRIBUIDORA ANTON HNOS, C.A",
+    "rif": "J-412612026",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "CHARCUTERIA/QUESERIA",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4112",
+    "nombre": "HORTALIZAS EL PARAMO, C.A",
+    "rif": "J-412555464",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "SUPERMERCADOS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4135",
+    "nombre": "PLASVIMAR, C.A",
+    "rif": "J-413046520",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "DISTRIBUIDORES",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4174",
+    "nombre": "INSSACA, C.A",
+    "rif": "J-412316974",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4287",
+    "nombre": "COMERCIAL MAXIOFERTAS LIANG 186, C.A.",
+    "rif": "J-317224272",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "MAYORISTA",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4338",
+    "nombre": "CARNICERIA CARNE HOUSE, C.A.",
+    "rif": "J-312646322",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "CARNICERIA/FRIGORIFICO",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4365",
+    "nombre": "FRANKLIN ROBERTO MUSETT LUGO",
+    "rif": "V-140743301",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "SUPERMERCADOS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4371",
+    "nombre": "PANADERIA EL ENCANTO, C.A",
+    "rif": "J-317344456",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "PANADERIA",
+    "zona": "Coro / Falcón",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4375",
+    "nombre": "PANADERIA Y PASTELERIA MAGESTIK, C.A",
+    "rif": "J-303860109",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "PANADERIA",
+    "zona": "Coro / Falcón",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4381",
+    "nombre": "MERCADO NUEVO FUTURO S III, C.A",
+    "rif": "J-312536470",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "MAYORISTA",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4384",
+    "nombre": "ATI IMPORT, C.A",
+    "rif": "J-403304769",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "PANADERIA",
+    "zona": "Coro / Falcón",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4394",
+    "nombre": "COMERCIAL MUNDO BUENO, C.A",
+    "rif": "J-500115253",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "MAYORISTA",
+    "zona": "Coro / Falcón",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4398",
+    "nombre": "FERRETERIA Y QUINCALLERIA CASA WU, C.A",
+    "rif": "J-402002726",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Coro / Falcón",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4404",
+    "nombre": "OCEAN`S IMPORT, C.A",
+    "rif": "J-317373960",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "SUPERMERCADOS",
+    "zona": "Coro / Falcón",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4424",
+    "nombre": "COMERCIALIZADORA Y DISTRIBUIDORA ZC VENEZOLANA, C.A",
+    "rif": "J-411016519",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Coro / Falcón",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4477",
+    "nombre": "MARIELA  CRISTINA RAMIREZ  SULBARAN",
+    "rif": "V-184482440",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Coro / Falcón",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4483",
+    "nombre": "INVERSIONES EDUGEN, C.A",
+    "rif": "J-294405967",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "CARNICERIA/FRIGORIFICO",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4516",
+    "nombre": "BARBACOA RANCH 2021, C.A",
+    "rif": "J-502400419",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "CARNICERIA/FRIGORIFICO",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4520",
+    "nombre": "DULCES AURORA TOPPERS",
+    "rif": "J-411643556",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "PANADERIA",
+    "zona": "Coro / Falcón",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4555",
+    "nombre": "SUPERMARKET LA MURALLA PF, C.A",
+    "rif": "J-503076186",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "SUPERMERCADOS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4691",
+    "nombre": "BUSSINESS LUICA, C.A",
+    "rif": "J-412857363",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Coro / Falcón",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4863",
+    "nombre": "EL PALACIO DE LOS LICORES, C.A",
+    "rif": "J-085044183",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "SUPERMERCADOS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "4970",
+    "nombre": "EDUARDO JESUS RAMONES CAYAMA",
+    "rif": "V-167003187",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Coro / Falcón",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "5054",
+    "nombre": "LA PRADERA, C.A",
+    "rif": "J-502717960",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "SUPERMERCADOS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "5074",
+    "nombre": "LENNIN  ESTIC CASTILLA GARCIA (COMERCIAL VALENTINA CASTILLA, F.P)",
+    "rif": "E-845882307",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Coro / Falcón",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "5225",
+    "nombre": "MINIMARKET  GONZALEZ 2020, C.A",
+    "rif": "J-413137259",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "5355",
+    "nombre": "INVERSIONES TROPILICOR, C.A",
+    "rif": "J-503538660",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "5476",
+    "nombre": "SUPERMARKET 688, C.A",
+    "rif": "J-504319481",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "MAYORISTA",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "5614",
+    "nombre": "CONSORCIO DIGITAL, C.A",
+    "rif": "J-313272248",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "SUPERMERCADOS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "5763",
+    "nombre": "SALLY IMPORT ZONA LIBRE, C.A",
+    "rif": "J-295620373",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "SUPERMERCADOS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "5840",
+    "nombre": "MINIMARKET JEMMAS, C.A",
+    "rif": "J-504304689",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "5893",
+    "nombre": "EXQUISITECES CASTELO, C.A",
+    "rif": "J-309084771",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Coro / Falcón",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "6079",
+    "nombre": "NUEVO SUPERMERCADO FAMILIA, CA",
+    "rif": "J-313352965",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "SUPERMERCADOS",
+    "zona": "Coro / Falcón",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "6111",
+    "nombre": "COMERCIAL 6681, C.A",
+    "rif": "J-501093393",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "CARNICERIA/FRIGORIFICO",
+    "zona": "Coro / Falcón",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "6210",
+    "nombre": "TU CARNE L & M, C.A",
+    "rif": "J-504357960",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "SUPERMERCADOS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "6223",
+    "nombre": "COMERCIAL JUAN 168, C.A",
+    "rif": "J-413249308",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Coro / Falcón",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "6286",
+    "nombre": "JOHANNA CAROLINA GUANIPA ZARRAGA",
+    "rif": "V-207968702",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "6316",
+    "nombre": "IBRAHIM ATTA \"ATTA.2020, F.P\"",
+    "rif": "V-306752908",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "6552",
+    "nombre": "MERCADO MAYORISTA 77 PARAGUANA C,A",
+    "rif": "J-503917083",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "MAYORISTA",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "6587",
+    "nombre": "ZAGHOUL PARAGUANA, C,A",
+    "rif": "J-504782394",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "SUPERMERCADOS",
+    "zona": "Coro / Falcón",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "6632",
+    "nombre": "EL ANDINO COMERCIALIZADORA, C.A",
+    "rif": "J-505256700",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Coro / Falcón",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "6749",
+    "nombre": "351 EUROMARKET, C.A",
+    "rif": "J-500247800",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "SUPERMERCADOS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "6999",
+    "nombre": "COMERCIAL MUNDO WEN II, C.A",
+    "rif": "J-500302983",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "7067",
+    "nombre": "MARKET SUPROMAX, C.A",
+    "rif": "J-506357011",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "SUPERMERCADOS",
+    "zona": "Coro / Falcón",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "7120",
+    "nombre": "JOSE GREGORIO SIERRA SIERRA (INVERSIONES HAYJOS, F.P)",
+    "rif": "V-075682820",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Coro / Falcón",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "7697",
+    "nombre": "EDIR REYES REYES, C.A",
+    "rif": "J-410251620",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "7763",
+    "nombre": "INVERSIONES LOS MUCHACHOS DE PARAGUANA R.R., C.A.",
+    "rif": "J-411889547",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "7791",
+    "nombre": "PUNTO ARAUCA 2025, C.A.",
+    "rif": "J-507173607",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "7827",
+    "nombre": "ANGUS CARNICERIA Y CHARCUTERIA, C.A",
+    "rif": "J-505701240",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Coro / Falcón",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "7865",
+    "nombre": "JAIRO ANTONIO LOZANO ESCORCIA \"JAIRO LOZANO, F.P\"",
+    "rif": "V-153682603",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "7960",
+    "nombre": "INVERSIONES ANA ISABEL PF , C.A",
+    "rif": "J-507844706",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "8012",
+    "nombre": "LAS GRACIAS A TI JEHOVA, C,A",
+    "rif": "J-402560710",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "ABASTOS Y BODEGAS",
+    "zona": "Maracaibo / Supervisión",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "8082",
+    "nombre": "AHORRA MAS SUPERMARKET, C.A.",
+    "rif": "J-504354023",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "SUPERMERCADOS",
+    "zona": "Coro / Falcón",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "8378",
+    "nombre": "WILBER JOSE HIDALGO LUGO",
+    "rif": "#N/A",
+    "vendedor": "VICTOR CAMPOS",
+    "canal": "#N/A",
     "zona": "Punto Fijo / Paraguaná",
     "region": "OCCIDENTE",
     "activo": true
@@ -24775,6 +25215,16 @@
     "rif": "J-408532654",
     "vendedor": "MARIANA CHACIN",
     "canal": "SUPERMERCADOS",
+    "zona": "Cuentas Clave 1",
+    "region": "OCCIDENTE",
+    "activo": true
+  },
+  {
+    "id": "8386",
+    "nombre": "MULTITIENDA FARMAEXPRESS AMPARO, C.A.",
+    "rif": "#N/A",
+    "vendedor": "MARIANA CHACIN",
+    "canal": "#N/A",
     "zona": "Cuentas Clave 1",
     "region": "OCCIDENTE",
     "activo": true

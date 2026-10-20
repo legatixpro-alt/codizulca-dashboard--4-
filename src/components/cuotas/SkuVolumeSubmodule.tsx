@@ -1172,7 +1172,7 @@ export const SkuVolumeSubmodule: React.FC<SkuVolumeSubmoduleProps> = ({
                   {inspectingRow.item.articulo}
                 </h3>
                 <p className="text-xs text-slate-300 mt-0.5">
-                  Auditoría individual de los 23 vendedores en este SKU puntual (Quién va bien vs Quién va mal)
+                  Auditoría individual de los 25 vendedores en este SKU puntual (Quién va bien vs Quién va mal)
                 </p>
               </div>
               <button
