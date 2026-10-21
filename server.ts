@@ -29,6 +29,12 @@ import {
   parseCuotasVolumenCsv,
   resolveMacroRubroKeyForArticle,
 } from './src/components/cuotas/skuVolumeSeedData';
+import crypto from 'crypto';
+import {
+  isSyntheticPriceOrInventoryRow,
+  mapSupabasePriceRowToPayload,
+  mapSupabaseInventoryRowToPayload,
+} from './src/lib/campoService';
 
 
 async function startServer() {
@@ -3910,8 +3916,8 @@ Responde con un JSON estructurado con:
       }
 
       let remoteRows: any[] | null = null;
-      const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+      const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
       if (supabaseUrl && supabaseKey) {
         try {
           const supabase = createClient(supabaseUrl.replace('/rest/v1/', ''), supabaseKey);
@@ -3959,8 +3965,8 @@ Responde con un JSON estructurado con:
       let photo: string | undefined = readMemoryCheckins().find((c) => c.id === id)?.photoBase64;
 
       if (!photo) {
-        const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+        const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
         if (supabaseUrl && supabaseKey) {
           const supabase = createClient(supabaseUrl.replace('/rest/v1/', ''), supabaseKey);
           const { data } = await supabase.from('checkins').select('photoBase64').eq('id', id).maybeSingle();
@@ -4005,8 +4011,8 @@ Responde con un JSON estructurado con:
       // Intentar persistir en Supabase si está disponible (solo columnas existentes en la tabla; campos extra
       // como offlinePending/batteryLevel hacían fallar el upsert en silencio y el marcaje nunca llegaba a Supabase)
       try {
-        const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+        const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
         if (supabaseUrl && supabaseKey) {
           const supabase = createClient(supabaseUrl.replace('/rest/v1/', ''), supabaseKey);
           const dbRecord: Record<string, any> = {};
@@ -4517,34 +4523,158 @@ Responde con un JSON estructurado con:
     }
   });
 
+  const isValidUuid = (val: any): boolean =>
+    typeof val === 'string' &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val.trim());
+
   const campoPricesPath = path.join(process.cwd(), 'data_price_surveys.json');
   let memoryPriceSurveys: any[] = [];
+  const deletedPriceSurveyIds = new Set<string>();
+  let priceSurveysCache: { payload: any[]; timestamp: number } | null = null;
   try {
     if (fs.existsSync(campoPricesPath)) {
-      memoryPriceSurveys = JSON.parse(fs.readFileSync(campoPricesPath, 'utf8'));
+      const rawDisk = JSON.parse(fs.readFileSync(campoPricesPath, 'utf8'));
+      if (Array.isArray(rawDisk)) {
+        memoryPriceSurveys = rawDisk
+          .filter((r) => !isSyntheticPriceOrInventoryRow(r))
+          .map(mapSupabasePriceRowToPayload);
+      }
     }
   } catch (e) {}
 
-  app.get('/api/price-surveys', (req, res) => {
-    res.json(memoryPriceSurveys);
+  app.get('/api/price-surveys', async (req, res) => {
+    try {
+      const now = Date.now();
+      if (req.query.refresh !== 'true' && priceSurveysCache && now - priceSurveysCache.timestamp < 4000) {
+        return res.json(priceSurveysCache.payload);
+      }
+
+      let remoteRows: any[] | null = null;
+      const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
+      if (supabaseUrl && supabaseKey) {
+        try {
+          const supabase = createClient(supabaseUrl.replace('/rest/v1/', ''), supabaseKey);
+          const pageSize = 1000;
+          const rows: any[] = [];
+          for (let from = 0; from < 50000; from += pageSize) {
+            const { data, error } = await supabase
+              .from('prices')
+              .select('*')
+              .order('date', { ascending: false })
+              .range(from, from + pageSize - 1);
+            if (error) throw error;
+            if (!Array.isArray(data) || data.length === 0) break;
+            rows.push(...data);
+            if (data.length < pageSize) break;
+          }
+          remoteRows = rows
+            .filter((r) => !isSyntheticPriceOrInventoryRow(r) && !deletedPriceSurveyIds.has(String(r.id)))
+            .map(mapSupabasePriceRowToPayload);
+        } catch (e: any) {
+          console.warn('[PriceSurveys] No se pudo leer Supabase prices, usando respaldo local:', e?.message);
+        }
+      }
+
+      const localFiltered = memoryPriceSurveys
+        .filter((r) => !isSyntheticPriceOrInventoryRow(r) && !deletedPriceSurveyIds.has(String(r.id)))
+        .map(mapSupabasePriceRowToPayload);
+
+      const remoteIds = new Set((remoteRows || []).map((r) => r.id));
+      const merged = [
+        ...(remoteRows || []),
+        ...localFiltered.filter((r) => !remoteIds.has(r.id)),
+      ].sort(
+        (a, b) => new Date(b.date || b.created_at || 0).getTime() - new Date(a.date || a.created_at || 0).getTime()
+      );
+
+      memoryPriceSurveys = merged;
+      priceSurveysCache = { payload: merged, timestamp: now };
+      try {
+        fs.writeFileSync(campoPricesPath, JSON.stringify(merged, null, 2), 'utf8');
+      } catch {}
+      return res.json(merged);
+    } catch (err: any) {
+      return res.json(memoryPriceSurveys);
+    }
   });
 
-  app.post('/api/price-surveys', (req, res) => {
+  app.post('/api/price-surveys', async (req, res) => {
     try {
-      const survey = req.body;
-      memoryPriceSurveys = [survey, ...memoryPriceSurveys.filter(s => s.id !== survey.id)];
-      try { fs.writeFileSync(campoPricesPath, JSON.stringify(memoryPriceSurveys, null, 2), 'utf8'); } catch (err) {}
+      const rawBody = req.body || {};
+      if (isSyntheticPriceOrInventoryRow(rawBody)) {
+        return res.status(201).json(rawBody);
+      }
+
+      const finalId = isValidUuid(rawBody.id) ? rawBody.id.trim() : crypto.randomUUID();
+      const survey = mapSupabasePriceRowToPayload({
+        ...rawBody,
+        id: finalId,
+        date: rawBody.date || new Date().toISOString(),
+        created_at: rawBody.created_at || new Date().toISOString(),
+      });
+
+      deletedPriceSurveyIds.delete(survey.id);
+      memoryPriceSurveys = [survey, ...memoryPriceSurveys.filter((s) => s.id !== survey.id)];
+      priceSurveysCache = null;
+      try {
+        fs.writeFileSync(campoPricesPath, JSON.stringify(memoryPriceSurveys, null, 2), 'utf8');
+      } catch (err) {}
+
+      try {
+        const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
+        if (supabaseUrl && supabaseKey) {
+          const supabase = createClient(supabaseUrl.replace('/rest/v1/', ''), supabaseKey);
+          const comps = Array.isArray(survey.competitors) ? survey.competitors : [];
+          const dbRow = {
+            id: finalId,
+            date: survey.date,
+            store: survey.store,
+            ourProduct: survey.productName,
+            ourPrice: Number(survey.ownPriceUsd) || 0,
+            competitor1Brand: comps[0]?.name || '',
+            competitor1Price: comps[0]?.priceUsd !== undefined ? Number(comps[0].priceUsd) : null,
+            competitor2Brand: comps[1]?.name || '',
+            competitor2Price: comps[1]?.priceUsd !== undefined ? Number(comps[1].priceUsd) : null,
+            competitor3Brand: comps[2]?.name || '',
+            competitor3Price: comps[2]?.priceUsd !== undefined ? Number(comps[2].priceUsd) : null,
+            competitorBrand: comps[0]?.name || null,
+            competitorPrice: comps[0]?.priceUsd !== undefined ? Number(comps[0].priceUsd) : null,
+            comments: survey.observations || '',
+            creatorId: String(rawBody.creatorId || rawBody.promoterEmail || survey.promoter || ''),
+            promoter: survey.promoter,
+          };
+          const { error: upsertErr } = await supabase.from('prices').upsert(dbRow);
+          if (upsertErr) console.warn('[PriceSurveys] Supabase upsert falló:', upsertErr.message);
+        }
+      } catch {}
+
       res.status(201).json(survey);
     } catch (err: any) {
       res.status(500).json({ error: 'Error al guardar precios', details: err?.message });
     }
   });
 
-  app.delete('/api/price-surveys/:id', (req, res) => {
+  app.delete('/api/price-surveys/:id', async (req, res) => {
     try {
       const { id } = req.params;
-      memoryPriceSurveys = memoryPriceSurveys.filter(s => s.id !== id);
-      try { fs.writeFileSync(campoPricesPath, JSON.stringify(memoryPriceSurveys, null, 2), 'utf8'); } catch (err) {}
+      deletedPriceSurveyIds.add(id);
+      memoryPriceSurveys = memoryPriceSurveys.filter((s) => s.id !== id);
+      priceSurveysCache = null;
+      try {
+        fs.writeFileSync(campoPricesPath, JSON.stringify(memoryPriceSurveys, null, 2), 'utf8');
+      } catch (err) {}
+
+      try {
+        const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
+        if (supabaseUrl && supabaseKey && isValidUuid(id)) {
+          const supabase = createClient(supabaseUrl.replace('/rest/v1/', ''), supabaseKey);
+          await supabase.from('prices').delete().eq('id', id);
+        }
+      } catch {}
+
       res.json({ success: true, id });
     } catch (err: any) {
       res.status(500).json({ error: 'Error al eliminar precio', details: err?.message });
@@ -4553,32 +4683,145 @@ Responde con un JSON estructurado con:
 
   const campoInvPath = path.join(process.cwd(), 'data_inventory_logs.json');
   let memoryInvLogs: any[] = [];
+  const deletedInvLogIds = new Set<string>();
+  let inventoryLogsCache: { payload: any[]; timestamp: number } | null = null;
   try {
     if (fs.existsSync(campoInvPath)) {
-      memoryInvLogs = JSON.parse(fs.readFileSync(campoInvPath, 'utf8'));
+      const rawDisk = JSON.parse(fs.readFileSync(campoInvPath, 'utf8'));
+      if (Array.isArray(rawDisk)) {
+        memoryInvLogs = rawDisk
+          .filter((r) => !isSyntheticPriceOrInventoryRow(r))
+          .map(mapSupabaseInventoryRowToPayload);
+      }
     }
   } catch (e) {}
 
-  app.get('/api/inventory-logs', (req, res) => {
-    res.json(memoryInvLogs);
+  app.get('/api/inventory-logs', async (req, res) => {
+    try {
+      const now = Date.now();
+      if (req.query.refresh !== 'true' && inventoryLogsCache && now - inventoryLogsCache.timestamp < 4000) {
+        return res.json(inventoryLogsCache.payload);
+      }
+
+      let remoteRows: any[] | null = null;
+      const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
+      if (supabaseUrl && supabaseKey) {
+        try {
+          const supabase = createClient(supabaseUrl.replace('/rest/v1/', ''), supabaseKey);
+          const pageSize = 1000;
+          const rows: any[] = [];
+          for (let from = 0; from < 50000; from += pageSize) {
+            const { data, error } = await supabase
+              .from('inventory')
+              .select('*')
+              .order('date', { ascending: false })
+              .range(from, from + pageSize - 1);
+            if (error) throw error;
+            if (!Array.isArray(data) || data.length === 0) break;
+            rows.push(...data);
+            if (data.length < pageSize) break;
+          }
+          remoteRows = rows
+            .filter((r) => !isSyntheticPriceOrInventoryRow(r) && !deletedInvLogIds.has(String(r.id)))
+            .map(mapSupabaseInventoryRowToPayload);
+        } catch (e: any) {
+          console.warn('[InventoryLogs] No se pudo leer Supabase inventory, usando respaldo local:', e?.message);
+        }
+      }
+
+      const localFiltered = memoryInvLogs
+        .filter((r) => !isSyntheticPriceOrInventoryRow(r) && !deletedInvLogIds.has(String(r.id)))
+        .map(mapSupabaseInventoryRowToPayload);
+
+      const remoteIds = new Set((remoteRows || []).map((r) => r.id));
+      const merged = [
+        ...(remoteRows || []),
+        ...localFiltered.filter((r) => !remoteIds.has(r.id)),
+      ].sort(
+        (a, b) => new Date(b.date || b.created_at || 0).getTime() - new Date(a.date || a.created_at || 0).getTime()
+      );
+
+      memoryInvLogs = merged;
+      inventoryLogsCache = { payload: merged, timestamp: now };
+      try {
+        fs.writeFileSync(campoInvPath, JSON.stringify(merged, null, 2), 'utf8');
+      } catch {}
+      return res.json(merged);
+    } catch (err: any) {
+      return res.json(memoryInvLogs);
+    }
   });
 
-  app.post('/api/inventory-logs', (req, res) => {
+  app.post('/api/inventory-logs', async (req, res) => {
     try {
-      const log = req.body;
-      memoryInvLogs = [log, ...memoryInvLogs.filter(s => s.id !== log.id)];
-      try { fs.writeFileSync(campoInvPath, JSON.stringify(memoryInvLogs, null, 2), 'utf8'); } catch (err) {}
+      const rawBody = req.body || {};
+      if (isSyntheticPriceOrInventoryRow(rawBody)) {
+        return res.status(201).json(rawBody);
+      }
+
+      const finalId = isValidUuid(rawBody.id) ? rawBody.id.trim() : crypto.randomUUID();
+      const log = mapSupabaseInventoryRowToPayload({
+        ...rawBody,
+        id: finalId,
+        date: rawBody.date || new Date().toISOString(),
+        created_at: rawBody.created_at || new Date().toISOString(),
+      });
+
+      deletedInvLogIds.delete(log.id);
+      memoryInvLogs = [log, ...memoryInvLogs.filter((s) => s.id !== log.id)];
+      inventoryLogsCache = null;
+      try {
+        fs.writeFileSync(campoInvPath, JSON.stringify(memoryInvLogs, null, 2), 'utf8');
+      } catch (err) {}
+
+      try {
+        const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
+        if (supabaseUrl && supabaseKey) {
+          const supabase = createClient(supabaseUrl.replace('/rest/v1/', ''), supabaseKey);
+          const dbRow = {
+            id: finalId,
+            date: log.date,
+            store: log.store,
+            product: log.productName,
+            initialQuantity: Number(log.initialStock) || 0,
+            finalQuantity: Number(log.finalStock) || 0,
+            degustations: Number(log.tastingsGiven) || 0,
+            comments: log.observations || '',
+            creatorId: String(rawBody.creatorId || rawBody.promoterEmail || log.promoter || ''),
+            promoter: log.promoter,
+          };
+          const { error: upsertErr } = await supabase.from('inventory').upsert(dbRow);
+          if (upsertErr) console.warn('[InventoryLogs] Supabase upsert falló:', upsertErr.message);
+        }
+      } catch {}
+
       res.status(201).json(log);
     } catch (err: any) {
       res.status(500).json({ error: 'Error al guardar inventario', details: err?.message });
     }
   });
 
-  app.delete('/api/inventory-logs/:id', (req, res) => {
+  app.delete('/api/inventory-logs/:id', async (req, res) => {
     try {
       const { id } = req.params;
-      memoryInvLogs = memoryInvLogs.filter(s => s.id !== id);
-      try { fs.writeFileSync(campoInvPath, JSON.stringify(memoryInvLogs, null, 2), 'utf8'); } catch (err) {}
+      deletedInvLogIds.add(id);
+      memoryInvLogs = memoryInvLogs.filter((s) => s.id !== id);
+      inventoryLogsCache = null;
+      try {
+        fs.writeFileSync(campoInvPath, JSON.stringify(memoryInvLogs, null, 2), 'utf8');
+      } catch (err) {}
+
+      try {
+        const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
+        if (supabaseUrl && supabaseKey && isValidUuid(id)) {
+          const supabase = createClient(supabaseUrl.replace('/rest/v1/', ''), supabaseKey);
+          await supabase.from('inventory').delete().eq('id', id);
+        }
+      } catch {}
+
       res.json({ success: true, id });
     } catch (err: any) {
       res.status(500).json({ error: 'Error al eliminar inventario', details: err?.message });

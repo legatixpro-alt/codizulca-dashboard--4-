@@ -11,6 +11,10 @@ import {
   PriceSurveyPayload,
   InventoryLogPayload,
   ShelfScanPayload,
+  mapSupabasePriceRowToPayload,
+  mapSupabaseInventoryRowToPayload,
+  isSyntheticPriceOrInventoryRow,
+  resolvePromoterNameFromRaw,
 } from '../lib/campoService';
 import { checkinsService } from '../lib/checkinsService';
 import { merchandisingService } from '../lib/merchandisingService';
@@ -236,6 +240,74 @@ describe('Restricción de Acceso a Trazabilidad y Sincronización App Promotoras
         expect(p.email).toContain('@');
         expect(p.name.length).toBeGreaterThan(2);
       }
+    });
+
+    it('mapea de forma exacta los registros reales de Supabase (prices e inventory) enviados desde la App de Promotoras', () => {
+      const supabasePriceRow = {
+        id: 'dd769a1f-e701-4161-ba59-6b6217289295',
+        date: '2026-10-18T00:34:03.922Z',
+        store: 'Comercializadora y Distribuidora FC',
+        ourProduct: 'Embutidos (Mortadela, Salchichas...) - Paquete',
+        ourPrice: 20.07,
+        competitor1Brand: 'Mortadela de pollo el corral 1Kg x10und ',
+        competitor1Price: 32,
+        competitor2Brand: 'Mortadela de pollo Recao 1Kg x10 und ',
+        competitor2Price: 30.54,
+        competitor3Brand: 'Mortadela de pollo Plumrose 1kg x10 und ',
+        competitor3Price: 25,
+        comments: '',
+        creatorId: '3e0b2b81-4785-41f3-8a15-e66ff02ae0ad',
+        promoter: 'JULIANNYS GIL',
+        created_at: '2026-10-18T00:34:03.925+00:00',
+      };
+
+      expect(isSyntheticPriceOrInventoryRow(supabasePriceRow)).toBe(false);
+      const mappedPrice = mapSupabasePriceRowToPayload(supabasePriceRow);
+      expect(mappedPrice.id).toBe('dd769a1f-e701-4161-ba59-6b6217289295');
+      expect(mappedPrice.promoter).toBe('JULIANNYS GIL');
+      expect(mappedPrice.store).toBe('Comercializadora y Distribuidora FC');
+      expect(mappedPrice.productName).toBe('Embutidos (Mortadela, Salchichas...) - Paquete');
+      expect(mappedPrice.ownPriceUsd).toBe(20.07);
+      expect(mappedPrice.competitors.length).toBe(3);
+      expect(mappedPrice.competitors[0].name).toBe('Mortadela de pollo el corral 1Kg x10und');
+      expect(mappedPrice.competitors[0].priceUsd).toBe(32);
+
+      const supabaseInvRow = {
+        id: 'a1dca447-be8c-4f9f-871c-f35ce54cb0d7',
+        date: '2026-10-17T22:41:28.690Z',
+        store: 'Alkosto de delicias ',
+        product: 'Embutidos (Mortadela, Salchichas...) - Unidad',
+        initialQuantity: 28.06,
+        finalQuantity: 23.05,
+        degustations: 0,
+        comments: 'Rotación continua en charcutería',
+        creatorId: '1d60249d-6731-4c19-9e80-26399fedb866',
+        promoter: 'DARIANNYS FERRER',
+        created_at: '2026-10-17T22:41:30.847751+00:00',
+      };
+
+      expect(isSyntheticPriceOrInventoryRow(supabaseInvRow)).toBe(false);
+      const mappedInv = mapSupabaseInventoryRowToPayload(supabaseInvRow);
+      expect(mappedInv.id).toBe('a1dca447-be8c-4f9f-871c-f35ce54cb0d7');
+      expect(mappedInv.promoter).toBe('DARIANNYS FERRER');
+      expect(mappedInv.store).toBe('Alkosto de delicias');
+      expect(mappedInv.initialStock).toBe(28.06);
+      expect(mappedInv.finalStock).toBe(23.05);
+      expect(mappedInv.netRotation).toBe(5.01);
+
+      // Resuelve el nombre de promotora cuando el registro trae correo o UID en creatorId
+      expect(resolvePromoterNameFromRaw('', 'valevalentina0111@gmail.com')).toBe('VALERIA ACEVEDO');
+      expect(resolvePromoterNameFromRaw('scarmichell22@gmail.com', 'scarmichell22@gmail.com')).toBe('SCARLETH PIÑA');
+
+      // Filtra registros semilla ficticios (admin / Supermercado A / Abasto B)
+      expect(
+        isSyntheticPriceOrInventoryRow({
+          id: 'ef235819-47b1-4523-ac24-3c39bea18ad5',
+          creatorId: 'admin',
+          promoter: '',
+          store: 'Supermercado De Candido',
+        })
+      ).toBe(true);
     });
   });
 });

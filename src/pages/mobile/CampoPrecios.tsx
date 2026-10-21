@@ -132,8 +132,13 @@ export const CampoPrecios: React.FC<{ activePromoterName?: string }> = ({
       };
     });
 
+    const generatedId =
+      typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : 'PRICE-' + Date.now().toString().slice(-6);
+
     const payload: PriceSurveyPayload = {
-      id: 'PRICE-' + Date.now().toString().slice(-6),
+      id: generatedId,
       date: new Date().toISOString(),
       store: storeName,
       promoter: activePromoterName || activePromoter?.name || campoService.getActivePromoter().name,

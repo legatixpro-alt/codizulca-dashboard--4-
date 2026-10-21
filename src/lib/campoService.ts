@@ -299,6 +299,246 @@ export function addCustomStoreToCatalog(storeName: string): string[] {
 // Tasa Oficial BCV de Referencia (Actualizable o por defecto)
 export const OFFICIAL_BCV_RATE = 36.85;
 
+// Mapa oficial de correos y UIDs de promotoras (App Móvil / Supabase) -> Nombre canónico
+const PROMOTER_CREATOR_MAP: Record<string, string> = {
+  'godoyaraujonicole@gmail.com': 'NICOLE GODOY',
+  'fer171205@gmail.com': 'FERNANDA LEON',
+  '0307e464-374d-4e97-b0dd-b6128d939de3': 'FERNANDA LEON',
+  'nismariderizan3@gmail.com': 'NISMARY DERIZAN',
+  'caf6f131-97f0-48cb-9503-e55637efb45d': 'NISMARY DERIZAN',
+  'dariannysferrer23@gmail.com': 'DARIANNYS FERRER',
+  '1d60249d-6731-4c19-9e80-26399fedb866': 'DARIANNYS FERRER',
+  'camimi2507@gmail.com': 'CAMILA MORALES',
+  'cc6ee90c-1518-4faf-a5ca-6b17ad1057a3': 'CAMILA MORALES',
+  'reyescareliz3@gmail.com': 'CARELIZ REYES',
+  'mariaalmarza16@gmail.com': 'MARIA ALMARZA',
+  '7ecc4132-41a1-457f-8b5b-a351d516eea7': 'MARIA ALMARZA',
+  'f4b01b87-ddc6-4d57-b5ce-89f365d84bcc': 'MARIA ALMARZA',
+  'scarmichell22@gmail.com': 'SCARLETH PIÑA',
+  'anavecheverriar@gmail.com': 'ANA ECHEVERRIA',
+  'luzz010203@gmail.com': 'OSMAIRY VILLASMIL',
+  '11a20f7f-f9c9-4520-b759-e6cadae3693f': 'OSMAIRY VILLASMIL',
+  'tataacardenas@gmail.com': 'TANIA CARDENAS',
+  '3fb11b83-0fe8-4fbb-9206-9f97fab5f728': 'TANIA CARDENAS',
+  'hxlloueipcm2uqncdotsdzuibc3': 'TANIA CARDENAS',
+  'hxlcloueipcm2uqncdotsdzuibc3': 'TANIA CARDENAS',
+  'antuneznairelis@gmail.com': 'NAIRELIS ANTUNEZ',
+  '5695f4f2-88c9-450f-b6e0-d164147f97d8': 'NAIRELIS ANTUNEZ',
+  '5p4txlh7hupfb2eyuxtwxvqyea53': 'NAIRELIS ANTUNEZ',
+  'demo-uid': 'NAIRELIS ANTUNEZ',
+  'demo-merch-uid': 'NAIRELIS ANTUNEZ',
+  'jaivelinfereira20@gmail.com': 'JAIVELIN FEREIRA',
+  'ruizahyrleth22@gmail.com': 'AHYRLET RUIZ',
+  '93246df4-ccba-41dd-8400-b811157453d0': 'AHYRLET RUIZ',
+  'valevalentina0111@gmail.com': 'VALERIA ACEVEDO',
+  '43b38a3c-1bd7-4491-8a74-7ba138b3eed4': 'VALERIA ACEVEDO',
+  'clausofidaza@gmail.com': 'CLAUDIA ALVAREZ',
+  '738c0941-615b-4cd6-b6e9-0d09e7457a64': 'CLAUDIA ALVAREZ',
+  'jelaryacosta@gmail.com': 'JELARY ACOSTA',
+  '6fca1c0d-5df5-43a4-ba0e-acf9694362fb': 'JELARY ACOSTA',
+  'mariangelulacio3110@gmail.com': 'MARIANGEL VALDIVIESO',
+  '91550c4c-5fa8-4fa6-84cd-3cbd9835b5b7': 'MARIANGEL VALDIVIESO',
+  'enuksqjurey0ilfujlxzalwl0fg1': 'MARIANGEL VALDIVIESO',
+  'angelicaquero13@gmail.com': 'ANGELICA SANCHEZ',
+  'eneliejoseph@gmail.com': 'ENELIANGELA GONZALEZ',
+  '403c29c0-298d-46e5-a31a-b8056b0113db': 'ENELIANGELA GONZALEZ',
+  'zwmq3nkkxxxwzqyachmw2bqzty1': 'ENELIANGELA GONZALEZ',
+  'zwmq3nkkxxxwzqyachmw2bqzzty1': 'ENELIANGELA GONZALEZ',
+  'marianyelaranda@gmail.com': 'MARIANYEL ARANDA',
+  'juliannys.gil.crespo@gmail.com': 'JULIANNYS GIL',
+  '3e0b2b81-4785-41f3-8a15-e66ff02ae0ad': 'JULIANNYS GIL',
+  'joseabraham.barroso@gmail.com': 'JOSE BARROSO',
+  'bd271523-05d7-430c-9dd7-d859f3d848f8': 'JOSE BARROSO',
+  'jose-barroso-official': 'JOSE BARROSO',
+  'ziorelis.grangger@codizulca.com': 'ZIORELI GRANGGER',
+};
+
+const SYNTHETIC_SEED_IDS = new Set([
+  'ef235819-47b1-4523-ac24-3c39bea18ad5',
+  '2842e4ec-f1a5-4a1f-917b-41a3e22692b8',
+  'f66d88fa-cf5b-4809-88ab-a16407fd50bf',
+  '2d84d199-70e6-4466-acb1-c158873068d3',
+  'a3569c63-dd0c-4f92-a5fd-738be016ecc0',
+  'a98ddc9d-afe9-4041-abef-d808b8ce1a7e',
+  'd12385d7-5c4a-48a5-adc2-81f2226be449',
+  'b8c153f9-0b47-462a-a0e8-01043d4eea2d',
+  'f19ac9d4-4687-4083-9c67-2297b592141c',
+  'e9cde11f-03fc-43ba-a995-c404bb42a7ac',
+]);
+
+const SYNTHETIC_DEMO_PROMOTERS = new Set([
+  'maria gonzalez',
+  'ana silva',
+  'ana perez',
+  'grecia castillo',
+]);
+
+export function isSyntheticPriceOrInventoryRow(row: any): boolean {
+  if (!row || !row.id) return true;
+  const idStr = String(row.id).trim();
+  if (SYNTHETIC_SEED_IDS.has(idStr)) return true;
+  if (/^(PRICE|INV|SURV|SCAN)-TEST-/i.test(idStr)) return true;
+  if (String(row.creatorId || '').trim().toLowerCase() === 'admin') return true;
+  const rawPromoter = String(row.promoter || '').trim().toLowerCase();
+  if (SYNTHETIC_DEMO_PROMOTERS.has(rawPromoter)) return true;
+  const rawStore = String(row.store || '').trim().toLowerCase();
+  if (rawStore === 'supermercado a' || rawStore === 'abasto b') return true;
+  if (!rawPromoter && !String(row.creatorId || '').trim()) return true;
+  return false;
+}
+
+export function resolvePromoterNameFromRaw(rawPromoter?: string, creatorId?: string): string {
+  const cleanRaw = String(rawPromoter || '').trim();
+  const cleanCreator = String(creatorId || '').trim().toLowerCase();
+
+  if (cleanRaw && !cleanRaw.includes('@')) {
+    const byCreator = PROMOTER_CREATOR_MAP[cleanRaw.toLowerCase()];
+    if (byCreator) return byCreator;
+    const matchedInList = PROMOTERS_LIST.find(
+      (p) => p.name.trim().toLowerCase() === cleanRaw.toLowerCase()
+    );
+    if (matchedInList) return matchedInList.name;
+    return cleanRaw;
+  }
+
+  if (cleanRaw && cleanRaw.includes('@')) {
+    const mapped = PROMOTER_CREATOR_MAP[cleanRaw.toLowerCase()];
+    if (mapped) return mapped;
+  }
+
+  if (cleanCreator && PROMOTER_CREATOR_MAP[cleanCreator]) {
+    return PROMOTER_CREATOR_MAP[cleanCreator];
+  }
+
+  return cleanRaw || 'Promotora';
+}
+
+export function mapSupabasePriceRowToPayload(row: any): PriceSurveyPayload {
+  const rate = Number(row?.bcvRate) || OFFICIAL_BCV_RATE;
+  const ownUsd = Number(row?.ourPrice ?? row?.ownPriceUsd) || 0;
+  const ownBs = Number(row?.ownPriceBs) || Number((ownUsd * rate).toFixed(2));
+
+  if (row && Array.isArray(row.competitors) && row.productName !== undefined) {
+    return {
+      ...row,
+      id: String(row.id),
+      date: row.date || row.created_at || new Date().toISOString(),
+      store: String(row.store || 'Punto de Venta').trim(),
+      promoter: resolvePromoterNameFromRaw(row.promoter, row.creatorId),
+      productName: String(row.productName || row.ourProduct || 'Producto Codizulca').trim(),
+      ownPriceUsd: ownUsd,
+      ownPriceBs: ownBs,
+      bcvRate: rate,
+      competitors: row.competitors.map((c: any) => {
+        const cUsd = Number(c?.priceUsd) || 0;
+        return {
+          name: String(c?.name || '').trim(),
+          priceUsd: cUsd,
+          priceBs: Number(c?.priceBs) || Number((cUsd * rate).toFixed(2)),
+          diffPercent:
+            c?.diffPercent !== undefined
+              ? Number(c.diffPercent)
+              : ownUsd > 0 && cUsd > 0
+              ? Number((((cUsd - ownUsd) / ownUsd) * 100).toFixed(1))
+              : 0,
+        };
+      }),
+      observations: String(row.observations ?? row.comments ?? '').trim(),
+      created_at: row.created_at || row.date,
+    };
+  }
+
+  const rawPairs: Array<{ brand: any; price: any }> = [
+    { brand: row?.competitor1Brand, price: row?.competitor1Price },
+    { brand: row?.competitor2Brand, price: row?.competitor2Price },
+    { brand: row?.competitor3Brand, price: row?.competitor3Price },
+  ];
+  if (
+    rawPairs.every((p) => !p.brand && (p.price === null || p.price === undefined || p.price === '')) &&
+    (row?.competitorBrand || row?.competitorPrice)
+  ) {
+    rawPairs.push({ brand: row.competitorBrand, price: row.competitorPrice });
+  }
+
+  const competitors = rawPairs
+    .filter(
+      (p) =>
+        (p.brand && String(p.brand).trim() !== '') ||
+        (p.price !== null && p.price !== undefined && Number(p.price) > 0)
+    )
+    .map((p) => {
+      const name = String(p.brand || 'Competidor').trim();
+      const priceUsd = Number(p.price) || 0;
+      const priceBs = Number((priceUsd * rate).toFixed(2));
+      const diffPercent =
+        ownUsd > 0 && priceUsd > 0 ? Number((((priceUsd - ownUsd) / ownUsd) * 100).toFixed(1)) : 0;
+      return { name, priceUsd, priceBs, diffPercent };
+    });
+
+  const rawComments = String(row?.comments ?? row?.observations ?? '').trim();
+  const cleanObs =
+    rawComments === 'AI_SCANNED' ? 'Escaneo de etiqueta en anaquel (App Promotora)' : rawComments;
+
+  return {
+    id: String(row?.id),
+    date: row?.date || row?.created_at || new Date().toISOString(),
+    store: String(row?.store || 'Punto de Venta').trim(),
+    promoter: resolvePromoterNameFromRaw(row?.promoter, row?.creatorId),
+    productName: String(row?.ourProduct || row?.productName || 'Producto Codizulca').trim(),
+    ownPriceUsd: ownUsd,
+    ownPriceBs: ownBs,
+    bcvRate: rate,
+    competitors,
+    observations: cleanObs,
+    created_at: row?.created_at || row?.date,
+  };
+}
+
+export function mapSupabaseInventoryRowToPayload(row: any): InventoryLogPayload {
+  const init = Number(row?.initialQuantity ?? row?.initialStock) || 0;
+  const fin = Number(row?.finalQuantity ?? row?.finalStock) || 0;
+  const tastings = Number(row?.degustations ?? row?.tastingsGiven) || 0;
+  const rawDiff = Number((init - fin).toFixed(3));
+  const calculatedNet =
+    tastings > 0 && rawDiff > tastings
+      ? Number((rawDiff - tastings).toFixed(3))
+      : Math.max(0, rawDiff);
+  const netRotation =
+    row?.netRotation !== undefined && row?.netRotation !== null && !Number.isNaN(Number(row.netRotation))
+      ? Number(row.netRotation)
+      : calculatedNet;
+
+  return {
+    id: String(row?.id),
+    date: row?.date || row?.created_at || new Date().toISOString(),
+    store: String(row?.store || 'Punto de Venta').trim(),
+    promoter: resolvePromoterNameFromRaw(row?.promoter, row?.creatorId),
+    productName: String(row?.product || row?.productName || 'Producto Codizulca').trim(),
+    initialStock: init,
+    tastingsGiven: tastings,
+    finalStock: fin,
+    netRotation,
+    observations: String(row?.comments ?? row?.observations ?? '').trim(),
+    created_at: row?.created_at || row?.date,
+  };
+}
+
+const CAMPO_SYNC_CHANNEL_NAME = 'codizulca_campo_sync_channel';
+const notifyCampoDataChanged = () => {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('codizulca_campo_data_updated'));
+  }
+  try {
+    if (typeof BroadcastChannel !== 'undefined') {
+      const bc = new BroadcastChannel(CAMPO_SYNC_CHANNEL_NAME);
+      bc.postMessage({ type: 'CAMPO_DATA_UPDATED', timestamp: Date.now() });
+      bc.close();
+    }
+  } catch {
+    // ignore BroadcastChannel errors
+  }
+};
+
 // Almacenamiento local
 const QUEUE_STORAGE_KEY = 'portal_sync_queue';
 const ACTIVE_USER_KEY = 'portal_active_promoter_obj';
@@ -620,11 +860,15 @@ export const campoService = {
     const KEY = 'codizulca_shelf_scans';
     const local: ShelfScanPayload[] = JSON.parse(localStorage.getItem(KEY) || '[]');
     const filtered = local.filter((s) => s.id !== scan.id);
-    localStorage.setItem(KEY, JSON.stringify([scan, ...filtered]));
+    try {
+      localStorage.setItem(KEY, JSON.stringify([scan, ...filtered]));
+    } catch {
+      // ignore quota errors
+    }
 
     if (!navigator.onLine) {
       this.enqueue('shelf_scan', scan);
-      window.dispatchEvent(new Event('codizulca_campo_data_updated'));
+      notifyCampoDataChanged();
       window.dispatchEvent(new Event('codizulca_merchandising_changed'));
       return { success: true, offline: true };
     }
@@ -636,27 +880,32 @@ export const campoService = {
         body: JSON.stringify(scan)
       });
       if (!res.ok) throw new Error('Error al sincronizar con servidor');
-      window.dispatchEvent(new Event('codizulca_campo_data_updated'));
+      notifyCampoDataChanged();
       window.dispatchEvent(new Event('codizulca_merchandising_changed'));
       return { success: true, offline: false };
     } catch {
       this.enqueue('shelf_scan', scan);
-      window.dispatchEvent(new Event('codizulca_campo_data_updated'));
+      notifyCampoDataChanged();
       window.dispatchEvent(new Event('codizulca_merchandising_changed'));
       return { success: true, offline: true };
     }
   },
 
-  // Guardado de Monitoreo de Precios
+  // Guardado de Monitoreo de Precios (Sincronización inmediata con Servidor + Supabase + Trade Marketing)
   async savePriceSurvey(survey: PriceSurveyPayload): Promise<{ success: boolean; offline: boolean }> {
     const KEY = 'codizulca_price_surveys';
+    const normalized = mapSupabasePriceRowToPayload(survey);
     const local: PriceSurveyPayload[] = JSON.parse(localStorage.getItem(KEY) || '[]');
-    const filtered = local.filter((s) => s.id !== survey.id);
-    localStorage.setItem(KEY, JSON.stringify([survey, ...filtered]));
+    const filtered = local.filter((s) => s.id !== normalized.id);
+    try {
+      localStorage.setItem(KEY, JSON.stringify([normalized, ...filtered]));
+    } catch {
+      // ignore quota errors
+    }
 
     if (!navigator.onLine) {
-      this.enqueue('price_survey', survey);
-      window.dispatchEvent(new Event('codizulca_campo_data_updated'));
+      this.enqueue('price_survey', normalized);
+      notifyCampoDataChanged();
       return { success: true, offline: true };
     }
 
@@ -664,28 +913,40 @@ export const campoService = {
       const res = await fetch('/api/price-surveys', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(survey)
+        body: JSON.stringify(normalized)
       });
       if (!res.ok) throw new Error('Error al enviar precios');
-      window.dispatchEvent(new Event('codizulca_campo_data_updated'));
+      const saved = await res.json().catch(() => normalized);
+      if (saved && saved.id && saved.id !== normalized.id) {
+        const updatedLocal = [mapSupabasePriceRowToPayload(saved), ...filtered];
+        try {
+          localStorage.setItem(KEY, JSON.stringify(updatedLocal));
+        } catch {}
+      }
+      notifyCampoDataChanged();
       return { success: true, offline: false };
     } catch {
-      this.enqueue('price_survey', survey);
-      window.dispatchEvent(new Event('codizulca_campo_data_updated'));
+      this.enqueue('price_survey', normalized);
+      notifyCampoDataChanged();
       return { success: true, offline: true };
     }
   },
 
-  // Guardado de Control de Inventario
+  // Guardado de Control de Inventario (Sincronización inmediata con Servidor + Supabase + Trade Marketing)
   async saveInventoryLog(log: InventoryLogPayload): Promise<{ success: boolean; offline: boolean }> {
     const KEY = 'codizulca_inventory_logs';
+    const normalized = mapSupabaseInventoryRowToPayload(log);
     const local: InventoryLogPayload[] = JSON.parse(localStorage.getItem(KEY) || '[]');
-    const filtered = local.filter((l) => l.id !== log.id);
-    localStorage.setItem(KEY, JSON.stringify([log, ...filtered]));
+    const filtered = local.filter((l) => l.id !== normalized.id);
+    try {
+      localStorage.setItem(KEY, JSON.stringify([normalized, ...filtered]));
+    } catch {
+      // ignore quota errors
+    }
 
     if (!navigator.onLine) {
-      this.enqueue('inventory_log', log);
-      window.dispatchEvent(new Event('codizulca_campo_data_updated'));
+      this.enqueue('inventory_log', normalized);
+      notifyCampoDataChanged();
       return { success: true, offline: true };
     }
 
@@ -693,14 +954,21 @@ export const campoService = {
       const res = await fetch('/api/inventory-logs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(log)
+        body: JSON.stringify(normalized)
       });
       if (!res.ok) throw new Error('Error al enviar inventario');
-      window.dispatchEvent(new Event('codizulca_campo_data_updated'));
+      const saved = await res.json().catch(() => normalized);
+      if (saved && saved.id && saved.id !== normalized.id) {
+        const updatedLocal = [mapSupabaseInventoryRowToPayload(saved), ...filtered];
+        try {
+          localStorage.setItem(KEY, JSON.stringify(updatedLocal));
+        } catch {}
+      }
+      notifyCampoDataChanged();
       return { success: true, offline: false };
     } catch {
-      this.enqueue('inventory_log', log);
-      window.dispatchEvent(new Event('codizulca_campo_data_updated'));
+      this.enqueue('inventory_log', normalized);
+      notifyCampoDataChanged();
       return { success: true, offline: true };
     }
   },
@@ -710,11 +978,15 @@ export const campoService = {
     const KEY = 'codizulca_tasting_surveys';
     const local: TastingSurveyPayload[] = JSON.parse(localStorage.getItem(KEY) || '[]');
     const filtered = local.filter((s) => s.id !== survey.id);
-    localStorage.setItem(KEY, JSON.stringify([survey, ...filtered]));
+    try {
+      localStorage.setItem(KEY, JSON.stringify([survey, ...filtered]));
+    } catch {
+      // ignore quota errors
+    }
 
     if (!navigator.onLine) {
       this.enqueue('tasting_survey', survey);
-      window.dispatchEvent(new Event('codizulca_campo_data_updated'));
+      notifyCampoDataChanged();
       return { success: true, offline: true };
     }
 
@@ -725,11 +997,11 @@ export const campoService = {
         body: JSON.stringify(survey)
       });
       if (!res.ok) throw new Error('Error al enviar encuesta');
-      window.dispatchEvent(new Event('codizulca_campo_data_updated'));
+      notifyCampoDataChanged();
       return { success: true, offline: false };
     } catch {
       this.enqueue('tasting_survey', survey);
-      window.dispatchEvent(new Event('codizulca_campo_data_updated'));
+      notifyCampoDataChanged();
       return { success: true, offline: true };
     }
   },
@@ -738,9 +1010,11 @@ export const campoService = {
   async getShelfScans(): Promise<ShelfScanPayload[]> {
     const KEY = 'codizulca_shelf_scans';
     let serverList: ShelfScanPayload[] = [];
+    let serverResponded = false;
     try {
       const res = await fetch('/api/shelf-scans');
       if (res.ok) {
+        serverResponded = true;
         const data = await res.json();
         if (Array.isArray(data)) serverList = data;
       }
@@ -753,6 +1027,9 @@ export const campoService = {
     } catch {
       localList = [];
     }
+    if (serverResponded) {
+      localList = localList.filter((item) => item && item.id && !/^SCAN-TEST-/i.test(String(item.id)));
+    }
     const map = new Map<string, ShelfScanPayload>();
     [...serverList, ...localList].forEach((item) => {
       if (item && item.id) map.set(item.id, item);
@@ -760,18 +1037,27 @@ export const campoService = {
     const merged = Array.from(map.values()).sort(
       (a, b) => new Date(b.created_at || b.date || 0).getTime() - new Date(a.created_at || a.date || 0).getTime()
     );
-    localStorage.setItem(KEY, JSON.stringify(merged));
+    try {
+      localStorage.setItem(KEY, JSON.stringify(merged));
+    } catch {}
     return merged;
   },
 
-  async getPriceSurveys(): Promise<PriceSurveyPayload[]> {
+  async getPriceSurveys(forceRefresh: boolean = false): Promise<PriceSurveyPayload[]> {
     const KEY = 'codizulca_price_surveys';
     let serverList: PriceSurveyPayload[] = [];
+    let serverResponded = false;
     try {
-      const res = await fetch('/api/price-surveys');
+      const url = forceRefresh ? '/api/price-surveys?refresh=true' : '/api/price-surveys';
+      const res = await fetch(url);
       if (res.ok) {
+        serverResponded = true;
         const data = await res.json();
-        if (Array.isArray(data)) serverList = data;
+        if (Array.isArray(data)) {
+          serverList = data
+            .filter((row) => !isSyntheticPriceOrInventoryRow(row))
+            .map(mapSupabasePriceRowToPayload);
+        }
       }
     } catch {
       // fallback to localStorage
@@ -782,25 +1068,40 @@ export const campoService = {
     } catch {
       localList = [];
     }
+    if (serverResponded) {
+      localList = localList
+        .filter((item) => !isSyntheticPriceOrInventoryRow(item))
+        .map(mapSupabasePriceRowToPayload);
+    }
     const map = new Map<string, PriceSurveyPayload>();
-    [...serverList, ...localList].forEach((item) => {
+    // localList primero y serverList después para que los datos canónicos de Supabase/servidor prevalezcan
+    [...localList, ...serverList].forEach((item) => {
       if (item && item.id) map.set(item.id, item);
     });
     const merged = Array.from(map.values()).sort(
-      (a, b) => new Date(b.created_at || b.date || 0).getTime() - new Date(a.created_at || a.date || 0).getTime()
+      (a, b) => new Date(b.date || b.created_at || 0).getTime() - new Date(a.date || a.created_at || 0).getTime()
     );
-    localStorage.setItem(KEY, JSON.stringify(merged));
+    try {
+      localStorage.setItem(KEY, JSON.stringify(merged));
+    } catch {}
     return merged;
   },
 
-  async getInventoryLogs(): Promise<InventoryLogPayload[]> {
+  async getInventoryLogs(forceRefresh: boolean = false): Promise<InventoryLogPayload[]> {
     const KEY = 'codizulca_inventory_logs';
     let serverList: InventoryLogPayload[] = [];
+    let serverResponded = false;
     try {
-      const res = await fetch('/api/inventory-logs');
+      const url = forceRefresh ? '/api/inventory-logs?refresh=true' : '/api/inventory-logs';
+      const res = await fetch(url);
       if (res.ok) {
+        serverResponded = true;
         const data = await res.json();
-        if (Array.isArray(data)) serverList = data;
+        if (Array.isArray(data)) {
+          serverList = data
+            .filter((row) => !isSyntheticPriceOrInventoryRow(row))
+            .map(mapSupabaseInventoryRowToPayload);
+        }
       }
     } catch {
       // fallback to localStorage
@@ -811,23 +1112,32 @@ export const campoService = {
     } catch {
       localList = [];
     }
+    if (serverResponded) {
+      localList = localList
+        .filter((item) => !isSyntheticPriceOrInventoryRow(item))
+        .map(mapSupabaseInventoryRowToPayload);
+    }
     const map = new Map<string, InventoryLogPayload>();
-    [...serverList, ...localList].forEach((item) => {
+    [...localList, ...serverList].forEach((item) => {
       if (item && item.id) map.set(item.id, item);
     });
     const merged = Array.from(map.values()).sort(
-      (a, b) => new Date(b.created_at || b.date || 0).getTime() - new Date(a.created_at || a.date || 0).getTime()
+      (a, b) => new Date(b.date || b.created_at || 0).getTime() - new Date(a.date || a.created_at || 0).getTime()
     );
-    localStorage.setItem(KEY, JSON.stringify(merged));
+    try {
+      localStorage.setItem(KEY, JSON.stringify(merged));
+    } catch {}
     return merged;
   },
 
   async getTastingSurveys(): Promise<TastingSurveyPayload[]> {
     const KEY = 'codizulca_tasting_surveys';
     let serverList: TastingSurveyPayload[] = [];
+    let serverResponded = false;
     try {
       const res = await fetch('/api/tasting-surveys');
       if (res.ok) {
+        serverResponded = true;
         const data = await res.json();
         if (Array.isArray(data)) serverList = data;
       }
@@ -840,6 +1150,9 @@ export const campoService = {
     } catch {
       localList = [];
     }
+    if (serverResponded) {
+      localList = localList.filter((item) => item && item.id && !/^SURV-TEST-/i.test(String(item.id)));
+    }
     const map = new Map<string, TastingSurveyPayload>();
     [...serverList, ...localList].forEach((item) => {
       if (item && item.id) map.set(item.id, item);
@@ -847,7 +1160,9 @@ export const campoService = {
     const merged = Array.from(map.values()).sort(
       (a, b) => new Date(b.created_at || b.date || 0).getTime() - new Date(a.created_at || a.date || 0).getTime()
     );
-    localStorage.setItem(KEY, JSON.stringify(merged));
+    try {
+      localStorage.setItem(KEY, JSON.stringify(merged));
+    } catch {}
     return merged;
   },
 
@@ -857,8 +1172,10 @@ export const campoService = {
       await fetch(`/api/price-surveys/${id}`, { method: 'DELETE' });
     } catch {}
     const local: PriceSurveyPayload[] = JSON.parse(localStorage.getItem(KEY) || '[]');
-    localStorage.setItem(KEY, JSON.stringify(local.filter((i) => i.id !== id)));
-    window.dispatchEvent(new Event('codizulca_campo_data_updated'));
+    try {
+      localStorage.setItem(KEY, JSON.stringify(local.filter((i) => i.id !== id)));
+    } catch {}
+    notifyCampoDataChanged();
     return true;
   },
 
@@ -868,8 +1185,10 @@ export const campoService = {
       await fetch(`/api/inventory-logs/${id}`, { method: 'DELETE' });
     } catch {}
     const local: InventoryLogPayload[] = JSON.parse(localStorage.getItem(KEY) || '[]');
-    localStorage.setItem(KEY, JSON.stringify(local.filter((i) => i.id !== id)));
-    window.dispatchEvent(new Event('codizulca_campo_data_updated'));
+    try {
+      localStorage.setItem(KEY, JSON.stringify(local.filter((i) => i.id !== id)));
+    } catch {}
+    notifyCampoDataChanged();
     return true;
   },
 
@@ -879,8 +1198,10 @@ export const campoService = {
       await fetch(`/api/tasting-surveys/${id}`, { method: 'DELETE' });
     } catch {}
     const local: TastingSurveyPayload[] = JSON.parse(localStorage.getItem(KEY) || '[]');
-    localStorage.setItem(KEY, JSON.stringify(local.filter((i) => i.id !== id)));
-    window.dispatchEvent(new Event('codizulca_campo_data_updated'));
+    try {
+      localStorage.setItem(KEY, JSON.stringify(local.filter((i) => i.id !== id)));
+    } catch {}
+    notifyCampoDataChanged();
     return true;
   },
 
@@ -896,6 +1217,15 @@ export const campoService = {
         callback();
       }
     };
+    let bc: BroadcastChannel | null = null;
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        bc = new BroadcastChannel(CAMPO_SYNC_CHANNEL_NAME);
+        bc.onmessage = () => callback();
+      }
+    } catch {
+      bc = null;
+    }
     window.addEventListener('codizulca_campo_data_updated', handler);
     window.addEventListener('codizulca_sync_queue_updated', handler);
     window.addEventListener('storage', storageHandler);
@@ -903,6 +1233,11 @@ export const campoService = {
       window.removeEventListener('codizulca_campo_data_updated', handler);
       window.removeEventListener('codizulca_sync_queue_updated', handler);
       window.removeEventListener('storage', storageHandler);
+      if (bc) {
+        try {
+          bc.close();
+        } catch {}
+      }
     };
   },
 

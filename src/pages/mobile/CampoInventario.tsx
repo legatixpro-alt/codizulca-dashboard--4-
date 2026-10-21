@@ -75,8 +75,12 @@ export const CampoInventario: React.FC<{ activePromoterName?: string }> = ({
     }
 
     const promoterFinalName = activePromoterName || activePromoter?.name || campoService.getActivePromoter().name;
+    const generatedId =
+      typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : 'INV-' + Date.now().toString().slice(-6);
     const payload: InventoryLogPayload = {
-      id: 'INV-' + Date.now().toString().slice(-6),
+      id: generatedId,
       date: new Date().toISOString(),
       store: storeName,
       promoter: promoterFinalName,

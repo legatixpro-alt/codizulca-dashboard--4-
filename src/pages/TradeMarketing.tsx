@@ -71,6 +71,7 @@ import { checkinsService, CheckInRecord, CheckInType } from '../lib/checkinsServ
 import { merchandisingService, MerchandisingReport } from '../lib/merchandisingService';
 import { staffService, StaffMember } from '../lib/staffService';
 import { campoService } from '../lib/campoService';
+import { supabase } from '../lib/supabase';
 import {
   degustacionesService,
   DegustacionItem,
@@ -726,23 +727,26 @@ export const TradeMarketing: React.FC = () => {
     }
   };
 
-  // Sincronización integral de toda la información cargada por las promotoras desde la App Móvil (/portal/*)
-  const loadCampoSynchronizedData = async () => {
+  // Sincronización integral de toda la información cargada por las promotoras desde la App Móvil (/portal/*) y Supabase
+  const loadCampoSynchronizedData = async (forceRefresh: boolean = false) => {
     try {
       const [priceSurveys, invLogs, tastingSurveys, shelfScans, merchList, checkinList] = await Promise.all([
-        campoService.getPriceSurveys(),
-        campoService.getInventoryLogs(),
+        campoService.getPriceSurveys(forceRefresh),
+        campoService.getInventoryLogs(forceRefresh),
         campoService.getTastingSurveys(),
         campoService.getShelfScans(),
         merchandisingService.getAll(),
         checkinsService.getAllCheckIns()
       ]);
 
-      // 1. Sincronizar Monitoreo de Precios (CampoPrecios -> Trade Marketing Precios)
+      // 1. Sincronizar Monitoreo de Precios (CampoPrecios / Supabase prices -> Trade Marketing Precios)
       const mappedPrices: PriceComparisonItem[] = priceSurveys.map((ps, idx) => {
         const staffMatch = resolvePromoterIdentity(ps.promoter);
-        const firstComp = ps.competitors && ps.competitors.length > 0
-          ? ps.competitors[0]
+        const validComps = (ps.competitors || []).filter(
+          (c) => (c.name && c.name.trim() !== '') || Number(c.priceUsd) > 0
+        );
+        const firstComp = validComps.length > 0
+          ? validComps[0]
           : { name: 'Competidor', priceUsd: ps.ownPriceUsd, priceBs: ps.ownPriceBs, diffPercent: 0 };
         const gapPercent = ps.ownPriceUsd > 0 && firstComp.priceUsd > 0
           ? Number((((ps.ownPriceUsd - firstComp.priceUsd) / firstComp.priceUsd) * 100).toFixed(1))
@@ -760,20 +764,20 @@ export const TradeMarketing: React.FC = () => {
           id: ps.id || `PRICE-${idx + 1}`,
           client: ps.store || 'Punto de Venta',
           zone: staffMatch?.zone || 'Zulia / Falcón',
-          promoter: ps.promoter || 'Promotora',
+          promoter: staffMatch?.name || ps.promoter || 'Promotora',
           origin: 'App Promotora',
           date: normalizeDateToDMY(ps.date),
           codizulcaProduct: ps.productName,
           codizulcaSku: `SKU-AST-${String(idx + 1).padStart(2, '0')}`,
           codizulcaPriceUSD: Number(ps.ownPriceUsd) || 0,
           codizulcaPriceBS: Number(ps.ownPriceBs) || 0,
-          competitors: (ps.competitors || []).map((c) => ({
+          competitors: validComps.map((c) => ({
             brand: c.name,
-            product: `${c.name} (${ps.productName.split(' ')[0]})`,
+            product: c.name,
             priceUSD: Number(c.priceUsd) || 0
           })),
           competitorBrand: firstComp.name,
-          competitorProduct: `${firstComp.name} Equivalente`,
+          competitorProduct: firstComp.name,
           competitorPriceUSD: Number(firstComp.priceUsd) || 0,
           competitorPriceBS: Number(firstComp.priceBs) || 0,
           differencePercent: gapPercent,
@@ -784,25 +788,39 @@ export const TradeMarketing: React.FC = () => {
       });
       setPriceComparisons(mappedPrices);
 
-      // 2. Sincronizar Control de Inventario y Degustación (CampoInventario -> Trade Marketing Inventario)
+      // 2. Sincronizar Control de Inventario y Degustación (CampoInventario / Supabase inventory -> Trade Marketing Inventario)
       const mappedInvReports: InventoryTastingReport[] = invLogs.map((log, idx) => {
+        const staffMatch = resolvePromoterIdentity(log.promoter);
         const init = Number(log.initialStock) || 0;
         const fin = Number(log.finalStock) || 0;
         const samples = Number(log.tastingsGiven) || 0;
-        const net = Number(log.netRotation) ?? Math.max(0, init - fin - samples);
+        const rawDiff = Number((init - fin).toFixed(2));
+        const defaultNet =
+          samples > 0 && rawDiff > samples
+            ? Number((rawDiff - samples).toFixed(2))
+            : Math.max(0, rawDiff);
+        const net =
+          typeof log.netRotation === 'number' && !Number.isNaN(log.netRotation)
+            ? Number(log.netRotation.toFixed(2))
+            : defaultNet;
         const rotPct = init > 0 ? Math.round(((init - fin) / init) * 100) : 0;
+        const prodLower = String(log.productName || '').toLowerCase();
+        const detectedUnit =
+          /\b(kg|1kg|x\s*kg)\b/i.test(prodLower) && !prodLower.includes('paquete') && !prodLower.includes('pieza') && !prodLower.includes('unidad')
+            ? 'Kg'
+            : 'Unid/Kg';
         return {
           id: log.id || `INV-${idx + 1}`,
           productName: log.productName,
           sku: `SKU-INV-${String(idx + 1).padStart(2, '0')}`,
           client: log.store,
-          promoter: log.promoter,
+          promoter: staffMatch?.name || log.promoter,
           date: normalizeDateToDMY(log.date),
           initialStock: init,
           finalStock: fin,
           samplesGiven: samples,
           salesGenerated: net,
-          unit: 'Unid/Kg',
+          unit: detectedUnit,
           rotationPercent: rotPct,
           promoterObservation: log.observations || 'Reporte sincronizado desde App Móvil de Promotoras',
           isRecent: true
@@ -979,21 +997,61 @@ export const TradeMarketing: React.FC = () => {
 
   useEffect(() => {
     loadMerchandisingReports();
-    loadCampoSynchronizedData();
+    loadCampoSynchronizedData(true);
     const unsubMerch = merchandisingService.subscribe(() => {
       loadMerchandisingReports();
-      loadCampoSynchronizedData();
+      loadCampoSynchronizedData(true);
     });
     const unsubCampo = campoService.subscribe(() => {
-      loadCampoSynchronizedData();
+      loadCampoSynchronizedData(true);
     });
     const unsubCheckins = checkinsService.subscribe(() => {
       loadCampoSynchronizedData();
     });
+
+    // Suscripción en tiempo real a Supabase (tablas `prices` e `inventory`) para reflejar al instante
+    // cualquier comparativa de precios o inventario que envíe la promotora desde su teléfono
+    let realtimeChannel: ReturnType<typeof supabase.channel> | null = null;
+    try {
+      realtimeChannel = supabase
+        .channel('trade-marketing-campo-live')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'prices' }, () => {
+          loadCampoSynchronizedData(true);
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory' }, () => {
+          loadCampoSynchronizedData(true);
+        })
+        .subscribe();
+    } catch {
+      realtimeChannel = null;
+    }
+
+    const pollCampo = window.setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        loadCampoSynchronizedData(true);
+      }
+    }, 15000);
+
+    const onCampoVisible = () => {
+      if (document.visibilityState === 'visible') {
+        loadCampoSynchronizedData(true);
+      }
+    };
+    document.addEventListener('visibilitychange', onCampoVisible);
+    window.addEventListener('focus', onCampoVisible);
+
     return () => {
       unsubMerch();
       unsubCampo();
       unsubCheckins();
+      window.clearInterval(pollCampo);
+      document.removeEventListener('visibilitychange', onCampoVisible);
+      window.removeEventListener('focus', onCampoVisible);
+      if (realtimeChannel) {
+        try {
+          supabase.removeChannel(realtimeChannel);
+        } catch {}
+      }
     };
   }, []);
 
@@ -1731,7 +1789,7 @@ export const TradeMarketing: React.FC = () => {
           ));
 
       const matchesPromoter =
-        promoterFilter === 'todos' || item.promoter === promoterFilter;
+        promoterFilter === 'todos' || matchPromoterName(item.promoter, promoterFilter);
 
       return matchesSearch && matchesChain && matchesCompetitor && matchesPromoter;
     });
@@ -1739,16 +1797,20 @@ export const TradeMarketing: React.FC = () => {
 
   // Filtrado de Reportes de Inventario y Degustación
   const filteredInventoryReports = useMemo(() => {
-    if (!reportSearchTerm.trim()) return inventoryReports;
-    const term = reportSearchTerm.toLowerCase();
-    return inventoryReports.filter(
-      (r) =>
-        r.productName.toLowerCase().includes(term) ||
-        r.client.toLowerCase().includes(term) ||
-        r.promoter.toLowerCase().includes(term) ||
-        r.promoterObservation.toLowerCase().includes(term)
-    );
-  }, [inventoryReports, reportSearchTerm]);
+    return inventoryReports.filter((r) => {
+      const matchesPromoter =
+        promoterFilter === 'todos' || matchPromoterName(r.promoter, promoterFilter);
+      if (!matchesPromoter) return false;
+      const combinedTerm = (reportSearchTerm || searchTerm).trim().toLowerCase();
+      if (!combinedTerm) return true;
+      return (
+        r.productName.toLowerCase().includes(combinedTerm) ||
+        r.client.toLowerCase().includes(combinedTerm) ||
+        r.promoter.toLowerCase().includes(combinedTerm) ||
+        r.promoterObservation.toLowerCase().includes(combinedTerm)
+      );
+    });
+  }, [inventoryReports, reportSearchTerm, searchTerm, promoterFilter]);
 
   // Totales agregados de inventario y degustación
   const inventoryReportTotals = useMemo(() => {
@@ -1760,10 +1822,10 @@ export const TradeMarketing: React.FC = () => {
       ? Math.round(filteredInventoryReports.reduce((acc, r) => acc + r.rotationPercent, 0) / filteredInventoryReports.length)
       : 0;
     return {
-      totalInitial: Math.round(totalInitial * 10) / 10,
-      totalFinal: Math.round(totalFinal * 10) / 10,
-      totalSamples: Math.round(totalSamples * 10) / 10,
-      totalSales: Math.round(totalSales * 10) / 10,
+      totalInitial: Math.round(totalInitial * 100) / 100,
+      totalFinal: Math.round(totalFinal * 100) / 100,
+      totalSamples: Math.round(totalSamples * 100) / 100,
+      totalSales: Math.round(totalSales * 100) / 100,
       avgRotation
     };
   }, [filteredInventoryReports]);
@@ -2983,7 +3045,7 @@ export const TradeMarketing: React.FC = () => {
                 <span className={`px-2 py-0.5 text-[10px] rounded-full font-mono font-bold ${
                   informesTab === 'inventario' ? 'bg-white/20 text-white' : 'bg-zinc-800 text-zinc-400'
                 }`}>
-                  {inventoryReports.length}
+                  {filteredInventoryReports.length}
                 </span>
               </button>
 
@@ -4112,7 +4174,7 @@ export const TradeMarketing: React.FC = () => {
                                 <div>
                                   <span className="px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-400 border border-emerald-500/40 font-black text-xs inline-flex items-center gap-1">
                                     <TrendingUp className="w-3 h-3" />
-                                    +{item.salesGenerated.toFixed(1)} {item.unit} vendidas
+                                    +{Number(item.salesGenerated.toFixed(2))} {item.unit} vendidas
                                   </span>
                                   <div className="text-[10px] text-emerald-400 font-bold mt-1">
                                     {item.rotationPercent}% rotación
@@ -4122,7 +4184,7 @@ export const TradeMarketing: React.FC = () => {
                                 <div>
                                   <span className="px-2 py-0.5 rounded bg-red-950/80 text-red-400 border border-red-500/40 font-black text-xs inline-flex items-center gap-1">
                                     <TrendingDown className="w-3 h-3" />
-                                    {item.salesGenerated.toFixed(1)} {item.unit} (Merma)
+                                    {Number(item.salesGenerated.toFixed(2))} {item.unit} (Merma)
                                   </span>
                                   <div className="text-[10px] text-red-400 font-bold mt-1">
                                     {item.rotationPercent}% rotación
