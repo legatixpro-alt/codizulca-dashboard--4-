@@ -55,8 +55,18 @@ const LoginContent: React.FC = () => {
       rawEmail === 'grecia01' ||
       rawEmail === 'grecia';
 
+    const isGisbellOrAdminAlias =
+      rawEmail === 'gisbell01@codizulca.com' ||
+      rawEmail === 'gisbell@codizulca.com' ||
+      rawEmail === 'administracion@codizulca.com' ||
+      rawEmail === 'administrativo@codizulca.com' ||
+      rawEmail === 'gisbell01' ||
+      rawEmail === 'gisbell';
+
     const matchedCorpProfile = isGreciaOrTradeAlias
       ? DASHBOARD_CORPORATE_PROFILES.find((p) => p.roleKey === 'trade_marketing')
+      : isGisbellOrAdminAlias
+      ? DASHBOARD_CORPORATE_PROFILES.find((p) => p.roleKey === 'administrativo')
       : DASHBOARD_CORPORATE_PROFILES.find((p) => p.email.toLowerCase() === rawEmail);
 
     let loginEmail = data.email.trim();
@@ -66,8 +76,12 @@ const LoginContent: React.FC = () => {
       '123',
       'codi123',
       'codi.123',
+      'codi.01',
+      'codi01',
       'codi.02',
       'codi02',
+      'gisbell01',
+      'gisbell',
       'admin123',
       'admin123_codizulca_gerencia',
       matchedCorpProfile?.passwordHint?.toLowerCase(),

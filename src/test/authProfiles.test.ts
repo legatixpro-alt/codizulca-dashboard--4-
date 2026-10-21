@@ -26,11 +26,26 @@ describe('Perfiles asignados: nadie entra como Administrador General por defecto
     expect(resolveCorporateProfile('ali.perez@codizulca.com').roleLabel).toBe('Supervisor Comercial');
   });
 
-  it('cada perfil oficial se resuelve por su correo exacto', () => {
+  it('cada perfil oficial se resuelve por su correo exacto o alias corporativo', () => {
     expect(resolveCorporateProfile('admin@codi.com').roleKey).toBe('admin');
     expect(resolveCorporateProfile('gerencia@codizulca.com').roleKey).toBe('gerente_nacional');
     expect(resolveCorporateProfile('Grecia01@codizulca.com').roleKey).toBe('trade_marketing');
     expect(resolveCorporateProfile('johnatan.soto@codizulca.com').roleKey).toBe('supervisor');
+    expect(resolveCorporateProfile('Gisbell01@codizulca.com').roleKey).toBe('administrativo');
+    expect(resolveCorporateProfile('gisbell01').roleLabel).toBe('Administrativo');
+  });
+
+  it('el perfil Administrativo de Gisbell tiene acceso a los módulos operativos y administrativos pero no a Trazabilidad', () => {
+    const gisbell = resolveCorporateProfile('Gisbell01@codizulca.com');
+    expect(gisbell.name).toBe('Gisbell');
+    expect(gisbell.roleKey).toBe('administrativo');
+    expect(gisbell.roleLabel).toBe('Administrativo');
+    expect(gisbell.zone).toBe('Administración / Sede Central');
+    expect(gisbell.canViewTrazabilidad).toBe(false);
+    expect(checkCanAccessTrazabilidad({ role: gisbell.roleLabel, email: gisbell.email, fullName: gisbell.name })).toBe(false);
+    for (const route of ['cuotas', 'ventas', 'clientes', 'productos', 'inventario', 'trade']) {
+      expect(canAccessDashboardRoute(gisbell, `/dashboard/${route}`)).toBe(true);
+    }
   });
 
   it('el perfil sin asignar no puede ver Trazabilidad', () => {

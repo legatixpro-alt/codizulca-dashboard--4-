@@ -4403,26 +4403,88 @@ Responde con un JSON estructurado con:
   } catch (e) {
     console.warn("[CheckIns] No se pudo leer el archivo local de asistencias:", e);
   }
-  app.get("/api/checkins", async (req, res) => {
-    try {
-      const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
-      if (supabaseUrl && supabaseKey) {
-        const supabase = (0, import_supabase_js.createClient)(supabaseUrl.replace("/rest/v1/", ""), supabaseKey);
-        const { data, error } = await supabase.from("checkins").select("*").order("date", { ascending: false });
-        if (!error && Array.isArray(data) && data.length > 0) {
-          return res.json(data);
-        }
-      }
-    } catch (e) {
-    }
+  const CHECKIN_TABLE_COLUMNS = ["id", "date", "store", "type", "location", "creatorId", "promoter", "created_at"];
+  const CHECKIN_PHOTO_URL = (id) => `/api/checkins/${encodeURIComponent(id)}/photo`;
+  const isSyntheticCheckinId = (id) => typeof id === "string" && /^CHK-LIVE-/i.test(id);
+  let checkinsListCache = null;
+  const readMemoryCheckins = () => {
     if (memoryCheckins.length === 0 && import_fs2.default.existsSync(checkinsFilePath)) {
       try {
         memoryCheckins = JSON.parse(import_fs2.default.readFileSync(checkinsFilePath, "utf8"));
       } catch (err) {
       }
     }
-    return res.json(memoryCheckins);
+    return memoryCheckins.filter((c) => c && c.id && !isSyntheticCheckinId(c.id));
+  };
+  app.get("/api/checkins", async (req, res) => {
+    try {
+      const now = Date.now();
+      if (req.query.refresh !== "true" && checkinsListCache && now - checkinsListCache.timestamp < 1e4) {
+        return res.json(checkinsListCache.payload);
+      }
+      let remoteRows = null;
+      const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+      if (supabaseUrl && supabaseKey) {
+        try {
+          const supabase = (0, import_supabase_js.createClient)(supabaseUrl.replace("/rest/v1/", ""), supabaseKey);
+          const pageSize = 1e3;
+          const rows = [];
+          for (let from = 0; from < 5e4; from += pageSize) {
+            const { data, error } = await supabase.from("checkins").select(CHECKIN_TABLE_COLUMNS.join(",")).order("date", { ascending: false }).range(from, from + pageSize - 1);
+            if (error) throw error;
+            if (!Array.isArray(data) || data.length === 0) break;
+            rows.push(...data);
+            if (data.length < pageSize) break;
+          }
+          remoteRows = rows;
+        } catch (e) {
+          console.warn("[CheckIns] No se pudo leer Supabase, se usa el archivo local:", e?.message);
+        }
+      }
+      const localRows = readMemoryCheckins();
+      const remoteIds = new Set((remoteRows || []).map((r) => r.id));
+      const merged = [
+        ...(remoteRows || []).filter((r) => !isSyntheticCheckinId(r.id)),
+        // Marcajes guardados en el servidor que aún no están en Supabase (p. ej. cola offline reenviada)
+        ...localRows.filter((r) => !remoteIds.has(r.id))
+      ].map((r) => ({ ...r, photoBase64: CHECKIN_PHOTO_URL(r.id) })).sort((a, b) => new Date(b.date || b.created_at || 0).getTime() - new Date(a.date || a.created_at || 0).getTime());
+      checkinsListCache = { payload: merged, timestamp: now };
+      return res.json(merged);
+    } catch (err) {
+      console.error("[CheckIns] Error al listar asistencias:", err);
+      return res.status(500).json({ error: "Error al listar asistencias", details: err?.message });
+    }
+  });
+  app.get("/api/checkins/:id/photo", async (req, res) => {
+    try {
+      const id = req.params.id;
+      let photo = readMemoryCheckins().find((c) => c.id === id)?.photoBase64;
+      if (!photo) {
+        const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+        if (supabaseUrl && supabaseKey) {
+          const supabase = (0, import_supabase_js.createClient)(supabaseUrl.replace("/rest/v1/", ""), supabaseKey);
+          const { data } = await supabase.from("checkins").select("photoBase64").eq("id", id).maybeSingle();
+          photo = data?.photoBase64;
+        }
+      }
+      if (!photo || typeof photo !== "string") {
+        return res.status(404).json({ error: "Foto no encontrada" });
+      }
+      const dataUrl = photo.match(/^data:([^;,]+);base64,([\s\S]+)$/);
+      if (dataUrl) {
+        res.setHeader("Content-Type", dataUrl[1]);
+        res.setHeader("Cache-Control", "public, max-age=86400");
+        return res.send(Buffer.from(dataUrl[2], "base64"));
+      }
+      if (photo.startsWith("/") || /^https?:\/\//i.test(photo)) {
+        return res.redirect(photo);
+      }
+      return res.status(404).json({ error: "Formato de foto no soportado" });
+    } catch (err) {
+      return res.status(500).json({ error: "Error al leer la foto", details: err?.message });
+    }
   });
   app.post("/api/checkins", async (req, res) => {
     try {
@@ -4441,10 +4503,16 @@ Responde con un JSON estructurado con:
         const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
         if (supabaseUrl && supabaseKey) {
           const supabase = (0, import_supabase_js.createClient)(supabaseUrl.replace("/rest/v1/", ""), supabaseKey);
-          await supabase.from("checkins").upsert(record);
+          const dbRecord = {};
+          for (const col of [...CHECKIN_TABLE_COLUMNS, "photoBase64"]) {
+            if (record[col] !== void 0) dbRecord[col] = record[col];
+          }
+          const { error: upsertError } = await supabase.from("checkins").upsert(dbRecord);
+          if (upsertError) console.warn("[CheckIns] Supabase upsert fall\xF3:", upsertError.message);
         }
       } catch (e) {
       }
+      checkinsListCache = null;
       res.status(201).json(record);
     } catch (err) {
       res.status(500).json({ error: "Error al registrar asistencia", details: err?.message });
@@ -4468,6 +4536,7 @@ Responde con un JSON estructurado con:
         }
       } catch (e) {
       }
+      checkinsListCache = null;
       res.json({ success: true, id });
     } catch (err) {
       res.status(500).json({ error: "Error al eliminar asistencia", details: err?.message });

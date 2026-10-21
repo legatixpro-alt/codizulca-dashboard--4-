@@ -11,7 +11,7 @@ export interface DashboardCorporateProfile {
   name: string;
   email: string;
   passwordHint: string;
-  roleKey: 'admin' | 'gerente_nacional' | 'trade_marketing' | 'supervisor' | 'vendedor';
+  roleKey: 'admin' | 'gerente_nacional' | 'administrativo' | 'trade_marketing' | 'supervisor' | 'vendedor';
   roleLabel: string;
   zone: string;
   canViewTrazabilidad: boolean;
@@ -74,6 +74,26 @@ export const DASHBOARD_CORPORATE_PROFILES: DashboardCorporateProfile[] = [
     canViewTrazabilidad: false,
     modules: ['Resumen Ejecutivo', 'Cuotas & Metas', 'Ventas & Facturación', 'Clientes & Geocercas', 'Catálogo de Productos', 'Trade Marketing (IA)'],
   },
+  {
+    id: 'CORP-006',
+    name: 'Gisbell',
+    email: 'Gisbell01@codizulca.com',
+    passwordHint: 'Codi.01',
+    roleKey: 'administrativo',
+    roleLabel: 'Administrativo',
+    zone: 'Administración / Sede Central',
+    canViewTrazabilidad: false,
+    modules: [
+      'Resumen Ejecutivo',
+      'Cuotas & Metas',
+      'Ventas & Facturación',
+      'Inventario & Stock',
+      'Clientes & Geocercas',
+      'Catálogo de Productos',
+      'Trade Marketing (IA)',
+      'Portal Móvil PWA',
+    ],
+  },
 ];
 
 export const STORAGE_KEY_DASHBOARD_PROFILE = 'codizulca_dashboard_profile';
@@ -93,7 +113,7 @@ export function checkCanAccessTrazabilidad(input?: {
   const emailNorm = (input.email || '').trim().toLowerCase();
   const nameNorm = (input.fullName || '').trim().toLowerCase();
 
-  // Exclusión explícita de roles no autorizados (Supervisores, Trade Marketing, Vendedores, Promotoras, Merchandising)
+  // Exclusión explícita de roles no autorizados (Supervisores, Administrativo, Trade Marketing, Vendedores, Promotoras, Merchandising)
   const forbiddenKeywords = [
     'supervisor',
     'vendedor',
@@ -105,6 +125,9 @@ export function checkCanAccessTrazabilidad(input?: {
     'coordinador',
     'almacen',
     'facturacion',
+    'administrativo',
+    'administracion',
+    'administración',
   ];
   if (forbiddenKeywords.some((kw) => roleNorm.includes(kw))) {
     return false;
@@ -144,17 +167,29 @@ export function checkCanAccessTrazabilidad(input?: {
 
 export function resolveCorporateProfile(email?: string | null, role?: string | null): DashboardCorporateProfile {
   const emailNorm = (email || '').trim().toLowerCase();
+  const roleNorm = (role || '').trim().toLowerCase();
   const byEmail = DASHBOARD_CORPORATE_PROFILES.find((p) => p.email.toLowerCase() === emailNorm);
   if (byEmail) return byEmail;
 
-  if (emailNorm.includes('gerente') || emailNorm.includes('gerencia') || (role || '').toLowerCase().includes('gerente nacional')) {
+  if (emailNorm.includes('gerente') || emailNorm.includes('gerencia') || roleNorm.includes('gerente nacional')) {
     return DASHBOARD_CORPORATE_PROFILES[1]; // Gerente Nacional
+  }
+  if (
+    emailNorm.includes('gisbell') ||
+    emailNorm === 'administrativo@codizulca.com' ||
+    emailNorm === 'administracion@codizulca.com' ||
+    roleNorm === 'administrativo' ||
+    roleNorm.includes('administrativo') ||
+    roleNorm.includes('administracion') ||
+    roleNorm.includes('administración')
+  ) {
+    return DASHBOARD_CORPORATE_PROFILES.find((p) => p.roleKey === 'administrativo')!;
   }
   if (
     emailNorm.includes('grecia') ||
     emailNorm.includes('trade') ||
-    (role || '').toLowerCase().includes('trade') ||
-    (role || '').toLowerCase().includes('coordinador')
+    roleNorm.includes('trade') ||
+    roleNorm.includes('coordinador')
   ) {
     return DASHBOARD_CORPORATE_PROFILES[2]; // Coordinación Trade Marketing (Grecia)
   }
@@ -164,7 +199,7 @@ export function resolveCorporateProfile(email?: string | null, role?: string | n
   if (emailNorm.includes('ali.perez')) {
     return DASHBOARD_CORPORATE_PROFILES[4];
   }
-  if ((role || '').toLowerCase().includes('supervisor')) {
+  if (roleNorm.includes('supervisor')) {
     return {
       id: 'CORP-SUP',
       name: email ? email.split('@')[0] : 'Supervisor Comercial',
@@ -243,6 +278,28 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 
+const upgradeStoredCorporateProfile = (rawProfile: DashboardCorporateProfile | null): DashboardCorporateProfile | null => {
+  if (!rawProfile) return null;
+  const candidateKey = rawProfile.email || rawProfile.name || '';
+  const resolved = resolveCorporateProfile(candidateKey, rawProfile.roleLabel);
+  if (resolved.id !== 'CORP-NA') {
+    if (
+      rawProfile.id === 'CORP-NA' ||
+      rawProfile.roleKey !== resolved.roleKey ||
+      rawProfile.roleLabel !== resolved.roleLabel ||
+      rawProfile.modules?.length !== resolved.modules.length
+    ) {
+      try {
+        localStorage.setItem(STORAGE_KEY_DASHBOARD_PROFILE, JSON.stringify(resolved));
+      } catch {
+        // ignore storage errors
+      }
+      return resolved;
+    }
+  }
+  return rawProfile;
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -250,7 +307,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [storedCorpProfile, setStoredCorpProfile] = useState<DashboardCorporateProfile | null>(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY_DASHBOARD_PROFILE);
-      return raw ? JSON.parse(raw) : null;
+      return raw ? upgradeStoredCorporateProfile(JSON.parse(raw)) : null;
     } catch {
       return null;
     }
@@ -261,7 +318,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const syncLocalCorpProfile = () => {
       try {
         const raw = localStorage.getItem(STORAGE_KEY_DASHBOARD_PROFILE);
-        setStoredCorpProfile(raw ? JSON.parse(raw) : null);
+        setStoredCorpProfile(raw ? upgradeStoredCorporateProfile(JSON.parse(raw)) : null);
       } catch {
         setStoredCorpProfile(null);
       }

@@ -998,18 +998,21 @@ export const checkinsService = {
    * Obtiene todos los checkins (servidor / supabase + local fallback)
    */
   async getAllCheckIns(): Promise<CheckInRecord[]> {
+    // Los registros CHK-LIVE-* son datos semilla de demostración (no son marcajes reales de promotoras)
+    const isRealRecord = (c: CheckInRecord) =>
+      c && c.id &&
+      !/^CHK-LIVE-/i.test(c.id) &&
+      !c.id.startsWith('chk-00') &&
+      !c.store?.includes("Palos Grandes") &&
+      !c.photoBase64?.includes('unsplash');
+
     let serverList: CheckInRecord[] = [];
     try {
       const response = await fetch('/api/checkins');
       if (response.ok) {
         const data = await response.json();
         if (Array.isArray(data)) {
-          serverList = data.filter((c: CheckInRecord) =>
-            c && c.id &&
-            !c.id.startsWith('chk-00') &&
-            !c.store?.includes("Palos Grandes") &&
-            !c.photoBase64?.includes('unsplash')
-          );
+          serverList = data.filter(isRealRecord);
         }
       }
     } catch {
@@ -1022,32 +1025,46 @@ export const checkinsService = {
       try {
         const parsed = JSON.parse(local);
         if (Array.isArray(parsed)) {
-          localList = parsed.filter((c: CheckInRecord) =>
-            c && c.id &&
-            !c.id.startsWith('chk-00') &&
-            !c.store?.includes("Palos Grandes") &&
-            !c.photoBase64?.includes('unsplash')
-          );
+          localList = parsed.filter(isRealRecord);
         }
       } catch (e) {
         console.warn('Error leyendo checkins locales:', e);
       }
     }
 
-    const map = new Map<string, CheckInRecord>();
-    const listToMerge = (serverList.length > 0 || localList.length > 0)
-      ? [...serverList, ...localList]
-      : INITIAL_CHECKINS_SEED;
+    // El servidor es la fuente de verdad: los registros locales solo se conservan si están pendientes
+    // de sincronizar (offline) o si el servidor no respondió.
+    const serverIds = new Set(serverList.map((c) => c.id));
+    const localToKeep = serverList.length > 0
+      ? localList.filter((c) => c.offlinePending && !serverIds.has(c.id))
+      : localList;
 
-    listToMerge.forEach((c) => {
+    const map = new Map<string, CheckInRecord>();
+    [...serverList, ...localToKeep].forEach((c) => {
       if (c && c.id) map.set(c.id, c);
     });
 
     const merged = Array.from(map.values()).sort(
-      (a, b) => new Date(b.created_at || b.date || 0).getTime() - new Date(a.created_at || a.date || 0).getTime()
+      (a, b) => new Date(b.date || b.created_at || 0).getTime() - new Date(a.date || a.created_at || 0).getTime()
     );
-    localStorage.setItem(STORAGE_KEY_CHECKINS, JSON.stringify(merged));
+    this.persistLocalCheckIns(merged);
     return merged;
+  },
+
+  /**
+   * Guarda la copia local sin fotos pesadas (evita exceder la cuota de localStorage)
+   */
+  persistLocalCheckIns(list: CheckInRecord[]) {
+    try {
+      const light = list.map((c) =>
+        !c.offlinePending && c.photoBase64?.startsWith('data:')
+          ? { ...c, photoBase64: `/api/checkins/${encodeURIComponent(c.id)}/photo` }
+          : c
+      );
+      localStorage.setItem(STORAGE_KEY_CHECKINS, JSON.stringify(light));
+    } catch (e) {
+      console.warn('No se pudo guardar la copia local de asistencias:', e);
+    }
   },
 
   /**
@@ -1065,7 +1082,7 @@ export const checkinsService = {
     // Actualizar almacenamiento local de inmediato
     const existing = await this.getAllCheckIns();
     const updated = [newRecord, ...existing];
-    localStorage.setItem(STORAGE_KEY_CHECKINS, JSON.stringify(updated));
+    this.persistLocalCheckIns(updated);
 
     // Si está offline, guardar en la cola de sincronización
     if (!isOnline) {
@@ -1087,7 +1104,7 @@ export const checkinsService = {
           newRecord.offlinePending = false;
           // Refrescar registro en local
           const refreshed = updated.map(r => r.id === newRecord.id ? { ...newRecord, ...serverRecord, offlinePending: false } : r);
-          localStorage.setItem(STORAGE_KEY_CHECKINS, JSON.stringify(refreshed));
+          this.persistLocalCheckIns(refreshed);
         } else {
           // Si el backend responde con error, encolar para reintento
           this.enqueueOfflineCheckIn(newRecord);
@@ -1170,7 +1187,7 @@ export const checkinsService = {
         }
         return item;
       });
-      localStorage.setItem(STORAGE_KEY_CHECKINS, JSON.stringify(updated));
+      this.persistLocalCheckIns(updated);
       this.notifySync();
     }
 
@@ -1189,7 +1206,7 @@ export const checkinsService = {
 
     const current = await this.getAllCheckIns();
     const filtered = current.filter(c => c.id !== id);
-    localStorage.setItem(STORAGE_KEY_CHECKINS, JSON.stringify(filtered));
+    this.persistLocalCheckIns(filtered);
 
     // Limpiar también de la cola si estuviera
     const queue = this.getOfflineQueue().filter(q => q.id !== id);

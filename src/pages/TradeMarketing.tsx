@@ -207,6 +207,33 @@ interface AttendanceItem {
   batteryLevel?: string;
 }
 
+// Foto de evidencia de asistencia: si la imagen no carga, se muestra un recuadro limpio en lugar del texto alternativo cortado
+const CheckInPhoto: React.FC<{ src?: string; alt: string; className?: string }> = ({ src, alt, className }) => {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    setFailed(false);
+  }, [src]);
+
+  if (!src || failed) {
+    return (
+      <div className="w-full h-full flex flex-col items-center justify-center gap-1.5 bg-zinc-900 text-zinc-500">
+        <Camera className="w-6 h-6" />
+        <span className="text-[10px] font-bold uppercase tracking-wider text-center px-2">Foto no disponible</span>
+      </div>
+    );
+  }
+  return (
+    <img
+      src={src}
+      alt={alt}
+      loading="lazy"
+      decoding="async"
+      onError={() => setFailed(true)}
+      className={className}
+    />
+  );
+};
+
 // Sucursales Oficiales de Alkosto en la Base de Datos Comercial
 export const ALKOSTO_BRANCHES = [
   {
@@ -654,7 +681,22 @@ export const TradeMarketing: React.FC = () => {
     const unsubscribe = checkinsService.subscribe(() => {
       loadCheckIns();
     });
-    return () => unsubscribe();
+    // Los marcajes se registran desde los teléfonos de las promotoras (otros dispositivos), por lo que el
+    // dashboard se actualiza solo cada 30 s y al volver a la pestaña, sin necesidad de recargar la página.
+    const poll = window.setInterval(() => {
+      if (document.visibilityState === 'visible') loadCheckIns();
+    }, 30000);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') loadCheckIns();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
+    return () => {
+      unsubscribe();
+      window.clearInterval(poll);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onVisible);
+    };
   }, []);
 
   const handleDeleteCheckIn = async (id: string) => {
@@ -4320,12 +4362,14 @@ export const TradeMarketing: React.FC = () => {
                         const dateFormatted = dateObj.toLocaleDateString('es-VE', {
                           day: '2-digit',
                           month: '2-digit',
-                          year: 'numeric'
+                          year: 'numeric',
+                          timeZone: 'America/Caracas'
                         });
                         const timeFormatted = dateObj.toLocaleTimeString('es-VE', {
                           hour: '2-digit',
                           minute: '2-digit',
-                          hour12: true
+                          hour12: true,
+                          timeZone: 'America/Caracas'
                         });
 
                         // Color badge según tipo de marcaje
@@ -4349,10 +4393,10 @@ export const TradeMarketing: React.FC = () => {
                             <div className="relative aspect-[3/4] w-full bg-zinc-950 overflow-hidden cursor-pointer"
                               onClick={() => setInspectCheckIn(item)}
                             >
-                              <img
+                              <CheckInPhoto
                                 src={item.photoBase64}
                                 alt={`Evidencia de ${item.promoter}`}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
                               />
 
                               {/* INSIGNIA FLOTANTE DE MARCAJE (SUPERIOR IZQUIERDA) */}
@@ -4458,8 +4502,8 @@ export const TradeMarketing: React.FC = () => {
                       <tbody className="divide-y divide-white/5">
                         {filteredCheckIns.map((item) => {
                           const dateObj = new Date(item.date);
-                          const dateStr = dateObj.toLocaleDateString('es-VE');
-                          const timeStr = dateObj.toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit', hour12: true });
+                          const dateStr = dateObj.toLocaleDateString('es-VE', { timeZone: 'America/Caracas' });
+                          const timeStr = dateObj.toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'America/Caracas' });
                           const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${item.location.lat},${item.location.lng}`;
 
                           let badgeCls = 'bg-emerald-950/70 border-emerald-500/40 text-emerald-400';
@@ -4476,7 +4520,7 @@ export const TradeMarketing: React.FC = () => {
                                     onClick={() => setInspectCheckIn(item)}
                                     className="w-10 h-13 rounded-lg overflow-hidden bg-zinc-900 border border-white/10 shrink-0 cursor-pointer hover:border-red-400 transition"
                                   >
-                                    <img src={item.photoBase64} alt={item.promoter} className="w-full h-full object-cover" />
+                                    <CheckInPhoto src={item.photoBase64} alt={item.promoter} className="w-full h-full object-cover object-top" />
                                   </div>
                                   <div>
                                     <div className="font-bold text-white text-sm">{item.promoter}</div>
@@ -4618,10 +4662,10 @@ export const TradeMarketing: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
                       {/* Fotografía 3:4 */}
                       <div className="aspect-[3/4] rounded-2xl overflow-hidden bg-black border border-white/10 shadow-lg relative">
-                        <img
+                        <CheckInPhoto
                           src={inspectCheckIn.photoBase64}
                           alt={inspectCheckIn.promoter}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover object-top"
                         />
                         <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-black/70 backdrop-blur-sm text-white text-[10px] font-mono">
                           Evidencia Inalterable

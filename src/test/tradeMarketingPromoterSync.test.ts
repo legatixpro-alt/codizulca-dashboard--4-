@@ -91,7 +91,7 @@ describe('Restricción de Acceso a Trazabilidad y Sincronización App Promotoras
     });
 
     it('verifica que los perfiles corporativos estén correctamente configurados', () => {
-      expect(DASHBOARD_CORPORATE_PROFILES.length).toBe(5);
+      expect(DASHBOARD_CORPORATE_PROFILES.length).toBe(6);
       const allowedProfiles = DASHBOARD_CORPORATE_PROFILES.filter((p) => p.canViewTrazabilidad);
       expect(allowedProfiles.map((p) => p.roleLabel)).toEqual([
         'Administrador General',
@@ -105,6 +105,9 @@ describe('Restricción de Acceso a Trazabilidad y Sincronización App Promotoras
       expect(resolveCorporateProfile('Grecia01@codizulca.com').roleKey).toBe('trade_marketing');
       expect(resolveCorporateProfile('Grecia01@codizulca.com').roleLabel).toBe('Coordinadora Trade Marketing');
       expect(resolveCorporateProfile('Grecia01@codizulca.com').canViewTrazabilidad).toBe(false);
+      expect(resolveCorporateProfile('Gisbell01@codizulca.com').roleKey).toBe('administrativo');
+      expect(resolveCorporateProfile('Gisbell01@codizulca.com').roleLabel).toBe('Administrativo');
+      expect(resolveCorporateProfile('Gisbell01@codizulca.com').canViewTrazabilidad).toBe(false);
     });
   });
 
