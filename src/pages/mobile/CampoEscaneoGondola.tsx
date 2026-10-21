@@ -296,8 +296,12 @@ export const CampoEscaneoGondola: React.FC<{ activePromoterName?: string }> = ({
   const handleSaveScan = async () => {
     if (!analysisResult || capturedPhotos.length === 0) return;
 
+    const generatedId =
+      typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : 'SCAN-' + Date.now().toString().slice(-6);
     const payload: ShelfScanPayload = {
-      id: 'SCAN-' + Date.now().toString().slice(-6),
+      id: generatedId,
       date: new Date().toISOString(),
       store: storeName,
       category,

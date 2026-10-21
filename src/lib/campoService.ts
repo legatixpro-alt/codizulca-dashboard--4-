@@ -535,6 +535,98 @@ export function mapSupabaseInventoryRowToPayload(row: any): InventoryLogPayload 
   };
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function ensureCampoUuid(rawId?: string, fallbackSeed?: string): string {
+  const trimmed = String(rawId || '').trim();
+  if (UUID_REGEX.test(trimmed)) return trimmed.toLowerCase();
+  const seed = trimmed || fallbackSeed || `${Date.now()}-${Math.random()}`;
+  let h1 = 0xdeadbeef ^ seed.length;
+  let h2 = 0x41c6ce57 ^ seed.length;
+  let h3 = 0x9e3779b9 ^ seed.length;
+  let h4 = 0x85ebca6b ^ seed.length;
+  for (let i = 0; i < seed.length; i++) {
+    const ch = seed.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+    h3 = Math.imul(h3 ^ ch, 2246822507);
+    h4 = Math.imul(h4 ^ ch, 3266489909);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  h3 = Math.imul(h3 ^ (h3 >>> 16), 2246822507) ^ Math.imul(h4 ^ (h4 >>> 13), 3266489909);
+  h4 = Math.imul(h4 ^ (h4 >>> 16), 2246822507) ^ Math.imul(h3 ^ (h3 >>> 13), 3266489909);
+  const hex = (
+    (h1 >>> 0).toString(16).padStart(8, '0') +
+    (h2 >>> 0).toString(16).padStart(8, '0') +
+    (h3 >>> 0).toString(16).padStart(8, '0') +
+    (h4 >>> 0).toString(16).padStart(8, '0')
+  ).slice(0, 32);
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-a${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
+}
+
+export function isSyntheticTastingSurveyRow(row: any): boolean {
+  if (!row) return true;
+  const idStr = String(row.id || '').trim();
+  if (/^SURV-TEST-/i.test(idStr)) return true;
+  const rowType = String(row.type || '').trim();
+  if (rowType === 'Degustacion' || rowType === 'Pedido Alkosto' || rowType === 'Merchandising') {
+    return true;
+  }
+  return false;
+}
+
+export function mapSupabaseTastingSurveyRowToPayload(row: any): TastingSurveyPayload {
+  let commentsText = '';
+  let sensoryRatings = row?.sensoryRatings;
+  const rawComments = row?.comments;
+  if (typeof rawComments === 'string' && rawComments.trim().startsWith('{')) {
+    try {
+      const parsed = JSON.parse(rawComments);
+      commentsText = String(parsed.originalComments ?? parsed.comments ?? '').trim();
+      if (parsed.sensoryRatings && !sensoryRatings) {
+        sensoryRatings = parsed.sensoryRatings;
+      }
+    } catch {
+      commentsText = rawComments.trim();
+    }
+  } else if (rawComments !== undefined && rawComments !== null) {
+    commentsText = String(rawComments).trim();
+  }
+
+  let purchaseIntent: 'SI' | 'NO' | 'TAL_VEZ' = 'SI';
+  if (row?.purchaseIntent === 'SI' || row?.purchaseIntent === 'NO' || row?.purchaseIntent === 'TAL_VEZ') {
+    purchaseIntent = row.purchaseIntent;
+  } else {
+    const intentStr = String(row?.intent || '').trim();
+    if (/tal vez|quiz/i.test(intentStr)) {
+      purchaseIntent = 'TAL_VEZ';
+    } else if (/no\b|poco probable|nada probable/i.test(intentStr)) {
+      purchaseIntent = 'NO';
+    } else {
+      purchaseIntent = 'SI';
+    }
+  }
+
+  const rawType = String(row?.type || '').trim();
+  const normalizedType: 'rapida' | 'extendida' =
+    rawType === 'Profunda' || rawType === 'extendida' ? 'extendida' : 'rapida';
+
+  return {
+    id: String(row?.id || ensureCampoUuid(undefined, `${row?.date}|${row?.promoter}|${row?.store}`)),
+    date: row?.date || row?.created_at || new Date().toISOString(),
+    store: String(row?.store || 'Punto de Venta').trim(),
+    promoter: resolvePromoterNameFromRaw(row?.promoter, row?.creatorId),
+    type: normalizedType,
+    productName: String(row?.productName || row?.product || 'Producto Codizulca').trim(),
+    ratingOverall: Number(row?.ratingOverall ?? row?.rating) || 5,
+    purchaseIntent,
+    ...(sensoryRatings ? { sensoryRatings } : {}),
+    ...(commentsText ? { comments: commentsText } : {}),
+    created_at: row?.created_at || row?.date,
+  };
+}
+
 const CAMPO_SYNC_CHANNEL_NAME = 'codizulca_campo_sync_channel';
 const notifyCampoDataChanged = () => {
   if (typeof window !== 'undefined') {
@@ -923,13 +1015,11 @@ export const campoService = {
 
     let syncedDirectSupabase = false;
     if (!isSyntheticPriceOrInventoryRow(normalized)) {
+      const dbId = ensureCampoUuid(
+        normalized.id,
+        `${normalized.date}|${normalized.promoter}|${normalized.store}|${normalized.productName}`
+      );
       try {
-        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(normalized.id);
-        const dbId = isUuid
-          ? normalized.id
-          : typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-          ? crypto.randomUUID()
-          : normalized.id;
         const comps = Array.isArray(normalized.competitors) ? normalized.competitors : [];
         const dbRow: Record<string, any> = {
           id: dbId,
@@ -1004,13 +1094,11 @@ export const campoService = {
 
     let syncedDirectSupabase = false;
     if (!isSyntheticPriceOrInventoryRow(normalized)) {
+      const dbId = ensureCampoUuid(
+        normalized.id,
+        `${normalized.date}|${normalized.promoter}|${normalized.store}|${normalized.productName}`
+      );
       try {
-        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(normalized.id);
-        const dbId = isUuid
-          ? normalized.id
-          : typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-          ? crypto.randomUUID()
-          : normalized.id;
         const dbRow: Record<string, any> = {
           id: dbId,
           date: normalized.date,
@@ -1058,36 +1146,89 @@ export const campoService = {
     }
   },
 
-  // Guardado de Encuesta de Degustación
+  // Guardado de Encuesta de Degustación (Sincronización inmediata con Servidor + Supabase surveys + Trade Marketing)
   async saveTastingSurvey(survey: TastingSurveyPayload): Promise<{ success: boolean; offline: boolean }> {
     const KEY = 'codizulca_tasting_surveys';
+    const normalized = mapSupabaseTastingSurveyRowToPayload(survey);
     const local: TastingSurveyPayload[] = JSON.parse(localStorage.getItem(KEY) || '[]');
-    const filtered = local.filter((s) => s.id !== survey.id);
+    const filtered = local.filter((s) => s.id !== normalized.id && s.id !== survey.id);
     try {
-      localStorage.setItem(KEY, JSON.stringify([survey, ...filtered]));
+      localStorage.setItem(KEY, JSON.stringify([normalized, ...filtered]));
     } catch {
       // ignore quota errors
     }
 
     if (!navigator.onLine) {
-      this.enqueue('tasting_survey', survey);
+      this.enqueue('tasting_survey', normalized);
       notifyCampoDataChanged();
       return { success: true, offline: true };
+    }
+
+    let syncedDirectSupabase = false;
+    const isTestSurvey = isSyntheticTastingSurveyRow(survey);
+    if (!isTestSurvey) {
+      const dbId = ensureCampoUuid(
+        normalized.id,
+        `${normalized.date}|${normalized.promoter}|${normalized.store}|${normalized.productName}`
+      );
+      try {
+        const rating = Number(normalized.ratingOverall) || 5;
+        const dbRow: Record<string, any> = {
+          id: dbId,
+          type: normalized.type === 'extendida' ? 'Profunda' : 'Breve',
+          date: normalized.date,
+          store: normalized.store,
+          promoter: normalized.promoter,
+          product: normalized.productName,
+          rating,
+          intent:
+            normalized.purchaseIntent === 'SI'
+              ? normalized.type === 'extendida'
+                ? 'Muy probable'
+                : 'Sí, definitivamente'
+              : normalized.purchaseIntent === 'TAL_VEZ'
+              ? 'Tal vez'
+              : 'No por ahora',
+          comments: JSON.stringify({
+            originalComments: normalized.comments || '',
+            acceptance: rating >= 4 ? 'Alta' : rating === 3 ? 'Media' : 'Baja',
+            isTasting: true,
+            ...(normalized.sensoryRatings ? { sensoryRatings: normalized.sensoryRatings } : {}),
+          }),
+          creatorId: normalized.promoter,
+        };
+        const { error } = await (supabase.from('surveys') as any).upsert(dbRow);
+        if (!error) {
+          syncedDirectSupabase = true;
+          normalized.id = dbId;
+        }
+      } catch {
+        // ignore direct supabase error
+      }
     }
 
     try {
       const res = await fetch('/api/tasting-surveys', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(survey)
+        body: JSON.stringify(normalized)
       });
       if (!res.ok) throw new Error('Error al enviar encuesta');
+      const saved = await res.json().catch(() => normalized);
+      if (saved && saved.id && saved.id !== normalized.id && !isTestSurvey) {
+        const updatedLocal = [mapSupabaseTastingSurveyRowToPayload(saved), ...filtered];
+        try {
+          localStorage.setItem(KEY, JSON.stringify(updatedLocal));
+        } catch {}
+      }
       notifyCampoDataChanged();
       return { success: true, offline: false };
     } catch {
-      this.enqueue('tasting_survey', survey);
+      if (!syncedDirectSupabase) {
+        this.enqueue('tasting_survey', normalized);
+      }
       notifyCampoDataChanged();
-      return { success: true, offline: true };
+      return { success: true, offline: !syncedDirectSupabase };
     }
   },
 
@@ -1275,20 +1416,56 @@ export const campoService = {
     return merged;
   },
 
-  async getTastingSurveys(): Promise<TastingSurveyPayload[]> {
+  async getTastingSurveys(forceRefresh: boolean = false): Promise<TastingSurveyPayload[]> {
     const KEY = 'codizulca_tasting_surveys';
     let serverList: TastingSurveyPayload[] = [];
     let serverResponded = false;
     try {
-      const res = await fetch('/api/tasting-surveys');
+      const url = forceRefresh ? '/api/tasting-surveys?refresh=true' : '/api/tasting-surveys';
+      const res = await fetch(url);
       if (res.ok) {
-        serverResponded = true;
-        const data = await res.json();
-        if (Array.isArray(data)) serverList = data;
+        const contentType = res.headers?.get?.('content-type') || 'application/json';
+        if (contentType.includes('application/json') || !contentType.includes('text/html')) {
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            serverResponded = true;
+            serverList = data
+              .filter((row) => !isSyntheticTastingSurveyRow(row))
+              .map(mapSupabaseTastingSurveyRowToPayload);
+          }
+        }
       }
     } catch {
-      // fallback to localStorage
+      // fallback to direct Supabase / localStorage
     }
+
+    const isTestEnv =
+      typeof process !== 'undefined' &&
+      Boolean(process.env?.NODE_ENV === 'test' || process.env?.VITEST);
+    if (!isTestEnv && (forceRefresh || serverList.length === 0)) {
+      try {
+        const { data: sbData, error: sbErr } = await supabase
+          .from('surveys')
+          .select('*')
+          .in('type', ['Breve', 'Profunda'])
+          .order('date', { ascending: false })
+          .limit(1000);
+        if (!sbErr && Array.isArray(sbData) && sbData.length > 0) {
+          serverResponded = true;
+          const mappedSb = sbData
+            .filter((row) => !isSyntheticTastingSurveyRow(row))
+            .map(mapSupabaseTastingSurveyRowToPayload);
+          const sbMap = new Map<string, TastingSurveyPayload>();
+          [...serverList, ...mappedSb].forEach((item) => {
+            if (item && item.id) sbMap.set(item.id, item);
+          });
+          serverList = Array.from(sbMap.values());
+        }
+      } catch {
+        // ignore direct Supabase error
+      }
+    }
+
     let localList: TastingSurveyPayload[] = [];
     try {
       localList = JSON.parse(localStorage.getItem(KEY) || '[]');
@@ -1296,14 +1473,16 @@ export const campoService = {
       localList = [];
     }
     if (serverResponded) {
-      localList = localList.filter((item) => item && item.id && !/^SURV-TEST-/i.test(String(item.id)));
+      localList = localList
+        .filter((item) => !isSyntheticTastingSurveyRow(item))
+        .map(mapSupabaseTastingSurveyRowToPayload);
     }
     const map = new Map<string, TastingSurveyPayload>();
-    [...serverList, ...localList].forEach((item) => {
+    [...localList, ...serverList].forEach((item) => {
       if (item && item.id) map.set(item.id, item);
     });
     const merged = Array.from(map.values()).sort(
-      (a, b) => new Date(b.created_at || b.date || 0).getTime() - new Date(a.created_at || a.date || 0).getTime()
+      (a, b) => new Date(b.date || b.created_at || 0).getTime() - new Date(a.date || a.created_at || 0).getTime()
     );
     try {
       localStorage.setItem(KEY, JSON.stringify(merged));
@@ -1341,6 +1520,11 @@ export const campoService = {
     const KEY = 'codizulca_tasting_surveys';
     try {
       await fetch(`/api/tasting-surveys/${id}`, { method: 'DELETE' });
+    } catch {}
+    try {
+      if (UUID_REGEX.test(id)) {
+        await (supabase.from('surveys') as any).delete().eq('id', id);
+      }
     } catch {}
     const local: TastingSurveyPayload[] = JSON.parse(localStorage.getItem(KEY) || '[]');
     try {

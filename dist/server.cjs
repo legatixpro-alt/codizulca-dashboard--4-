@@ -1353,6 +1353,138 @@ function mapSupabaseInventoryRowToPayload(row) {
     created_at: row?.created_at || row?.date
   };
 }
+var UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function ensureCampoUuid(rawId, fallbackSeed) {
+  const trimmed = String(rawId || "").trim();
+  if (UUID_REGEX.test(trimmed)) return trimmed.toLowerCase();
+  const seed = trimmed || fallbackSeed || `${Date.now()}-${Math.random()}`;
+  let h1 = 3735928559 ^ seed.length;
+  let h2 = 1103547991 ^ seed.length;
+  let h3 = 2654435769 ^ seed.length;
+  let h4 = 2246822507 ^ seed.length;
+  for (let i = 0; i < seed.length; i++) {
+    const ch = seed.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+    h3 = Math.imul(h3 ^ ch, 2246822507);
+    h4 = Math.imul(h4 ^ ch, 3266489909);
+  }
+  h1 = Math.imul(h1 ^ h1 >>> 16, 2246822507) ^ Math.imul(h2 ^ h2 >>> 13, 3266489909);
+  h2 = Math.imul(h2 ^ h2 >>> 16, 2246822507) ^ Math.imul(h1 ^ h1 >>> 13, 3266489909);
+  h3 = Math.imul(h3 ^ h3 >>> 16, 2246822507) ^ Math.imul(h4 ^ h4 >>> 13, 3266489909);
+  h4 = Math.imul(h4 ^ h4 >>> 16, 2246822507) ^ Math.imul(h3 ^ h3 >>> 13, 3266489909);
+  const hex = ((h1 >>> 0).toString(16).padStart(8, "0") + (h2 >>> 0).toString(16).padStart(8, "0") + (h3 >>> 0).toString(16).padStart(8, "0") + (h4 >>> 0).toString(16).padStart(8, "0")).slice(0, 32);
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-a${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
+}
+function isSyntheticTastingSurveyRow(row) {
+  if (!row) return true;
+  const idStr = String(row.id || "").trim();
+  if (/^SURV-TEST-/i.test(idStr)) return true;
+  const rowType = String(row.type || "").trim();
+  if (rowType === "Degustacion" || rowType === "Pedido Alkosto" || rowType === "Merchandising") {
+    return true;
+  }
+  return false;
+}
+function mapSupabaseTastingSurveyRowToPayload(row) {
+  let commentsText = "";
+  let sensoryRatings = row?.sensoryRatings;
+  const rawComments = row?.comments;
+  if (typeof rawComments === "string" && rawComments.trim().startsWith("{")) {
+    try {
+      const parsed = JSON.parse(rawComments);
+      commentsText = String(parsed.originalComments ?? parsed.comments ?? "").trim();
+      if (parsed.sensoryRatings && !sensoryRatings) {
+        sensoryRatings = parsed.sensoryRatings;
+      }
+    } catch {
+      commentsText = rawComments.trim();
+    }
+  } else if (rawComments !== void 0 && rawComments !== null) {
+    commentsText = String(rawComments).trim();
+  }
+  let purchaseIntent = "SI";
+  if (row?.purchaseIntent === "SI" || row?.purchaseIntent === "NO" || row?.purchaseIntent === "TAL_VEZ") {
+    purchaseIntent = row.purchaseIntent;
+  } else {
+    const intentStr = String(row?.intent || "").trim();
+    if (/tal vez|quiz/i.test(intentStr)) {
+      purchaseIntent = "TAL_VEZ";
+    } else if (/no\b|poco probable|nada probable/i.test(intentStr)) {
+      purchaseIntent = "NO";
+    } else {
+      purchaseIntent = "SI";
+    }
+  }
+  const rawType = String(row?.type || "").trim();
+  const normalizedType = rawType === "Profunda" || rawType === "extendida" ? "extendida" : "rapida";
+  return {
+    id: String(row?.id || ensureCampoUuid(void 0, `${row?.date}|${row?.promoter}|${row?.store}`)),
+    date: row?.date || row?.created_at || (/* @__PURE__ */ new Date()).toISOString(),
+    store: String(row?.store || "Punto de Venta").trim(),
+    promoter: resolvePromoterNameFromRaw(row?.promoter, row?.creatorId),
+    type: normalizedType,
+    productName: String(row?.productName || row?.product || "Producto Codizulca").trim(),
+    ratingOverall: Number(row?.ratingOverall ?? row?.rating) || 5,
+    purchaseIntent,
+    ...sensoryRatings ? { sensoryRatings } : {},
+    ...commentsText ? { comments: commentsText } : {},
+    created_at: row?.created_at || row?.date
+  };
+}
+
+// src/lib/merchandisingService.ts
+var SAMPLE_SIGNATURE = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAABkCAYAAADDhn8LAAAACXBIWXMAAAsTAAALEwEAmpwYAAAFmElEQVR4nO3dX2jbVRzH8c/vnpq0dcuapN1K7Wbttm4dtqXQ1s7/88a2oYzBEGQggyHYHwYyjA2EZdChbAyEDWSD4f4gCIIMhjLGsK0oQ7C1yhr/2qRpnTZpk7Zp8/s6D657b9q69Nfk3vTz";
+function mapSupabaseMerchRowToReport(row) {
+  if (row && Array.isArray(row.activities) && row.storeManagerName) {
+    return {
+      ...row,
+      id: String(row.id),
+      type: "Merchandising",
+      promoter: resolvePromoterNameFromRaw(row.promoter, row.creatorId),
+      signature: row.signature || SAMPLE_SIGNATURE,
+      certified: row.certified !== void 0 ? Boolean(row.certified) : true,
+      photos: Array.isArray(row.photos) ? row.photos : [],
+      created_at: row.created_at || row.signedAt || row.date || (/* @__PURE__ */ new Date()).toISOString()
+    };
+  }
+  let c = {};
+  if (typeof row?.comments === "string" && row.comments.trim().startsWith("{")) {
+    try {
+      c = JSON.parse(row.comments);
+    } catch {
+      c = {};
+    }
+  } else if (row?.comments && typeof row.comments === "object") {
+    c = row.comments;
+  }
+  const rawDate = String(row?.date || c?.date || row?.created_at || (/* @__PURE__ */ new Date()).toISOString());
+  return {
+    id: String(row?.id || ensureCampoUuid(void 0, `${rawDate}|${row?.promoter}|${row?.store}`)),
+    type: "Merchandising",
+    date: rawDate.split("T")[0],
+    time: c?.time || (row?.created_at ? new Date(row.created_at).toLocaleTimeString("es-VE", { hour: "2-digit", minute: "2-digit" }) : "09:00 a.m."),
+    store: String(row?.store || c?.store || "Punto de Venta").trim(),
+    address: String(c?.address || row?.address || "").trim(),
+    promoter: resolvePromoterNameFromRaw(row?.promoter || c?.promoter, row?.creatorId),
+    storeManagerName: String(c?.storeManagerName || row?.storeManagerName || "Encargado de Tienda").trim(),
+    storeManagerRole: String(c?.storeManagerRole || row?.storeManagerRole || "Encargado de PDV").trim(),
+    storeManagerPhone: String(c?.storeManagerPhone || row?.storeManagerPhone || "").trim(),
+    visitReason: String(c?.visitReason || row?.visitReason || "Visita de Merchandising y Certificaci\xF3n PDV").trim(),
+    activities: Array.isArray(c?.activities) && c.activities.length > 0 ? c.activities : ["Exhibici\xF3n y Ajuste de Planograma"],
+    product: String(row?.product || c?.product || "General").trim(),
+    observations: String(c?.observations || row?.observations || "").trim(),
+    signature: c?.signature || row?.signature || SAMPLE_SIGNATURE,
+    signedAt: c?.signedAt || row?.signedAt || row?.created_at || rawDate,
+    certified: c?.certified !== void 0 ? Boolean(c.certified) : true,
+    photos: Array.isArray(c?.photos) ? c.photos : Array.isArray(row?.photos) ? row.photos : [],
+    category: c?.category || row?.category,
+    metrics: c?.metrics || row?.metrics,
+    alerts: c?.alerts || row?.alerts,
+    aiRecommendations: c?.aiRecommendations || row?.aiRecommendations,
+    created_at: row?.created_at || c?.signedAt || rawDate
+  };
+}
 
 // server.ts
 import_dotenv.default.config();
@@ -4822,41 +4954,137 @@ Responde con un JSON estructurado con:
   });
   const merchFilePath = import_path2.default.join(process.cwd(), "data_merchandising.json");
   let memoryMerch = [];
+  const deletedMerchIds = /* @__PURE__ */ new Set();
+  let merchCache = null;
   try {
     if (import_fs2.default.existsSync(merchFilePath)) {
-      memoryMerch = JSON.parse(import_fs2.default.readFileSync(merchFilePath, "utf8"));
+      const rawDisk = JSON.parse(import_fs2.default.readFileSync(merchFilePath, "utf8"));
+      if (Array.isArray(rawDisk)) {
+        memoryMerch = rawDisk.map(mapSupabaseMerchRowToReport);
+      }
     }
   } catch (e) {
     console.warn("[Merchandising] Error leyendo archivo de reportes:", e);
   }
-  app.get("/api/merchandising", (req, res) => {
-    res.json(memoryMerch);
-  });
-  app.post("/api/merchandising", (req, res) => {
+  app.get("/api/merchandising", async (req, res) => {
     try {
-      const record = req.body;
-      if (!record || !record.store || !record.promoter) {
+      const now = Date.now();
+      if (req.query.refresh !== "true" && merchCache && now - merchCache.timestamp < 5e3) {
+        return res.json(merchCache.payload);
+      }
+      let remoteRows = null;
+      const supabaseUrl2 = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL2;
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
+      if (supabaseUrl2 && supabaseKey) {
+        try {
+          const supabase2 = (0, import_supabase_js2.createClient)(supabaseUrl2.replace("/rest/v1/", ""), supabaseKey);
+          const { data, error } = await supabase2.from("surveys").select("*").eq("type", "Merchandising").order("date", { ascending: false }).limit(200);
+          if (!error && Array.isArray(data)) {
+            remoteRows = data.filter((r) => !deletedMerchIds.has(String(r.id))).map(mapSupabaseMerchRowToReport);
+          }
+        } catch (e) {
+          console.warn("[Merchandising] Error leyendo Supabase surveys (Merchandising):", e?.message);
+        }
+      }
+      const localFiltered = memoryMerch.filter((r) => r && r.id && !deletedMerchIds.has(String(r.id))).map(mapSupabaseMerchRowToReport);
+      const remoteIds = new Set((remoteRows || []).map((r) => r.id));
+      const merged = [
+        ...remoteRows || [],
+        ...localFiltered.filter((r) => !remoteIds.has(r.id))
+      ].sort(
+        (a, b) => new Date(b.created_at || b.date || 0).getTime() - new Date(a.created_at || a.date || 0).getTime()
+      );
+      memoryMerch = merged;
+      merchCache = { payload: merged, timestamp: now };
+      return res.json(merged);
+    } catch (err) {
+      return res.json(memoryMerch);
+    }
+  });
+  app.post("/api/merchandising", async (req, res) => {
+    try {
+      const rawRecord = req.body;
+      if (!rawRecord || !rawRecord.store || !rawRecord.promoter) {
         return res.status(400).json({ error: "Datos de merchandising incompletos" });
       }
-      memoryMerch = [record, ...memoryMerch.filter((m) => m.id !== record.id)];
+      const finalId = ensureCampoUuid(
+        rawRecord.id,
+        `${rawRecord.date || ""}|${rawRecord.promoter}|${rawRecord.store}`
+      );
+      const record = mapSupabaseMerchRowToReport({
+        ...rawRecord,
+        id: finalId,
+        created_at: rawRecord.created_at || (/* @__PURE__ */ new Date()).toISOString()
+      });
+      deletedMerchIds.delete(record.id);
+      memoryMerch = [record, ...memoryMerch.filter((m) => m.id !== record.id && m.id !== rawRecord.id)];
+      merchCache = null;
       try {
         import_fs2.default.writeFileSync(merchFilePath, JSON.stringify(memoryMerch, null, 2), "utf8");
       } catch (err) {
         console.warn("[Merchandising] Error persistiendo en disco:", err);
+      }
+      try {
+        const supabaseUrl2 = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL2;
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
+        if (supabaseUrl2 && supabaseKey) {
+          const supabase2 = (0, import_supabase_js2.createClient)(supabaseUrl2.replace("/rest/v1/", ""), supabaseKey);
+          const dbRow = {
+            id: finalId,
+            type: "Merchandising",
+            date: record.date,
+            store: record.store,
+            promoter: record.promoter,
+            product: record.product || "General",
+            comments: JSON.stringify({
+              isMerchandising: true,
+              address: record.address || "",
+              time: record.time || "",
+              storeManagerName: record.storeManagerName || "",
+              storeManagerRole: record.storeManagerRole || "",
+              storeManagerPhone: record.storeManagerPhone || "",
+              visitReason: record.visitReason || "Visita de Merchandising y Certificaci\xF3n PDV",
+              activities: record.activities || [],
+              observations: record.observations || "",
+              signature: record.signature || "",
+              signedAt: record.signedAt || record.created_at,
+              certified: Boolean(record.certified),
+              photos: record.photos || [],
+              category: record.category,
+              metrics: record.metrics,
+              alerts: record.alerts,
+              aiRecommendations: record.aiRecommendations
+            }),
+            creatorId: record.promoter
+          };
+          await supabase2.from("surveys").upsert(dbRow);
+        }
+      } catch {
       }
       res.status(201).json(record);
     } catch (err) {
       res.status(500).json({ error: "Error al guardar reporte de merchandising", details: err?.message });
     }
   });
-  app.delete("/api/merchandising/:id", (req, res) => {
+  app.delete("/api/merchandising/:id", async (req, res) => {
     try {
       const { id } = req.params;
+      deletedMerchIds.add(id);
       memoryMerch = memoryMerch.filter((m) => m.id !== id);
+      merchCache = null;
       try {
         import_fs2.default.writeFileSync(merchFilePath, JSON.stringify(memoryMerch, null, 2), "utf8");
       } catch (err) {
         console.warn("[Merchandising] Error guardando tras eliminar:", err);
+      }
+      try {
+        const supabaseUrl2 = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL2;
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
+        if (supabaseUrl2 && supabaseKey && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+          const supabase2 = (0, import_supabase_js2.createClient)(supabaseUrl2.replace("/rest/v1/", ""), supabaseKey);
+          await supabase2.from("surveys").delete().eq("id", id);
+        }
+      } catch {
       }
       res.json({ success: true, id });
     } catch (err) {
@@ -5290,7 +5518,10 @@ Responde con un JSON estructurado con:
       if (isSyntheticPriceOrInventoryRow(rawBody)) {
         return res.status(201).json(rawBody);
       }
-      const finalId = isValidUuid(rawBody.id) ? rawBody.id.trim() : import_crypto.default.randomUUID();
+      const finalId = ensureCampoUuid(
+        rawBody.id,
+        `${rawBody.date || ""}|${rawBody.promoter || ""}|${rawBody.store || ""}|${rawBody.productName || rawBody.ourProduct || ""}`
+      );
       const survey = mapSupabasePriceRowToPayload({
         ...rawBody,
         id: finalId,
@@ -5426,7 +5657,10 @@ Responde con un JSON estructurado con:
       if (isSyntheticPriceOrInventoryRow(rawBody)) {
         return res.status(201).json(rawBody);
       }
-      const finalId = isValidUuid(rawBody.id) ? rawBody.id.trim() : import_crypto.default.randomUUID();
+      const finalId = ensureCampoUuid(
+        rawBody.id,
+        `${rawBody.date || ""}|${rawBody.promoter || ""}|${rawBody.store || ""}|${rawBody.productName || rawBody.product || ""}`
+      );
       const log = mapSupabaseInventoryRowToPayload({
         ...rawBody,
         id: finalId,
@@ -5493,35 +5727,130 @@ Responde con un JSON estructurado con:
   });
   const campoTastingPath = import_path2.default.join(process.cwd(), "data_tasting_surveys.json");
   let memoryTastingSurveys = [];
+  const deletedTastingSurveyIds = /* @__PURE__ */ new Set();
+  let tastingSurveysCache = null;
   try {
     if (import_fs2.default.existsSync(campoTastingPath)) {
-      memoryTastingSurveys = JSON.parse(import_fs2.default.readFileSync(campoTastingPath, "utf8"));
+      const rawDisk = JSON.parse(import_fs2.default.readFileSync(campoTastingPath, "utf8"));
+      if (Array.isArray(rawDisk)) {
+        memoryTastingSurveys = rawDisk.filter((r) => !isSyntheticTastingSurveyRow(r)).map(mapSupabaseTastingSurveyRowToPayload);
+      }
     }
   } catch (e) {
   }
-  app.get("/api/tasting-surveys", (req, res) => {
-    res.json(memoryTastingSurveys);
-  });
-  app.post("/api/tasting-surveys", (req, res) => {
+  app.get("/api/tasting-surveys", async (req, res) => {
     try {
-      const survey = req.body;
-      memoryTastingSurveys = [survey, ...memoryTastingSurveys.filter((s) => s.id !== survey.id)];
+      const now = Date.now();
+      if (req.query.refresh !== "true" && tastingSurveysCache && now - tastingSurveysCache.timestamp < 4e3) {
+        return res.json(tastingSurveysCache.payload);
+      }
+      let remoteRows = null;
+      const supabaseUrl2 = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL2;
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
+      if (supabaseUrl2 && supabaseKey) {
+        try {
+          const supabase2 = (0, import_supabase_js2.createClient)(supabaseUrl2.replace("/rest/v1/", ""), supabaseKey);
+          const { data, error } = await supabase2.from("surveys").select("*").in("type", ["Breve", "Profunda"]).order("date", { ascending: false }).limit(1e3);
+          if (!error && Array.isArray(data)) {
+            remoteRows = data.filter((r) => !isSyntheticTastingSurveyRow(r) && !deletedTastingSurveyIds.has(String(r.id))).map(mapSupabaseTastingSurveyRowToPayload);
+          }
+        } catch (e) {
+          console.warn("[TastingSurveys] Error leyendo Supabase surveys:", e?.message);
+        }
+      }
+      const localFiltered = memoryTastingSurveys.filter((r) => !isSyntheticTastingSurveyRow(r) && !deletedTastingSurveyIds.has(String(r.id))).map(mapSupabaseTastingSurveyRowToPayload);
+      const remoteIds = new Set((remoteRows || []).map((r) => r.id));
+      const merged = [
+        ...remoteRows || [],
+        ...localFiltered.filter((r) => !remoteIds.has(r.id))
+      ].sort(
+        (a, b) => new Date(b.date || b.created_at || 0).getTime() - new Date(a.date || a.created_at || 0).getTime()
+      );
+      memoryTastingSurveys = merged;
+      tastingSurveysCache = { payload: merged, timestamp: now };
+      try {
+        import_fs2.default.writeFileSync(campoTastingPath, JSON.stringify(merged, null, 2), "utf8");
+      } catch {
+      }
+      return res.json(merged);
+    } catch (err) {
+      return res.json(memoryTastingSurveys);
+    }
+  });
+  app.post("/api/tasting-surveys", async (req, res) => {
+    try {
+      const rawBody = req.body || {};
+      if (isSyntheticTastingSurveyRow(rawBody)) {
+        return res.status(201).json(rawBody);
+      }
+      const finalId = ensureCampoUuid(
+        rawBody.id,
+        `${rawBody.date || ""}|${rawBody.promoter || ""}|${rawBody.store || ""}|${rawBody.productName || rawBody.product || ""}`
+      );
+      const survey = mapSupabaseTastingSurveyRowToPayload({
+        ...rawBody,
+        id: finalId,
+        date: rawBody.date || (/* @__PURE__ */ new Date()).toISOString(),
+        created_at: rawBody.created_at || (/* @__PURE__ */ new Date()).toISOString()
+      });
+      deletedTastingSurveyIds.delete(survey.id);
+      memoryTastingSurveys = [survey, ...memoryTastingSurveys.filter((s) => s.id !== survey.id && s.id !== rawBody.id)];
+      tastingSurveysCache = null;
       try {
         import_fs2.default.writeFileSync(campoTastingPath, JSON.stringify(memoryTastingSurveys, null, 2), "utf8");
       } catch (err) {
+      }
+      try {
+        const supabaseUrl2 = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL2;
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
+        if (supabaseUrl2 && supabaseKey) {
+          const supabase2 = (0, import_supabase_js2.createClient)(supabaseUrl2.replace("/rest/v1/", ""), supabaseKey);
+          const rating = Number(survey.ratingOverall) || 5;
+          const dbRow = {
+            id: finalId,
+            type: survey.type === "extendida" ? "Profunda" : "Breve",
+            date: survey.date,
+            store: survey.store,
+            promoter: survey.promoter,
+            product: survey.productName,
+            rating,
+            intent: survey.purchaseIntent === "SI" ? survey.type === "extendida" ? "Muy probable" : "S\xED, definitivamente" : survey.purchaseIntent === "TAL_VEZ" ? "Tal vez" : "No por ahora",
+            comments: JSON.stringify({
+              originalComments: survey.comments || "",
+              acceptance: rating >= 4 ? "Alta" : rating === 3 ? "Media" : "Baja",
+              isTasting: true,
+              ...survey.sensoryRatings ? { sensoryRatings: survey.sensoryRatings } : {}
+            }),
+            creatorId: String(rawBody.creatorId || survey.promoter || "")
+          };
+          const { error: upsertErr } = await supabase2.from("surveys").upsert(dbRow);
+          if (upsertErr) console.warn("[TastingSurveys] Supabase upsert fall\xF3:", upsertErr.message);
+        }
+      } catch {
       }
       res.status(201).json(survey);
     } catch (err) {
       res.status(500).json({ error: "Error al guardar degustaci\xF3n", details: err?.message });
     }
   });
-  app.delete("/api/tasting-surveys/:id", (req, res) => {
+  app.delete("/api/tasting-surveys/:id", async (req, res) => {
     try {
       const { id } = req.params;
+      deletedTastingSurveyIds.add(id);
       memoryTastingSurveys = memoryTastingSurveys.filter((s) => s.id !== id);
+      tastingSurveysCache = null;
       try {
         import_fs2.default.writeFileSync(campoTastingPath, JSON.stringify(memoryTastingSurveys, null, 2), "utf8");
       } catch (err) {
+      }
+      try {
+        const supabaseUrl2 = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL2;
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
+        if (supabaseUrl2 && supabaseKey && isValidUuid(id)) {
+          const supabase2 = (0, import_supabase_js2.createClient)(supabaseUrl2.replace("/rest/v1/", ""), supabaseKey);
+          await supabase2.from("surveys").delete().eq("id", id);
+        }
+      } catch {
       }
       res.json({ success: true, id });
     } catch (err) {
@@ -5590,7 +5919,7 @@ Responde con un JSON estructurado con:
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 8e3);
-      const response = await fetch(`${supabaseUrl2}surveys?select=*&order=date.desc&limit=1000`, {
+      const response = await fetch(`${supabaseUrl2}surveys?select=*&type=eq.Degustacion&order=date.desc&limit=1000`, {
         headers: {
           apikey: supabaseKey,
           Authorization: `Bearer ${supabaseKey}`

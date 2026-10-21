@@ -1086,6 +1086,10 @@ export const TradeMarketing: React.FC = () => {
           loadCheckIns();
           loadCampoSynchronizedData(true);
         })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'surveys' }, () => {
+          loadMerchandisingReports();
+          loadCampoSynchronizedData(true);
+        })
         .subscribe();
     } catch {
       realtimeChannel = null;
@@ -2358,9 +2362,6 @@ export const TradeMarketing: React.FC = () => {
                 Sincronizado en Vivo
               </span>
             </div>
-            <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed max-w-4xl">
-              Enlace de acceso a la App Móvil de Campo (<strong className="text-zinc-200">/portal/login</strong>). Cada promotora cuenta con su pantalla de inicio de sesión segura donde ingresa su <strong className="text-zinc-200">correo electrónico y contraseña</strong> para validar su identidad y visualizar únicamente su <strong className="text-red-400">cronograma de degustaciones y rutas asignadas</strong>.
-            </p>
           </div>
         </div>
 
@@ -3381,50 +3382,6 @@ export const TradeMarketing: React.FC = () => {
           {/* ========================================================================= */}
           {informesTab === 'visitas' && (
             <div className="space-y-4">
-              {/* Tarjetas KPI de Visitas */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="bg-[#121316] border border-white/10 rounded-xl p-3.5 shadow-md">
-                  <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">
-                    Visitas Registradas
-                  </span>
-                  <div className="flex items-baseline gap-2 mt-1">
-                    <span className="text-2xl font-black text-white">{filteredInformes.length}</span>
-                    <span className="text-xs text-zinc-500 font-mono">auditorías</span>
-                  </div>
-                </div>
-                <div className="bg-[#121316] border border-white/10 rounded-xl p-3.5 shadow-md">
-                  <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">
-                    GPS Geoverificado
-                  </span>
-                  <div className="flex items-baseline gap-2 mt-1">
-                    <span className="text-2xl font-black text-emerald-400">100%</span>
-                    <span className="text-xs text-zinc-500 font-mono">en tienda</span>
-                  </div>
-                </div>
-                <div className="bg-[#121316] border border-white/10 rounded-xl p-3.5 shadow-md">
-                  <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">
-                    Muestras Entregadas
-                  </span>
-                  <div className="flex items-baseline gap-2 mt-1">
-                    <span className="text-2xl font-black text-white">
-                      {filteredInformes.reduce((acc, curr) => acc + (curr.samplesGiven || 0), 0)}
-                    </span>
-                    <span className="text-xs text-zinc-500 font-mono">degustaciones</span>
-                  </div>
-                </div>
-                <div className="bg-[#121316] border border-white/10 rounded-xl p-3.5 shadow-md">
-                  <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">
-                    Fotos de Góndola
-                  </span>
-                  <div className="flex items-baseline gap-2 mt-1">
-                    <span className="text-2xl font-black text-purple-400">
-                      {filteredInformes.reduce((acc, curr) => acc + (curr.photosCount || 0), 0)}
-                    </span>
-                    <span className="text-xs text-zinc-500 font-mono">evidencias</span>
-                  </div>
-                </div>
-              </div>
-
               {/* Tabla de Visitas */}
               <div className="bg-[#121316] border border-white/10 rounded-2xl shadow-xl overflow-hidden">
                 <div className="overflow-x-auto">
@@ -3969,9 +3926,6 @@ export const TradeMarketing: React.FC = () => {
                       {filteredInventoryReports.length} balances registrados
                     </span>
                   </div>
-                  <p className="text-xs sm:text-sm text-zinc-400 max-w-3xl">
-                    Monitoreo de inventario inicial (antes de la actividad), inventario final (después de la degustación o venta), cálculo automático del resultado y observaciones de la actividad con análisis de efectividad mediante IA.
-                  </p>
                 </div>
 
                 <div className="flex items-center gap-3 flex-wrap">
@@ -4002,7 +3956,7 @@ export const TradeMarketing: React.FC = () => {
               </div>
 
               {/* 2. TARJETAS KPI RESUMEN DE INVENTARIOS Y VENTAS */}
-              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
                 {/* KPI 1: Total Inventario Inicial */}
                 <div className="bg-[#121316] border border-white/10 rounded-2xl p-4 shadow-xl flex flex-col justify-between">
                   <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">
@@ -4057,20 +4011,6 @@ export const TradeMarketing: React.FC = () => {
                     <span className="text-xs text-emerald-300 font-mono">unidades / kg</span>
                   </div>
                   <span className="text-[10px] text-emerald-500/80 font-mono mt-1 block">Inicial - Final - Muestras</span>
-                </div>
-
-                {/* KPI 5: Rotación Promedio */}
-                <div className="bg-[#121316] border border-white/10 rounded-2xl p-4 shadow-xl flex flex-col justify-between col-span-2 sm:col-span-2 lg:col-span-1">
-                  <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">
-                    % Rotación Promedio
-                  </span>
-                  <div className="flex items-baseline gap-2 mt-2">
-                    <span className="text-2xl sm:text-3xl font-black text-teal-300 font-mono">
-                      {inventoryReportTotals.avgRotation}%
-                    </span>
-                    <span className="text-xs text-zinc-500 font-mono">en góndola</span>
-                  </div>
-                  <span className="text-[10px] text-teal-500/80 font-mono mt-1 block">Drenaje de anaquel</span>
                 </div>
               </div>
 

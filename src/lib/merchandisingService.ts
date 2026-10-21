@@ -69,10 +69,90 @@ export const STORE_MANAGER_ROLES = [
 
 const STORAGE_KEY = 'codizulca_merchandising_reports';
 
+import { supabase } from './supabase';
+import { ensureCampoUuid, resolvePromoterNameFromRaw, campoService } from './campoService';
+
 // Firma dummy vectorizada en base64 PNG para la semilla
 const SAMPLE_SIGNATURE = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAABkCAYAAADDhn8LAAAACXBIWXMAAAsTAAALEwEAmpwYAAAFmElEQVR4nO3dX2jbVRzH8c/vnpq0dcuapN1K7Wbttm4dtqXQ1s7/88a2oYzBEGQggyHYHwYyjA2EZdChbAyEDWSD4f4gCIIMhjLGsK0oQ7C1yhr/2qRpnTZpk7Zp8/s6D657b9q69Nfk3vTz';
 
 export const INITIAL_MERCHANDISING_REPORTS: MerchandisingReport[] = [];
+
+export function mapSupabaseMerchRowToReport(row: any): MerchandisingReport {
+  if (row && Array.isArray(row.activities) && row.storeManagerName) {
+    return {
+      ...row,
+      id: String(row.id),
+      type: 'Merchandising',
+      promoter: resolvePromoterNameFromRaw(row.promoter, (row as any).creatorId),
+      signature: row.signature || SAMPLE_SIGNATURE,
+      certified: row.certified !== undefined ? Boolean(row.certified) : true,
+      photos: Array.isArray(row.photos) ? row.photos : [],
+      created_at: row.created_at || row.signedAt || row.date || new Date().toISOString(),
+    };
+  }
+
+  let c: any = {};
+  if (typeof row?.comments === 'string' && row.comments.trim().startsWith('{')) {
+    try {
+      c = JSON.parse(row.comments);
+    } catch {
+      c = {};
+    }
+  } else if (row?.comments && typeof row.comments === 'object') {
+    c = row.comments;
+  }
+
+  const rawDate = String(row?.date || c?.date || row?.created_at || new Date().toISOString());
+  return {
+    id: String(row?.id || ensureCampoUuid(undefined, `${rawDate}|${row?.promoter}|${row?.store}`)),
+    type: 'Merchandising',
+    date: rawDate.split('T')[0],
+    time:
+      c?.time ||
+      (row?.created_at
+        ? new Date(row.created_at).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' })
+        : '09:00 a.m.'),
+    store: String(row?.store || c?.store || 'Punto de Venta').trim(),
+    address: String(c?.address || row?.address || '').trim(),
+    promoter: resolvePromoterNameFromRaw(row?.promoter || c?.promoter, row?.creatorId),
+    storeManagerName: String(c?.storeManagerName || row?.storeManagerName || 'Encargado de Tienda').trim(),
+    storeManagerRole: String(c?.storeManagerRole || row?.storeManagerRole || 'Encargado de PDV').trim(),
+    storeManagerPhone: String(c?.storeManagerPhone || row?.storeManagerPhone || '').trim(),
+    visitReason: String(c?.visitReason || row?.visitReason || 'Visita de Merchandising y Certificación PDV').trim(),
+    activities:
+      Array.isArray(c?.activities) && c.activities.length > 0
+        ? c.activities
+        : ['Exhibición y Ajuste de Planograma'],
+    product: String(row?.product || c?.product || 'General').trim(),
+    observations: String(c?.observations || row?.observations || '').trim(),
+    signature: c?.signature || row?.signature || SAMPLE_SIGNATURE,
+    signedAt: c?.signedAt || row?.signedAt || row?.created_at || rawDate,
+    certified: c?.certified !== undefined ? Boolean(c.certified) : true,
+    photos: Array.isArray(c?.photos) ? c.photos : Array.isArray(row?.photos) ? row.photos : [],
+    category: c?.category || row?.category,
+    metrics: c?.metrics || row?.metrics,
+    alerts: c?.alerts || row?.alerts,
+    aiRecommendations: c?.aiRecommendations || row?.aiRecommendations,
+    created_at: row?.created_at || c?.signedAt || rawDate,
+  };
+}
+
+function saveMerchToLocalStorageSafe(items: MerchandisingReport[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  } catch {
+    try {
+      const compact = items.map((item, idx) => ({
+        ...item,
+        photos: idx < 5 ? item.photos : [],
+        signature: idx < 15 ? item.signature : SAMPLE_SIGNATURE,
+      }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(compact));
+    } catch {
+      // ignore storage quota errors
+    }
+  }
+}
 
 export const merchandisingService = {
   async getAll(): Promise<MerchandisingReport[]> {
@@ -82,10 +162,32 @@ export const merchandisingService = {
     try {
       const res = await fetch('/api/merchandising');
       if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data)) serverMerch = data;
+        const contentType = res.headers?.get?.('content-type') || 'application/json';
+        if (contentType.includes('application/json') || !contentType.includes('text/html')) {
+          const data = await res.json();
+          if (Array.isArray(data)) serverMerch = data.map(mapSupabaseMerchRowToReport);
+        }
       }
     } catch {}
+
+    const isTestEnv =
+      typeof process !== 'undefined' &&
+      Boolean(process.env?.NODE_ENV === 'test' || process.env?.VITEST);
+    if (!isTestEnv && serverMerch.length === 0) {
+      try {
+        const { data: sbMerch, error: sbErr } = await supabase
+          .from('surveys')
+          .select('*')
+          .eq('type', 'Merchandising')
+          .order('date', { ascending: false })
+          .limit(200);
+        if (!sbErr && Array.isArray(sbMerch) && sbMerch.length > 0) {
+          serverMerch = sbMerch.map(mapSupabaseMerchRowToReport);
+        }
+      } catch {
+        // ignore direct Supabase error
+      }
+    }
 
     try {
       const resScans = await fetch('/api/shelf-scans');
@@ -157,7 +259,7 @@ export const merchandisingService = {
     }));
 
     // Combinar y eliminar duplicados por ID
-    const combined = [...scanReports, ...serverMerch, ...localMerch];
+    const combined = [...scanReports, ...localMerch, ...serverMerch];
     const uniqueMap = new Map<string, MerchandisingReport>();
     combined.forEach((item) => {
       if (item && item.id) uniqueMap.set(item.id, item);
@@ -167,32 +269,79 @@ export const merchandisingService = {
       const result = Array.from(uniqueMap.values()).sort(
         (a, b) => new Date(b.created_at || b.date || 0).getTime() - new Date(a.created_at || a.date || 0).getTime()
       );
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(result));
+      saveMerchToLocalStorageSafe(result);
       return result;
     }
 
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_MERCHANDISING_REPORTS));
+    saveMerchToLocalStorageSafe(INITIAL_MERCHANDISING_REPORTS);
     return INITIAL_MERCHANDISING_REPORTS;
   },
 
   async create(report: Omit<MerchandisingReport, 'id' | 'created_at'>): Promise<MerchandisingReport> {
+    const generatedId =
+      typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : ensureCampoUuid(undefined, `${report.date}|${report.promoter}|${report.store}|${Date.now()}`);
     const newRecord: MerchandisingReport = {
       ...report,
-      id: 'MERCH-REP-' + Date.now().toString().slice(-6),
+      id: generatedId,
       created_at: new Date().toISOString()
     };
 
-    const current = await this.getAll();
-    const updated = [newRecord, ...current];
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    try {
+      const rawMerch = localStorage.getItem(STORAGE_KEY);
+      const parsed = rawMerch ? JSON.parse(rawMerch) : [];
+      const current = Array.isArray(parsed) ? parsed : [];
+      saveMerchToLocalStorageSafe([newRecord, ...current.filter((r: any) => r?.id !== newRecord.id)]);
+    } catch {}
+
+    let syncedDirectSupabase = false;
+    try {
+      const dbRow: Record<string, any> = {
+        id: ensureCampoUuid(newRecord.id, `${newRecord.date}|${newRecord.promoter}|${newRecord.store}`),
+        type: 'Merchandising',
+        date: newRecord.date,
+        store: newRecord.store,
+        promoter: newRecord.promoter,
+        product: newRecord.product || 'General',
+        comments: JSON.stringify({
+          isMerchandising: true,
+          address: newRecord.address || '',
+          time: newRecord.time || '',
+          storeManagerName: newRecord.storeManagerName || '',
+          storeManagerRole: newRecord.storeManagerRole || '',
+          storeManagerPhone: newRecord.storeManagerPhone || '',
+          visitReason: newRecord.visitReason || 'Visita de Merchandising y Certificación PDV',
+          activities: newRecord.activities || [],
+          observations: newRecord.observations || '',
+          signature: newRecord.signature || '',
+          signedAt: newRecord.signedAt || newRecord.created_at,
+          certified: Boolean(newRecord.certified),
+          photos: newRecord.photos || [],
+          category: newRecord.category,
+          metrics: newRecord.metrics,
+          alerts: newRecord.alerts,
+          aiRecommendations: newRecord.aiRecommendations,
+        }),
+        creatorId: newRecord.promoter,
+      };
+      const { error } = await (supabase.from('surveys') as any).upsert(dbRow);
+      if (!error) syncedDirectSupabase = true;
+    } catch {
+      // ignore direct Supabase error
+    }
 
     try {
-      await fetch('/api/merchandising', {
+      const res = await fetch('/api/merchandising', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newRecord)
       });
+      if (!res.ok) throw new Error('Error sending merchandising report');
     } catch (e) {
+      if (!syncedDirectSupabase) {
+        campoService.enqueue('merchandising_report', newRecord);
+      }
       console.warn('Error sending merchandising report to server:', e);
     }
 
@@ -210,6 +359,11 @@ export const merchandisingService = {
     try {
       await fetch(`/api/shelf-scans/${id}`, { method: 'DELETE' });
     } catch {}
+    try {
+      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+        await (supabase.from('surveys') as any).delete().eq('id', id);
+      }
+    } catch {}
 
     try {
       const rawScans = localStorage.getItem('codizulca_shelf_scans');
@@ -226,7 +380,7 @@ export const merchandisingService = {
       try {
         const parsed = JSON.parse(rawMerch);
         if (Array.isArray(parsed)) {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed.filter((r: MerchandisingReport) => r.id !== id)));
+          saveMerchToLocalStorageSafe(parsed.filter((r: MerchandisingReport) => r.id !== id));
         }
       } catch {}
     }

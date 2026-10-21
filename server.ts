@@ -32,9 +32,13 @@ import {
 import crypto from 'crypto';
 import {
   isSyntheticPriceOrInventoryRow,
+  isSyntheticTastingSurveyRow,
   mapSupabasePriceRowToPayload,
   mapSupabaseInventoryRowToPayload,
+  mapSupabaseTastingSurveyRowToPayload,
+  ensureCampoUuid,
 } from './src/lib/campoService';
+import { mapSupabaseMerchRowToReport } from './src/lib/merchandisingService';
 
 
 async function startServer() {
@@ -4106,45 +4110,154 @@ Responde con un JSON estructurado con:
   // Submódulo de Merchandising (Informes y Certificación de Visita en PDV)
   const merchFilePath = path.join(process.cwd(), 'data_merchandising.json');
   let memoryMerch: any[] = [];
+  const deletedMerchIds = new Set<string>();
+  let merchCache: { payload: any[]; timestamp: number } | null = null;
   try {
     if (fs.existsSync(merchFilePath)) {
-      memoryMerch = JSON.parse(fs.readFileSync(merchFilePath, 'utf8'));
+      const rawDisk = JSON.parse(fs.readFileSync(merchFilePath, 'utf8'));
+      if (Array.isArray(rawDisk)) {
+        memoryMerch = rawDisk.map(mapSupabaseMerchRowToReport);
+      }
     }
   } catch (e) {
     console.warn('[Merchandising] Error leyendo archivo de reportes:', e);
   }
 
-  app.get('/api/merchandising', (req, res) => {
-    res.json(memoryMerch);
+  app.get('/api/merchandising', async (req, res) => {
+    try {
+      const now = Date.now();
+      if (req.query.refresh !== 'true' && merchCache && now - merchCache.timestamp < 5000) {
+        return res.json(merchCache.payload);
+      }
+
+      let remoteRows: any[] | null = null;
+      const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
+      if (supabaseUrl && supabaseKey) {
+        try {
+          const supabase = createClient(supabaseUrl.replace('/rest/v1/', ''), supabaseKey);
+          const { data, error } = await supabase
+            .from('surveys')
+            .select('*')
+            .eq('type', 'Merchandising')
+            .order('date', { ascending: false })
+            .limit(200);
+          if (!error && Array.isArray(data)) {
+            remoteRows = data
+              .filter((r) => !deletedMerchIds.has(String(r.id)))
+              .map(mapSupabaseMerchRowToReport);
+          }
+        } catch (e: any) {
+          console.warn('[Merchandising] Error leyendo Supabase surveys (Merchandising):', e?.message);
+        }
+      }
+
+      const localFiltered = memoryMerch
+        .filter((r) => r && r.id && !deletedMerchIds.has(String(r.id)))
+        .map(mapSupabaseMerchRowToReport);
+      const remoteIds = new Set((remoteRows || []).map((r) => r.id));
+      const merged = [
+        ...(remoteRows || []),
+        ...localFiltered.filter((r) => !remoteIds.has(r.id)),
+      ].sort(
+        (a, b) => new Date(b.created_at || b.date || 0).getTime() - new Date(a.created_at || a.date || 0).getTime()
+      );
+
+      memoryMerch = merged;
+      merchCache = { payload: merged, timestamp: now };
+      return res.json(merged);
+    } catch (err: any) {
+      return res.json(memoryMerch);
+    }
   });
 
-  app.post('/api/merchandising', (req, res) => {
+  app.post('/api/merchandising', async (req, res) => {
     try {
-      const record = req.body;
-      if (!record || !record.store || !record.promoter) {
+      const rawRecord = req.body;
+      if (!rawRecord || !rawRecord.store || !rawRecord.promoter) {
         return res.status(400).json({ error: 'Datos de merchandising incompletos' });
       }
-      memoryMerch = [record, ...memoryMerch.filter(m => m.id !== record.id)];
+      const finalId = ensureCampoUuid(
+        rawRecord.id,
+        `${rawRecord.date || ''}|${rawRecord.promoter}|${rawRecord.store}`
+      );
+      const record = mapSupabaseMerchRowToReport({
+        ...rawRecord,
+        id: finalId,
+        created_at: rawRecord.created_at || new Date().toISOString(),
+      });
+
+      deletedMerchIds.delete(record.id);
+      memoryMerch = [record, ...memoryMerch.filter(m => m.id !== record.id && m.id !== rawRecord.id)];
+      merchCache = null;
       try {
         fs.writeFileSync(merchFilePath, JSON.stringify(memoryMerch, null, 2), 'utf8');
       } catch (err) {
         console.warn('[Merchandising] Error persistiendo en disco:', err);
       }
+
+      try {
+        const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
+        if (supabaseUrl && supabaseKey) {
+          const supabase = createClient(supabaseUrl.replace('/rest/v1/', ''), supabaseKey);
+          const dbRow = {
+            id: finalId,
+            type: 'Merchandising',
+            date: record.date,
+            store: record.store,
+            promoter: record.promoter,
+            product: record.product || 'General',
+            comments: JSON.stringify({
+              isMerchandising: true,
+              address: record.address || '',
+              time: record.time || '',
+              storeManagerName: record.storeManagerName || '',
+              storeManagerRole: record.storeManagerRole || '',
+              storeManagerPhone: record.storeManagerPhone || '',
+              visitReason: record.visitReason || 'Visita de Merchandising y Certificación PDV',
+              activities: record.activities || [],
+              observations: record.observations || '',
+              signature: record.signature || '',
+              signedAt: record.signedAt || record.created_at,
+              certified: Boolean(record.certified),
+              photos: record.photos || [],
+              category: record.category,
+              metrics: record.metrics,
+              alerts: record.alerts,
+              aiRecommendations: record.aiRecommendations,
+            }),
+            creatorId: record.promoter,
+          };
+          await supabase.from('surveys').upsert(dbRow);
+        }
+      } catch {}
+
       res.status(201).json(record);
     } catch (err: any) {
       res.status(500).json({ error: 'Error al guardar reporte de merchandising', details: err?.message });
     }
   });
 
-  app.delete('/api/merchandising/:id', (req, res) => {
+  app.delete('/api/merchandising/:id', async (req, res) => {
     try {
       const { id } = req.params;
+      deletedMerchIds.add(id);
       memoryMerch = memoryMerch.filter(m => m.id !== id);
+      merchCache = null;
       try {
         fs.writeFileSync(merchFilePath, JSON.stringify(memoryMerch, null, 2), 'utf8');
       } catch (err) {
         console.warn('[Merchandising] Error guardando tras eliminar:', err);
       }
+      try {
+        const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
+        if (supabaseUrl && supabaseKey && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+          const supabase = createClient(supabaseUrl.replace('/rest/v1/', ''), supabaseKey);
+          await supabase.from('surveys').delete().eq('id', id);
+        }
+      } catch {}
       res.json({ success: true, id });
     } catch (err: any) {
       res.status(500).json({ error: 'Error al eliminar reporte de merchandising', details: err?.message });
@@ -4648,7 +4761,10 @@ Responde con un JSON estructurado con:
         return res.status(201).json(rawBody);
       }
 
-      const finalId = isValidUuid(rawBody.id) ? rawBody.id.trim() : crypto.randomUUID();
+      const finalId = ensureCampoUuid(
+        rawBody.id,
+        `${rawBody.date || ''}|${rawBody.promoter || ''}|${rawBody.store || ''}|${rawBody.productName || rawBody.ourProduct || ''}`
+      );
       const survey = mapSupabasePriceRowToPayload({
         ...rawBody,
         id: finalId,
@@ -4802,7 +4918,10 @@ Responde con un JSON estructurado con:
         return res.status(201).json(rawBody);
       }
 
-      const finalId = isValidUuid(rawBody.id) ? rawBody.id.trim() : crypto.randomUUID();
+      const finalId = ensureCampoUuid(
+        rawBody.id,
+        `${rawBody.date || ''}|${rawBody.promoter || ''}|${rawBody.store || ''}|${rawBody.productName || rawBody.product || ''}`
+      );
       const log = mapSupabaseInventoryRowToPayload({
         ...rawBody,
         id: finalId,
@@ -4872,32 +4991,150 @@ Responde con un JSON estructurado con:
 
   const campoTastingPath = path.join(process.cwd(), 'data_tasting_surveys.json');
   let memoryTastingSurveys: any[] = [];
+  const deletedTastingSurveyIds = new Set<string>();
+  let tastingSurveysCache: { payload: any[]; timestamp: number } | null = null;
   try {
     if (fs.existsSync(campoTastingPath)) {
-      memoryTastingSurveys = JSON.parse(fs.readFileSync(campoTastingPath, 'utf8'));
+      const rawDisk = JSON.parse(fs.readFileSync(campoTastingPath, 'utf8'));
+      if (Array.isArray(rawDisk)) {
+        memoryTastingSurveys = rawDisk
+          .filter((r) => !isSyntheticTastingSurveyRow(r))
+          .map(mapSupabaseTastingSurveyRowToPayload);
+      }
     }
   } catch (e) {}
 
-  app.get('/api/tasting-surveys', (req, res) => {
-    res.json(memoryTastingSurveys);
+  app.get('/api/tasting-surveys', async (req, res) => {
+    try {
+      const now = Date.now();
+      if (req.query.refresh !== 'true' && tastingSurveysCache && now - tastingSurveysCache.timestamp < 4000) {
+        return res.json(tastingSurveysCache.payload);
+      }
+
+      let remoteRows: any[] | null = null;
+      const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
+      if (supabaseUrl && supabaseKey) {
+        try {
+          const supabase = createClient(supabaseUrl.replace('/rest/v1/', ''), supabaseKey);
+          const { data, error } = await supabase
+            .from('surveys')
+            .select('*')
+            .in('type', ['Breve', 'Profunda'])
+            .order('date', { ascending: false })
+            .limit(1000);
+          if (!error && Array.isArray(data)) {
+            remoteRows = data
+              .filter((r) => !isSyntheticTastingSurveyRow(r) && !deletedTastingSurveyIds.has(String(r.id)))
+              .map(mapSupabaseTastingSurveyRowToPayload);
+          }
+        } catch (e: any) {
+          console.warn('[TastingSurveys] Error leyendo Supabase surveys:', e?.message);
+        }
+      }
+
+      const localFiltered = memoryTastingSurveys
+        .filter((r) => !isSyntheticTastingSurveyRow(r) && !deletedTastingSurveyIds.has(String(r.id)))
+        .map(mapSupabaseTastingSurveyRowToPayload);
+
+      const remoteIds = new Set((remoteRows || []).map((r) => r.id));
+      const merged = [
+        ...(remoteRows || []),
+        ...localFiltered.filter((r) => !remoteIds.has(r.id)),
+      ].sort(
+        (a, b) => new Date(b.date || b.created_at || 0).getTime() - new Date(a.date || a.created_at || 0).getTime()
+      );
+
+      memoryTastingSurveys = merged;
+      tastingSurveysCache = { payload: merged, timestamp: now };
+      try {
+        fs.writeFileSync(campoTastingPath, JSON.stringify(merged, null, 2), 'utf8');
+      } catch {}
+      return res.json(merged);
+    } catch (err: any) {
+      return res.json(memoryTastingSurveys);
+    }
   });
 
-  app.post('/api/tasting-surveys', (req, res) => {
+  app.post('/api/tasting-surveys', async (req, res) => {
     try {
-      const survey = req.body;
-      memoryTastingSurveys = [survey, ...memoryTastingSurveys.filter(s => s.id !== survey.id)];
+      const rawBody = req.body || {};
+      if (isSyntheticTastingSurveyRow(rawBody)) {
+        return res.status(201).json(rawBody);
+      }
+
+      const finalId = ensureCampoUuid(
+        rawBody.id,
+        `${rawBody.date || ''}|${rawBody.promoter || ''}|${rawBody.store || ''}|${rawBody.productName || rawBody.product || ''}`
+      );
+      const survey = mapSupabaseTastingSurveyRowToPayload({
+        ...rawBody,
+        id: finalId,
+        date: rawBody.date || new Date().toISOString(),
+        created_at: rawBody.created_at || new Date().toISOString(),
+      });
+
+      deletedTastingSurveyIds.delete(survey.id);
+      memoryTastingSurveys = [survey, ...memoryTastingSurveys.filter(s => s.id !== survey.id && s.id !== rawBody.id)];
+      tastingSurveysCache = null;
       try { fs.writeFileSync(campoTastingPath, JSON.stringify(memoryTastingSurveys, null, 2), 'utf8'); } catch (err) {}
+
+      try {
+        const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
+        if (supabaseUrl && supabaseKey) {
+          const supabase = createClient(supabaseUrl.replace('/rest/v1/', ''), supabaseKey);
+          const rating = Number(survey.ratingOverall) || 5;
+          const dbRow = {
+            id: finalId,
+            type: survey.type === 'extendida' ? 'Profunda' : 'Breve',
+            date: survey.date,
+            store: survey.store,
+            promoter: survey.promoter,
+            product: survey.productName,
+            rating,
+            intent:
+              survey.purchaseIntent === 'SI'
+                ? survey.type === 'extendida'
+                  ? 'Muy probable'
+                  : 'Sí, definitivamente'
+                : survey.purchaseIntent === 'TAL_VEZ'
+                ? 'Tal vez'
+                : 'No por ahora',
+            comments: JSON.stringify({
+              originalComments: survey.comments || '',
+              acceptance: rating >= 4 ? 'Alta' : rating === 3 ? 'Media' : 'Baja',
+              isTasting: true,
+              ...(survey.sensoryRatings ? { sensoryRatings: survey.sensoryRatings } : {}),
+            }),
+            creatorId: String(rawBody.creatorId || survey.promoter || ''),
+          };
+          const { error: upsertErr } = await supabase.from('surveys').upsert(dbRow);
+          if (upsertErr) console.warn('[TastingSurveys] Supabase upsert falló:', upsertErr.message);
+        }
+      } catch {}
+
       res.status(201).json(survey);
     } catch (err: any) {
       res.status(500).json({ error: 'Error al guardar degustación', details: err?.message });
     }
   });
 
-  app.delete('/api/tasting-surveys/:id', (req, res) => {
+  app.delete('/api/tasting-surveys/:id', async (req, res) => {
     try {
       const { id } = req.params;
+      deletedTastingSurveyIds.add(id);
       memoryTastingSurveys = memoryTastingSurveys.filter(s => s.id !== id);
+      tastingSurveysCache = null;
       try { fs.writeFileSync(campoTastingPath, JSON.stringify(memoryTastingSurveys, null, 2), 'utf8'); } catch (err) {}
+      try {
+        const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
+        if (supabaseUrl && supabaseKey && isValidUuid(id)) {
+          const supabase = createClient(supabaseUrl.replace('/rest/v1/', ''), supabaseKey);
+          await supabase.from('surveys').delete().eq('id', id);
+        }
+      } catch {}
       res.json({ success: true, id });
     } catch (err: any) {
       res.status(500).json({ error: 'Error al eliminar encuesta', details: err?.message });
@@ -4975,7 +5212,7 @@ Responde con un JSON estructurado con:
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 8000);
-      const response = await fetch(`${supabaseUrl}surveys?select=*&order=date.desc&limit=1000`, {
+      const response = await fetch(`${supabaseUrl}surveys?select=*&type=eq.Degustacion&order=date.desc&limit=1000`, {
         headers: {
           apikey: supabaseKey,
           Authorization: `Bearer ${supabaseKey}`

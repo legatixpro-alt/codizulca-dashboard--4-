@@ -116,8 +116,12 @@ export const CampoEncuestas: React.FC<{ activePromoterName?: string }> = ({
 
     setIsSubmitting(true);
     try {
+      const generatedId =
+        typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+          ? crypto.randomUUID()
+          : 'SURV-CORTA-' + Date.now().toString().slice(-6);
       const payload: TastingSurveyPayload = {
-        id: 'SURV-CORTA-' + Date.now().toString().slice(-6),
+        id: generatedId,
         date: new Date().toISOString(),
         store: storeName.trim(),
         promoter: activePromoterName || activePromoter?.name || campoService.getActivePromoter().name,
@@ -147,8 +151,12 @@ export const CampoEncuestas: React.FC<{ activePromoterName?: string }> = ({
 
     setIsSubmitting(true);
     try {
+      const generatedId =
+        typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+          ? crypto.randomUUID()
+          : 'SURV-LARGA-' + Date.now().toString().slice(-6);
       const payload: TastingSurveyPayload = {
-        id: 'SURV-LARGA-' + Date.now().toString().slice(-6),
+        id: generatedId,
         date: new Date().toISOString(),
         store: storeName.trim(),
         promoter: activePromoterName || activePromoter?.name || campoService.getActivePromoter().name,
