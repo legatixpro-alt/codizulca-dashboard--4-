@@ -20,6 +20,7 @@ import {
   UserCheck
 } from 'lucide-react';
 import { campoService, PROMOTERS_LIST, TRADE_COORDINATOR_PROFILE } from '../../lib/campoService';
+import { checkinsService } from '../../lib/checkinsService';
 import { matchPromoterName } from '../../lib/degustacionesService';
 import { trazabilidadService } from '../../lib/trazabilidadService';
 import { FueraDeHorarioScreen } from '../mobile/FueraDeHorarioScreen';
@@ -105,15 +106,30 @@ export const CampoLayout: React.FC = () => {
 
   // 2. Monitoreo de Conectividad & Sincronización Automática
   useEffect(() => {
+    const syncPendingAndLocalCheckins = async () => {
+      try {
+        const [resCampo, resCheckins] = await Promise.all([
+          campoService.flushQueue(),
+          checkinsService.flushOfflineQueue(),
+        ]);
+        await checkinsService.getAllCheckIns(true);
+        const totalSynced = (resCampo?.synced || 0) + (resCheckins?.syncedCount || 0);
+        if (totalSynced > 0) {
+          setSyncToastMessage(`¡Conexión restaurada! Se sincronizaron ${totalSynced} registros pendientes.`);
+          setTimeout(() => setSyncToastMessage(null), 5000);
+        }
+        setPendingQueueCount((resCampo?.remaining || 0) + (resCheckins?.remainingCount || 0));
+      } catch {}
+    };
+
     const handleOnline = async () => {
       setIsOnline(true);
-      const res = await campoService.flushQueue();
-      if (res.synced > 0) {
-        setSyncToastMessage(`¡Conexión restaurada! Se sincronizaron ${res.synced} registros pendientes.`);
-        setTimeout(() => setSyncToastMessage(null), 5000);
-      }
-      setPendingQueueCount(res.remaining);
+      await syncPendingAndLocalCheckins();
     };
+
+    if (navigator.onLine) {
+      syncPendingAndLocalCheckins();
+    }
 
     const handleOffline = () => {
       setIsOnline(false);
@@ -160,11 +176,17 @@ export const CampoLayout: React.FC = () => {
     }
     setIsFlushingQueue(true);
     try {
-      const res = await campoService.flushQueue();
-      setPendingQueueCount(res.remaining);
+      const [res, chkRes] = await Promise.all([
+        campoService.flushQueue(),
+        checkinsService.flushOfflineQueue(),
+      ]);
+      await checkinsService.getAllCheckIns(true);
+      const totalSynced = (res?.synced || 0) + (chkRes?.syncedCount || 0);
+      const totalRemaining = (res?.remaining || 0) + (chkRes?.remainingCount || 0);
+      setPendingQueueCount(totalRemaining);
       setSyncToastMessage(
-        res.synced > 0
-          ? `Sincronizados ${res.synced} registros con el servidor.`
+        totalSynced > 0
+          ? `Sincronizados ${totalSynced} registros con el servidor.`
           : 'Todos los registros ya están al día.'
       );
       setTimeout(() => setSyncToastMessage(null), 4000);

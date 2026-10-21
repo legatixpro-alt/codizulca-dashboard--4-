@@ -325,21 +325,17 @@ export const CampoAsistencia: React.FC<{ activePromoterName?: string }> = ({
     setIsSubmitting(true);
 
     try {
-      const promoterName = activePromoterName || campoService.getActivePromoter().name;
-      const payload: CheckinPayload = {
-        date: new Date().toISOString(),
-        store: storeName,
-        type: checkInType,
-        photoBase64: selfieDataUrl,
-        location: gpsLocation,
-        promoter: promoterName,
-        creatorId: 'USR-' + promoterName.replace(/\s+/g, '-').toLowerCase()
-      };
-
-      // Guardar también en el servicio existente checkinsService para sincronización total
       const activeProfile = campoService.getActivePromoter();
-      await checkinsService.createCheckIn({
-        date: new Date().toISOString(),
+      const promoterName = activePromoterName || activeProfile.name;
+      const creatorIdentifier =
+        activeProfile?.email ||
+        activeProfile?.id ||
+        'USR-' + promoterName.replace(/\s+/g, '-').toLowerCase();
+      const nowIso = new Date().toISOString();
+
+      // Guardar en checkinsService (con UUID válido, sincronización directa a Supabase + Backend y cola offline)
+      const checkinResult = await checkinsService.createCheckIn({
+        date: nowIso,
         promoter: promoterName,
         store: storeName,
         type: checkInType,
@@ -349,8 +345,19 @@ export const CampoAsistencia: React.FC<{ activePromoterName?: string }> = ({
           lng: gpsLocation.lng,
           accuracy: gpsLocation.accuracy || 10
         },
-        creatorId: 'USR-' + promoterName.replace(/\s+/g, '-').toLowerCase()
+        creatorId: creatorIdentifier
       });
+
+      const payload: CheckinPayload & { id: string } = {
+        id: checkinResult.record.id,
+        date: nowIso,
+        store: storeName,
+        type: checkInType,
+        photoBase64: selfieDataUrl,
+        location: gpsLocation,
+        promoter: promoterName,
+        creatorId: creatorIdentifier
+      };
 
       // Registrar en Trazabilidad con coordenadas GPS reales y dirección física exacta
       (async () => {
@@ -407,7 +414,24 @@ export const CampoAsistencia: React.FC<{ activePromoterName?: string }> = ({
       setSaveSuccess(true);
     } catch (err) {
       console.error('Error al guardar asistencia:', err);
-      // Fallback offline
+      // Fallback offline garantizado
+      try {
+        const activeProfile = campoService.getActivePromoter();
+        const promoterName = activePromoterName || activeProfile.name;
+        const creatorIdentifier =
+          activeProfile?.email ||
+          activeProfile?.id ||
+          'USR-' + promoterName.replace(/\s+/g, '-').toLowerCase();
+        campoService.enqueue('checkin', {
+          date: new Date().toISOString(),
+          store: storeName,
+          type: checkInType,
+          photoBase64: selfieDataUrl,
+          location: gpsLocation,
+          promoter: promoterName,
+          creatorId: creatorIdentifier
+        });
+      } catch {}
       setSaveSuccess(true);
       setIsOfflineSaved(true);
     } finally {

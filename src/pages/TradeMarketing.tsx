@@ -703,10 +703,10 @@ export const TradeMarketing: React.FC = () => {
   const [isRefreshingCheckIns, setIsRefreshingCheckIns] = useState<boolean>(false);
   const [lastCheckInSync, setLastCheckInSync] = useState<Date>(new Date());
 
-  const loadCheckIns = async () => {
+  const loadCheckIns = async (forceRefresh: boolean = false) => {
     setIsRefreshingCheckIns(true);
     try {
-      const records = await checkinsService.getAllCheckIns();
+      const records = await checkinsService.getAllCheckIns(forceRefresh);
       setCheckIns(records);
       setLastCheckInSync(new Date());
 
@@ -1676,30 +1676,21 @@ export const TradeMarketing: React.FC = () => {
   }, [todayStart]);
 
   // Cronograma Actual:
-  // 1. Todas las solicitudes de vendedores PENDIENTES o EN CURSO ('scheduled' o 'in_progress'),
-  //    garantizando que ninguna solicitud activa se oculte de la vista de la coordinación.
-  // 2. Más todas las actividades agendadas o ejecutadas en la semana en curso (lunes a domingo: >= weekStart && <= weekEnd).
+  // Muestra únicamente las solicitudes de degustación nuevas/pendientes o en curso ('scheduled' o 'in_progress'),
+  // dejando el Cronograma Actual completamente limpio cuando las actividades pasan al Historial.
   const currentWeekDegustaciones = useMemo(() => {
     return degustaciones.filter((item) => {
-      if (item.status === 'scheduled' || item.status === 'in_progress') {
-        return true;
-      }
-      const parsed = parseDateDMY(item.date);
-      return parsed.getTime() >= weekStart.getTime() && parsed.getTime() <= weekEnd.getTime();
+      return item.status === 'scheduled' || item.status === 'in_progress';
     });
-  }, [degustaciones, weekStart, weekEnd]);
+  }, [degustaciones]);
 
   // Historial:
-  // Degustaciones que ya fueron completadas o canceladas de semanas anteriores (< weekStart).
+  // Todas las degustaciones completadas o archivadas ('completed' o 'cancelled').
   const historicalDegustaciones = useMemo(() => {
     return degustaciones.filter((item) => {
-      if (item.status === 'scheduled' || item.status === 'in_progress') {
-        return false;
-      }
-      const parsed = parseDateDMY(item.date);
-      return parsed.getTime() < weekStart.getTime();
+      return item.status !== 'scheduled' && item.status !== 'in_progress';
     });
-  }, [degustaciones, weekStart]);
+  }, [degustaciones]);
 
   // Agrupación automática de Historial por Semana (Semana 4, Semana 3, Semana 2, Semana 1)
   const historicalWeeksGrouped = useMemo(() => {
@@ -4486,10 +4477,19 @@ export const TradeMarketing: React.FC = () => {
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2 self-start md:self-auto">
+                  <div className="flex items-center gap-2 self-start md:self-auto flex-wrap">
                     <span className="text-[10px] text-zinc-500 font-mono hidden xl:inline">
                       Última sync: {lastCheckInSync.toLocaleTimeString('es-VE')}
                     </span>
+                    <button
+                      type="button"
+                      onClick={() => loadCheckIns(true)}
+                      disabled={isRefreshingCheckIns}
+                      className="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-white/10 text-zinc-200 font-bold text-xs inline-flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 text-emerald-400 ${isRefreshingCheckIns ? 'animate-spin' : ''}`} />
+                      <span>{isRefreshingCheckIns ? 'Sincronizando...' : 'Sincronizar Asistencias'}</span>
+                    </button>
                     <a
                       href="/portal/checkin"
                       target="_blank"
@@ -4518,7 +4518,7 @@ export const TradeMarketing: React.FC = () => {
                       Todas ({checkIns.length})
                     </button>
                     {personal.map((p) => {
-                      const count = checkIns.filter(c => c.promoter === p.name).length;
+                      const count = checkIns.filter(c => matchPromoterName(c.promoter, p.name)).length;
                       return (
                         <button
                           key={p.id}

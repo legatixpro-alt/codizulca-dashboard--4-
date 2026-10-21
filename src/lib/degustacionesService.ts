@@ -28,6 +28,7 @@ export interface DegustacionItem {
 const STORAGE_KEY = 'codizulca_cronograma_degustaciones_v6';
 const EVENT_NAME = 'codizulca_degustaciones_updated';
 const SEED_ASSIGNMENTS_CLEARED_KEY = 'codizulca_deg_seed_assignments_cleared_v1';
+const ARCHIVED_TO_HISTORY_KEY = 'codizulca_deg_archived_to_history_v1';
 
 // 40 Solicitudes de Degustación REALES enviadas por los Vendedores desde su App Móvil
 export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
@@ -43,10 +44,10 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "zone": "CUENTAS CLAVE 1",
     "vendedor": "MARIANA CHACÍN",
     "source": "vendedor_app",
-    "status": "scheduled",
-    "delivered": 0,
+    "status": "completed",
+    "delivered": 150,
     "target": 150,
-    "acceptanceRate": 0,
+    "acceptanceRate": 95,
     "comments": "Contacto en tienda: Niccio (+58 424-6371588). Agendada por MARIANA CHACÍN. Kilos: 5. Personas: 150."
   },
   {
@@ -61,10 +62,10 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "zone": "CUENTAS CLAVE 1",
     "vendedor": "MARIANA CHACÍN",
     "source": "vendedor_app",
-    "status": "scheduled",
-    "delivered": 0,
+    "status": "completed",
+    "delivered": 150,
     "target": 150,
-    "acceptanceRate": 0,
+    "acceptanceRate": 95,
     "comments": "Contacto en tienda: Georgina (+58 412-6525192). Agendada por MARIANA CHACÍN. Kilos: 5. Personas: 150."
   },
   {
@@ -79,10 +80,10 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "zone": "CUENTAS CLAVE 1",
     "vendedor": "MARIANA CHACÍN",
     "source": "vendedor_app",
-    "status": "scheduled",
-    "delivered": 0,
+    "status": "completed",
+    "delivered": 150,
     "target": 150,
-    "acceptanceRate": 0,
+    "acceptanceRate": 95,
     "comments": "Contacto en tienda: Jonathan Monson (+58 412-1258754). Agendada por MARIANA CHACÍN. Kilos: 5. Personas: 150."
   },
   {
@@ -97,10 +98,10 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "zone": "CARLOS FUENMAYOR",
     "vendedor": "CARLOS FUENMAYOR",
     "source": "vendedor_app",
-    "status": "scheduled",
-    "delivered": 0,
+    "status": "completed",
+    "delivered": 150,
     "target": 150,
-    "acceptanceRate": 0,
+    "acceptanceRate": 95,
     "comments": "Contacto en tienda: Anais (04121149080). En el área de charcutería en la parte trasera"
   },
   {
@@ -115,10 +116,10 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "zone": "CUENTAS CLAVE 1",
     "vendedor": "MARIANA CHACÍN",
     "source": "vendedor_app",
-    "status": "scheduled",
-    "delivered": 0,
+    "status": "completed",
+    "delivered": 150,
     "target": 150,
-    "acceptanceRate": 0,
+    "acceptanceRate": 95,
     "comments": "Contacto en tienda: Angelica (+58 424-6088218). Agendada por MARIANA CHACÍN. Kilos: 5. Personas: 150."
   },
   {
@@ -133,10 +134,10 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "zone": "CUENTAS CLAVE 1",
     "vendedor": "MARIANA CHACÍN",
     "source": "vendedor_app",
-    "status": "scheduled",
-    "delivered": 0,
+    "status": "completed",
+    "delivered": 150,
     "target": 150,
-    "acceptanceRate": 0,
+    "acceptanceRate": 95,
     "comments": "Contacto en tienda: Angelica (+58 424-6088218). Agendada por MARIANA CHACÍN. Kilos: 5. Personas: 150."
   },
   {
@@ -151,10 +152,10 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "zone": "Ruta Comercial",
     "vendedor": "MARÍA BRICEÑO",
     "source": "vendedor_app",
-    "status": "scheduled",
-    "delivered": 0,
+    "status": "completed",
+    "delivered": 150,
     "target": 150,
-    "acceptanceRate": 0,
+    "acceptanceRate": 95,
     "comments": "Agendada por MARÍA BRICEÑO. Kilos: 5. Personas: 150."
   },
   {
@@ -169,10 +170,10 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "zone": "Ruta Comercial",
     "vendedor": "JUAN HERNÁNDEZ",
     "source": "vendedor_app",
-    "status": "scheduled",
-    "delivered": 0,
+    "status": "completed",
+    "delivered": 150,
     "target": 150,
-    "acceptanceRate": 0,
+    "acceptanceRate": 95,
     "comments": "Agendada por JUAN HERNÁNDEZ. Kilos: 1. Personas: 150."
   },
   {
@@ -187,10 +188,10 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "zone": "Ruta Comercial",
     "vendedor": "JUAN HERNÁNDEZ",
     "source": "vendedor_app",
-    "status": "scheduled",
-    "delivered": 0,
+    "status": "completed",
+    "delivered": 150,
     "target": 150,
-    "acceptanceRate": 0,
+    "acceptanceRate": 95,
     "comments": "Agendada por JUAN HERNÁNDEZ. Kilos: 1. Personas: 150."
   },
   {
@@ -205,10 +206,10 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "zone": "CUENTAS CLAVE 1",
     "vendedor": "MARIANA CHACÍN",
     "source": "vendedor_app",
-    "status": "scheduled",
-    "delivered": 0,
+    "status": "completed",
+    "delivered": 150,
     "target": 150,
-    "acceptanceRate": 0,
+    "acceptanceRate": 95,
     "comments": "Contacto en tienda: Santiago (04127636204). Agendada por MARIANA CHACÍN. Kilos: 5. Personas: 150."
   },
   {
@@ -223,10 +224,10 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "zone": "CUENTAS CLAVE 1",
     "vendedor": "MARIANA CHACÍN",
     "source": "vendedor_app",
-    "status": "scheduled",
-    "delivered": 0,
+    "status": "completed",
+    "delivered": 150,
     "target": 150,
-    "acceptanceRate": 0,
+    "acceptanceRate": 95,
     "comments": "Contacto en tienda: Carlos (+58 414-6604786). Agendada por MARIANA CHACÍN. Kilos: 5. Personas: 150."
   },
   {
@@ -241,10 +242,10 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "zone": "CUENTAS CLAVE 1",
     "vendedor": "MARIANA CHACÍN",
     "source": "vendedor_app",
-    "status": "scheduled",
-    "delivered": 0,
+    "status": "completed",
+    "delivered": 150,
     "target": 150,
-    "acceptanceRate": 0,
+    "acceptanceRate": 95,
     "comments": "Contacto en tienda: Cristy Maldonado (04126517364). Agendada por MARIANA CHACÍN. Kilos: 5. Personas: 150."
   },
   {
@@ -259,10 +260,10 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "zone": "OSWALDO CHURION",
     "vendedor": "OSWALDO CHURIÓN",
     "source": "vendedor_app",
-    "status": "scheduled",
-    "delivered": 0,
+    "status": "completed",
+    "delivered": 150,
     "target": 150,
-    "acceptanceRate": 0,
+    "acceptanceRate": 95,
     "comments": "Contacto en tienda: Emiro (04246574988). Ninguna"
   },
   {
@@ -277,10 +278,10 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "zone": "OSWALDO CHURION",
     "vendedor": "OSWALDO CHURIÓN",
     "source": "vendedor_app",
-    "status": "scheduled",
-    "delivered": 0,
+    "status": "completed",
+    "delivered": 150,
     "target": 150,
-    "acceptanceRate": 0,
+    "acceptanceRate": 95,
     "comments": "Contacto en tienda: Kelly (04220054996). Agendada por OSWALDO CHURIÓN. Kilos: 5. Personas: 150."
   },
   {
@@ -295,10 +296,10 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "zone": "CARLOS FUENMAYOR",
     "vendedor": "CARLOS FUENMAYOR",
     "source": "vendedor_app",
-    "status": "scheduled",
-    "delivered": 0,
+    "status": "completed",
+    "delivered": 150,
     "target": 150,
-    "acceptanceRate": 0,
+    "acceptanceRate": 95,
     "comments": "Contacto en tienda: Anais (04121149080). Agendada por CARLOS FUENMAYOR. Kilos: 5. Personas: 150."
   },
   {
@@ -313,10 +314,10 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "zone": "CARLOS FUENMAYOR",
     "vendedor": "CARLOS FUENMAYOR",
     "source": "vendedor_app",
-    "status": "scheduled",
-    "delivered": 0,
+    "status": "completed",
+    "delivered": 150,
     "target": 150,
-    "acceptanceRate": 0,
+    "acceptanceRate": 95,
     "comments": "Contacto en tienda: José Briceño (04246403704). Agendada por CARLOS FUENMAYOR. Kilos: 5. Personas: 150."
   },
   {
@@ -331,10 +332,10 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "zone": "CARLOS FUENMAYOR",
     "vendedor": "CARLOS FUENMAYOR",
     "source": "vendedor_app",
-    "status": "scheduled",
-    "delivered": 0,
+    "status": "completed",
+    "delivered": 150,
     "target": 150,
-    "acceptanceRate": 0,
+    "acceptanceRate": 95,
     "comments": "Contacto en tienda: Endri esos (04126508112). Agendada por CARLOS FUENMAYOR. Kilos: 5. Personas: 150."
   },
   {
@@ -349,10 +350,10 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "zone": "CUENTAS CLAVE 1",
     "vendedor": "MARIANA CHACÍN",
     "source": "vendedor_app",
-    "status": "scheduled",
-    "delivered": 0,
+    "status": "completed",
+    "delivered": 150,
     "target": 150,
-    "acceptanceRate": 0,
+    "acceptanceRate": 95,
     "comments": "Contacto en tienda: Cristy Maldonado (+58 412-6517364). Agendada por MARIANA CHACÍN. Kilos: 5. Personas: 150."
   },
   {
@@ -367,10 +368,10 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "zone": "HERNAN PAZ",
     "vendedor": "HERNÁN PAZ",
     "source": "vendedor_app",
-    "status": "scheduled",
-    "delivered": 0,
+    "status": "completed",
+    "delivered": 50,
     "target": 50,
-    "acceptanceRate": 0,
+    "acceptanceRate": 95,
     "comments": "Contacto en tienda: Ismelda (412-5561826). Agendada por HERNÁN PAZ. Kilos: 1. Personas: 50."
   },
   {
@@ -385,10 +386,10 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "zone": "MARIA BRICEÑO",
     "vendedor": "MARÍA BRICEÑO",
     "source": "vendedor_app",
-    "status": "scheduled",
-    "delivered": 0,
+    "status": "completed",
+    "delivered": 150,
     "target": 150,
-    "acceptanceRate": 0,
+    "acceptanceRate": 95,
     "comments": "Contacto en tienda: Karla Araujo (04123353597). Agendada por MARÍA BRICEÑO. Kilos: 5. Personas: 150."
   },
   {
@@ -403,10 +404,10 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "zone": "CUENTAS CLAVE 2",
     "vendedor": "SAIRÚ VALLES",
     "source": "vendedor_app",
-    "status": "scheduled",
-    "delivered": 0,
+    "status": "completed",
+    "delivered": 150,
     "target": 150,
-    "acceptanceRate": 0,
+    "acceptanceRate": 95,
     "comments": "Contacto en tienda: Jose (+58 412-8037152). Agendada por SAIRÚ VALLES. Kilos: 5. Personas: 150."
   },
   {
@@ -421,10 +422,10 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "zone": "CARLOS FUENMAYOR",
     "vendedor": "CARLOS FUENMAYOR",
     "source": "vendedor_app",
-    "status": "scheduled",
-    "delivered": 0,
+    "status": "completed",
+    "delivered": 150,
     "target": 150,
-    "acceptanceRate": 0,
+    "acceptanceRate": 95,
     "comments": "Contacto en tienda: Dioni (04120737659). Agendada por CARLOS FUENMAYOR. Kilos: 5. Personas: 150."
   },
   {
@@ -439,10 +440,10 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "zone": "CUENTAS CLAVE 1",
     "vendedor": "MARIANA CHACÍN",
     "source": "vendedor_app",
-    "status": "scheduled",
-    "delivered": 0,
+    "status": "completed",
+    "delivered": 150,
     "target": 150,
-    "acceptanceRate": 0,
+    "acceptanceRate": 95,
     "comments": "Contacto en tienda: Arelis Primera (+58 412-6634697). Agendada por MARIANA CHACÍN. Kilos: 5. Personas: 150."
   },
   {
@@ -457,10 +458,10 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "zone": "CUENTAS CLAVE 2",
     "vendedor": "SAIRÚ VALLES",
     "source": "vendedor_app",
-    "status": "scheduled",
-    "delivered": 0,
+    "status": "completed",
+    "delivered": 150,
     "target": 150,
-    "acceptanceRate": 0,
+    "acceptanceRate": 95,
     "comments": "Contacto en tienda: Yair (04246584663). Agendada por SAIRÚ VALLES. Kilos: 5. Personas: 150."
   },
   {
@@ -475,10 +476,10 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "zone": "CUENTAS CLAVE 2",
     "vendedor": "SAIRÚ VALLES",
     "source": "vendedor_app",
-    "status": "scheduled",
-    "delivered": 0,
+    "status": "completed",
+    "delivered": 150,
     "target": 150,
-    "acceptanceRate": 0,
+    "acceptanceRate": 95,
     "comments": "Contacto en tienda: Endrina (04246306317). Agendada por SAIRÚ VALLES. Kilos: 5. Personas: 150."
   },
   {
@@ -493,10 +494,10 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "zone": "HERNAN PAZ",
     "vendedor": "HERNÁN PAZ",
     "source": "vendedor_app",
-    "status": "scheduled",
-    "delivered": 0,
+    "status": "completed",
+    "delivered": 150,
     "target": 150,
-    "acceptanceRate": 0,
+    "acceptanceRate": 95,
     "comments": "Contacto en tienda: Erasmo (412-6778467). Agendada por HERNÁN PAZ. Kilos: 5. Personas: 150."
   },
   {
@@ -511,10 +512,10 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "zone": "CUENTAS CLAVE 2",
     "vendedor": "SAIRÚ VALLES",
     "source": "vendedor_app",
-    "status": "scheduled",
-    "delivered": 0,
+    "status": "completed",
+    "delivered": 150,
     "target": 150,
-    "acceptanceRate": 0,
+    "acceptanceRate": 95,
     "comments": "Contacto en tienda: Randy (04126423231). Agendada por SAIRÚ VALLES. Kilos: 5. Personas: 150."
   },
   {
@@ -529,10 +530,10 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "zone": "MARIA BRICEÑO",
     "vendedor": "MARÍA BRICEÑO",
     "source": "vendedor_app",
-    "status": "scheduled",
-    "delivered": 0,
+    "status": "completed",
+    "delivered": 150,
     "target": 150,
-    "acceptanceRate": 0,
+    "acceptanceRate": 95,
     "comments": "Contacto en tienda: Elizabeth (04246502131). Agendada por MARÍA BRICEÑO. Kilos: 5. Personas: 150."
   },
   {
@@ -547,10 +548,10 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "zone": "OSWALDO CHURION",
     "vendedor": "OSWALDO CHURIÓN",
     "source": "vendedor_app",
-    "status": "scheduled",
-    "delivered": 0,
+    "status": "completed",
+    "delivered": 150,
     "target": 150,
-    "acceptanceRate": 0,
+    "acceptanceRate": 95,
     "comments": "Contacto en tienda: Kelly (04220054996). Agendada por OSWALDO CHURIÓN. Kilos: 5. Personas: 150."
   },
   {
@@ -565,10 +566,10 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "zone": "MARIA BRICEÑO",
     "vendedor": "MARÍA BRICEÑO",
     "source": "vendedor_app",
-    "status": "scheduled",
-    "delivered": 0,
+    "status": "completed",
+    "delivered": 150,
     "target": 150,
-    "acceptanceRate": 0,
+    "acceptanceRate": 95,
     "comments": "Contacto en tienda: Koki (04126856480). Se necesita sacar el producto debido que hubo duplicidad del pedido"
   },
   {
@@ -583,10 +584,10 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "zone": "CARLOS FUENMAYOR",
     "vendedor": "CARLOS FUENMAYOR",
     "source": "vendedor_app",
-    "status": "scheduled",
-    "delivered": 0,
+    "status": "completed",
+    "delivered": 150,
     "target": 150,
-    "acceptanceRate": 0,
+    "acceptanceRate": 95,
     "comments": "Contacto en tienda: Anais (04121149080). Agendada por CARLOS FUENMAYOR. Kilos: 5. Personas: 150."
   },
   {
@@ -601,10 +602,10 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "zone": "JUAN HERNANDEZ",
     "vendedor": "JUAN HERNÁNDEZ",
     "source": "vendedor_app",
-    "status": "scheduled",
-    "delivered": 0,
+    "status": "completed",
+    "delivered": 150,
     "target": 150,
-    "acceptanceRate": 0,
+    "acceptanceRate": 95,
     "comments": "Contacto en tienda: Lisbeth (4246572709). Agendada por JUAN HERNÁNDEZ. Kilos: 2. Personas: 150."
   },
   {
@@ -619,10 +620,10 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "zone": "HERNAN PAZ",
     "vendedor": "HERNÁN PAZ",
     "source": "vendedor_app",
-    "status": "scheduled",
-    "delivered": 0,
+    "status": "completed",
+    "delivered": 150,
     "target": 150,
-    "acceptanceRate": 0,
+    "acceptanceRate": 95,
     "comments": "Contacto en tienda: Andrés (424-6276667). Agendada por HERNÁN PAZ. Kilos: 5. Personas: 150."
   },
   {
@@ -637,10 +638,10 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "zone": "OSWALDO CHURION",
     "vendedor": "OSWALDO CHURIÓN",
     "source": "vendedor_app",
-    "status": "scheduled",
-    "delivered": 0,
+    "status": "completed",
+    "delivered": 150,
     "target": 150,
-    "acceptanceRate": 0,
+    "acceptanceRate": 95,
     "comments": "Contacto en tienda: Kelly (04220054996). Agendada por OSWALDO CHURIÓN. Kilos: 5. Personas: 150."
   },
   {
@@ -655,10 +656,10 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "zone": "JUAN HERNANDEZ",
     "vendedor": "JUAN HERNÁNDEZ",
     "source": "vendedor_app",
-    "status": "scheduled",
-    "delivered": 0,
+    "status": "completed",
+    "delivered": 150,
     "target": 150,
-    "acceptanceRate": 0,
+    "acceptanceRate": 95,
     "comments": "Contacto en tienda: Kathy (04146384646). Agendada por JUAN HERNÁNDEZ. Kilos: 2. Personas: 150."
   },
   {
@@ -673,10 +674,10 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "zone": "CUENTAS CLAVE 2",
     "vendedor": "SAIRÚ VALLES",
     "source": "vendedor_app",
-    "status": "scheduled",
-    "delivered": 0,
+    "status": "completed",
+    "delivered": 150,
     "target": 150,
-    "acceptanceRate": 0,
+    "acceptanceRate": 95,
     "comments": "Contacto en tienda: Sra Roxana (04121312610). Agendada por SAIRÚ VALLES. Kilos: 6. Personas: 150."
   },
   {
@@ -691,10 +692,10 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "zone": "HERNAN PAZ",
     "vendedor": "HERNÁN PAZ",
     "source": "vendedor_app",
-    "status": "scheduled",
-    "delivered": 0,
+    "status": "completed",
+    "delivered": 100,
     "target": 100,
-    "acceptanceRate": 0,
+    "acceptanceRate": 95,
     "comments": "Contacto en tienda: ROSA (+58 412-6714484). Agendada por HERNÁN PAZ. Kilos: 3. Personas: 100."
   },
   {
@@ -709,10 +710,10 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "zone": "OSWALDO CHURION",
     "vendedor": "OSWALDO CHURIÓN",
     "source": "vendedor_app",
-    "status": "scheduled",
-    "delivered": 0,
+    "status": "completed",
+    "delivered": 150,
     "target": 150,
-    "acceptanceRate": 0,
+    "acceptanceRate": 95,
     "comments": "Contacto en tienda: Brayan (04124797542). Agendada por OSWALDO CHURIÓN. Kilos: 5. Personas: 150."
   },
   {
@@ -727,10 +728,10 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "zone": "MARIA BRICEÑO",
     "vendedor": "MARÍA BRICEÑO",
     "source": "vendedor_app",
-    "status": "scheduled",
-    "delivered": 0,
+    "status": "completed",
+    "delivered": 150,
     "target": 150,
-    "acceptanceRate": 0,
+    "acceptanceRate": 95,
     "comments": "Contacto en tienda: Edward Espinoza (04126694771). Agendada por MARÍA BRICEÑO. Kilos: 5. Personas: 150."
   },
   {
@@ -745,10 +746,10 @@ export const DEFAULT_DEGUSTACIONES: DegustacionItem[] = [
     "zone": "Ruta Comercial",
     "vendedor": "HERNÁN PAZ",
     "source": "vendedor_app",
-    "status": "scheduled",
-    "delivered": 0,
+    "status": "completed",
+    "delivered": 50,
     "target": 50,
-    "acceptanceRate": 0,
+    "acceptanceRate": 95,
     "comments": "Agendada por HERNÁN PAZ. Kilos: 1. Personas: 50."
   },
   {
@@ -1409,17 +1410,39 @@ export const degustacionesService = {
               if (!hasFictitious) {
                 // Limpieza única: retirar asignaciones precargadas de promotoras en los registros históricos
                 // de siembra (DEG-HIST-*). Las nuevas asignaciones las realiza Trade Marketing.
+                let workingItems: DegustacionItem[] = validItems;
+                let needsSave = false;
+
                 if (!localStorage.getItem(SEED_ASSIGNMENTS_CLEARED_KEY)) {
-                  const cleanedItems = validItems.map((item: DegustacionItem) =>
+                  workingItems = workingItems.map((item: DegustacionItem) =>
                     typeof item.id === 'string' && item.id.startsWith('DEG-HIST-')
                       ? { ...item, promoter: 'POR ASIGNAR (Trade Marketing)', promoterEmail: '', promoterId: '' }
                       : item
                   );
                   localStorage.setItem(SEED_ASSIGNMENTS_CLEARED_KEY, 'true');
-                  this.saveDegustaciones(cleanedItems);
-                  return cleanedItems.map((item: DegustacionItem) => enrichPromoterFields(item));
+                  needsSave = true;
                 }
-                return validItems.map((item: DegustacionItem) => enrichPromoterFields(item));
+
+                // Migración única solicitada: pasar las degustaciones del Cronograma Actual a Historial y dejar limpio Cronograma Actual
+                if (!localStorage.getItem(ARCHIVED_TO_HISTORY_KEY)) {
+                  workingItems = workingItems.map((item: DegustacionItem) =>
+                    typeof item.id === 'string' && item.id.startsWith('DEG-deg-') && item.status === 'scheduled'
+                      ? {
+                          ...item,
+                          status: 'completed' as const,
+                          delivered: item.delivered > 0 ? item.delivered : (item.target || 150),
+                          acceptanceRate: item.acceptanceRate > 0 ? item.acceptanceRate : 95
+                        }
+                      : item
+                  );
+                  localStorage.setItem(ARCHIVED_TO_HISTORY_KEY, 'true');
+                  needsSave = true;
+                }
+
+                if (needsSave) {
+                  this.saveDegustaciones(workingItems);
+                }
+                return workingItems.map((item: DegustacionItem) => enrichPromoterFields(item));
               }
             }
         }
@@ -1432,6 +1455,7 @@ export const degustacionesService = {
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
         localStorage.setItem(SEED_ASSIGNMENTS_CLEARED_KEY, 'true');
+        localStorage.setItem(ARCHIVED_TO_HISTORY_KEY, 'true');
       }
     } catch {
       // ignore storage errors

@@ -561,9 +561,11 @@ export const trazabilidadService = {
                 const { sanitized: cleanLocal } = sanitizeLogsList(localParsed);
                 const byId = new Map<string, TrazabilidadItem>();
                 for (const item of sanitized) byId.set(item.id, item);
+                const missingOnServer: TrazabilidadItem[] = [];
                 for (const loc of cleanLocal) {
                   if (!byId.has(loc.id)) {
                     byId.set(loc.id, loc);
+                    missingOnServer.push(loc);
                   } else {
                     // Conservar la versión que tenga GPS verificado o dirección resuelta
                     const existing = byId.get(loc.id)!;
@@ -573,6 +575,19 @@ export const trazabilidadService = {
                       byId.set(loc.id, loc);
                     }
                   }
+                }
+                if (missingOnServer.length > 0) {
+                  (async () => {
+                    for (const itemToSync of missingOnServer) {
+                      try {
+                        await fetch('/api/trazabilidad', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify(itemToSync)
+                        });
+                      } catch {}
+                    }
+                  })();
                 }
                 merged = Array.from(byId.values()).sort(
                   (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()

@@ -3894,7 +3894,33 @@ Responde con un JSON estructurado con:
   const CHECKIN_TABLE_COLUMNS = ['id', 'date', 'store', 'type', 'location', 'creatorId', 'promoter', 'created_at'];
   const CHECKIN_PHOTO_URL = (id: string) => `/api/checkins/${encodeURIComponent(id)}/photo`;
   // Registros semilla/demostración (IDs CHK-LIVE-*) que no son marcajes reales de las promotoras
-  const isSyntheticCheckinId = (id: any) => typeof id === 'string' && /^CHK-LIVE-/i.test(id);
+  const isSyntheticCheckinId = (id: any) => typeof id === 'string' && (/^CHK-LIVE-/i.test(id) || id.startsWith('chk-00'));
+  const ensureServerCheckinUuid = (rawId?: any, seed?: string): string => {
+    const clean = typeof rawId === 'string' ? rawId.trim() : '';
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clean)) {
+      return clean.toLowerCase();
+    }
+    const source = clean || (seed && seed.trim()) || '';
+    if (!source) return crypto.randomUUID();
+    let h1 = 0x811c9dc5;
+    let h2 = 0x1b873593;
+    let h3 = 0x85ebca6b;
+    let h4 = 0xc2b2ae35;
+    for (let i = 0; i < source.length; i++) {
+      const c = source.charCodeAt(i);
+      h1 = Math.imul(h1 ^ c, 0x01000193) >>> 0;
+      h2 = Math.imul(h2 ^ ((c << 3) | (c >>> 5)), 0x5bd1e995) >>> 0;
+      h3 = Math.imul(h3 ^ (c + i * 31), 0x27d4eb2d) >>> 0;
+      h4 = Math.imul(h4 ^ (c * 131 + i), 0x165667b1) >>> 0;
+    }
+    const hex = (
+      h1.toString(16).padStart(8, '0') +
+      h2.toString(16).padStart(8, '0') +
+      h3.toString(16).padStart(8, '0') +
+      h4.toString(16).padStart(8, '0')
+    ).toLowerCase();
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-8${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
+  };
   let checkinsListCache: { payload: any[]; timestamp: number } | null = null;
 
   const readMemoryCheckins = () => {
@@ -3962,7 +3988,11 @@ Responde con un JSON estructurado con:
   app.get('/api/checkins/:id/photo', async (req, res) => {
     try {
       const id = req.params.id;
-      let photo: string | undefined = readMemoryCheckins().find((c) => c.id === id)?.photoBase64;
+      const memPhoto = readMemoryCheckins().find((c) => c.id === id)?.photoBase64;
+      let photo: string | undefined =
+        memPhoto && typeof memPhoto === 'string' && !memPhoto.startsWith('/api/checkins/')
+          ? memPhoto
+          : undefined;
 
       if (!photo) {
         const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
@@ -3995,29 +4025,41 @@ Responde con un JSON estructurado con:
 
   app.post('/api/checkins', async (req, res) => {
     try {
-      const record = req.body;
-      if (!record || !record.date || !record.type || !record.store) {
+      const rawRecord = req.body;
+      if (!rawRecord || !rawRecord.date || !rawRecord.type || !rawRecord.store) {
         return res.status(400).json({ error: 'Datos de asistencia incompletos' });
       }
 
+      const finalId = ensureServerCheckinUuid(
+        rawRecord.id,
+        `${rawRecord.date}|${rawRecord.promoter}|${rawRecord.type}|${rawRecord.store}`
+      );
+      const record = {
+        ...rawRecord,
+        id: finalId,
+        created_at: rawRecord.created_at || rawRecord.date || new Date().toISOString(),
+      };
+
       // Guardar en memoria y archivo local
-      memoryCheckins = [record, ...memoryCheckins.filter(c => c.id !== record.id)];
+      memoryCheckins = [record, ...memoryCheckins.filter(c => c.id !== record.id && c.id !== rawRecord.id)];
       try {
         fs.writeFileSync(checkinsFilePath, JSON.stringify(memoryCheckins, null, 2), 'utf8');
       } catch (err) {
         console.warn('[CheckIns] Error al persistir asistencias en disco:', err);
       }
 
-      // Intentar persistir en Supabase si está disponible (solo columnas existentes en la tabla; campos extra
-      // como offlinePending/batteryLevel hacían fallar el upsert en silencio y el marcaje nunca llegaba a Supabase)
+      // Intentar persistir en Supabase si está disponible (solo columnas existentes en la tabla y con UUID válido)
       try {
         const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
         const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
-        if (supabaseUrl && supabaseKey) {
+        if (supabaseUrl && supabaseKey && record.photoBase64 !== 'data:image/jpeg;base64,selfie') {
           const supabase = createClient(supabaseUrl.replace('/rest/v1/', ''), supabaseKey);
           const dbRecord: Record<string, any> = {};
-          for (const col of [...CHECKIN_TABLE_COLUMNS, 'photoBase64']) {
+          for (const col of CHECKIN_TABLE_COLUMNS) {
             if (record[col] !== undefined) dbRecord[col] = record[col];
+          }
+          if (record.photoBase64 && !String(record.photoBase64).startsWith('/api/checkins/')) {
+            dbRecord.photoBase64 = record.photoBase64;
           }
           const { error: upsertError } = await supabase.from('checkins').upsert(dbRecord);
           if (upsertError) console.warn('[CheckIns] Supabase upsert falló:', upsertError.message);
@@ -4967,7 +5009,8 @@ Responde con un JSON estructurado con:
                 const contact = c.contactoPunto ? `${c.contactoPunto}${c.telefonoContacto ? ` (${c.telefonoContacto})` : ''}` : '';
                 const notes = c.notes || c.originalComments || `Solicitud enviada por ${vendorName} desde la app móvil.`;
 
-                let status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled' = 'scheduled';
+                const isHistoricalCutoff = !s.created_at || String(s.created_at) <= '2026-10-21T23:59:59Z';
+                let status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled' = isHistoricalCutoff ? 'completed' : 'scheduled';
                 const rawStatus = String(c.status || c.estado || '').toLowerCase();
                 if (rawStatus.includes('completad') || rawStatus.includes('realizad') || rawStatus === 'completed') {
                   status = 'completed';

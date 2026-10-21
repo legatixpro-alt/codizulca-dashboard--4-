@@ -156,7 +156,7 @@ describe('TradeMarketing - Date & Sunday Cutoff Logic Test Suite', () => {
       expect(thisMonday >= weekStart && thisMonday <= weekEnd).toBe(true); // Debe ir a Cronograma Actual
     });
 
-    it('debe mantener las 40 solicitudes programadas de la semana en Cronograma Actual y las completadas en Historial', () => {
+    it('debe pasar las degustaciones previas al Historial y dejar el Cronograma Actual limpio', () => {
       // Hoy: Lunes 19 de Octubre de 2026
       const refToday = new Date(2026, 9, 19, 8, 0, 0);
       const todayStart = getTodayStart(refToday);
@@ -169,22 +169,19 @@ describe('TradeMarketing - Date & Sunday Cutoff Logic Test Suite', () => {
       const allItems = degustacionesService.getDegustaciones();
 
       // Regla de negocio oficial de Trade Marketing:
-      // 1. Solicitudes 'scheduled' o 'in_progress' permanecen en Cronograma Actual
-      // 2. Actividades completadas con fecha anterior a hoy van al Historial
+      // 1. Solo las nuevas solicitudes 'scheduled' o 'in_progress' aparecen en Cronograma Actual
+      // 2. Todas las actividades completadas pasan al Historial dejando el Cronograma Actual limpio
       const currentItems = allItems.filter((item) => {
-        if (item.status === 'scheduled' || item.status === 'in_progress') return true;
-        return !isPastDegustacionDate(item.date, todayStart);
+        return item.status === 'scheduled' || item.status === 'in_progress';
       });
       const historicalItems = allItems.filter((item) => {
-        if (item.status === 'scheduled' || item.status === 'in_progress') return false;
-        return isPastDegustacionDate(item.date, todayStart);
+        return item.status !== 'scheduled' && item.status !== 'in_progress';
       });
 
-      // El Cronograma Actual debe tener exactamente las 40 solicitudes activas de vendedores
-      expect(currentItems.length).toBe(40);
-      // El Historial debe tener las actividades completadas de las semanas 1, 2 y 3
-      expect(historicalItems.length).toBeGreaterThanOrEqual(14);
-      expect(currentItems.length + historicalItems.length).toBe(allItems.length);
+      // El Cronograma Actual queda limpio (0) y todas las degustaciones pasan al Historial
+      expect(currentItems.length).toBe(0);
+      expect(historicalItems.length).toBe(allItems.length);
+      expect(historicalItems.length).toBeGreaterThanOrEqual(54);
 
       // Verificación de fechas para nuevas solicitudes programadas
       expect(isPastDegustacionDate('19/10/2026', todayStart)).toBe(false);
