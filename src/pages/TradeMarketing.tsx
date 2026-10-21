@@ -702,6 +702,89 @@ export const TradeMarketing: React.FC = () => {
   const [inspectCheckIn, setInspectCheckIn] = useState<CheckInRecord | null>(null);
   const [isRefreshingCheckIns, setIsRefreshingCheckIns] = useState<boolean>(false);
   const [lastCheckInSync, setLastCheckInSync] = useState<Date>(new Date());
+  const [manualSlotModal, setManualSlotModal] = useState<{
+    existingId?: string;
+    dayKey: string;
+    dateFormatted: string;
+    promoter: string;
+    store: string;
+    type: CheckInType;
+    time: string;
+    location: { lat: number; lng: number; accuracy: number };
+    photoBase64: string;
+  } | null>(null);
+  const [isSavingManualSlot, setIsSavingManualSlot] = useState<boolean>(false);
+
+  const handleManualSlotPhotoFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !manualSlotModal) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          const TARGET_WIDTH = 720;
+          const vWidth = img.width || 720;
+          const vHeight = img.height || 960;
+          const TARGET_HEIGHT = Math.round((vHeight / vWidth) * TARGET_WIDTH);
+          canvas.width = TARGET_WIDTH;
+          canvas.height = TARGET_HEIGHT;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            const compressed = canvas.toDataURL('image/jpeg', 0.72);
+            setManualSlotModal((prev) => (prev ? { ...prev, photoBase64: compressed } : null));
+            return;
+          }
+        } catch {}
+        setManualSlotModal((prev) =>
+          prev ? { ...prev, photoBase64: String(ev.target?.result || '') } : null
+        );
+      };
+      img.onerror = () => {
+        setManualSlotModal((prev) =>
+          prev ? { ...prev, photoBase64: String(ev.target?.result || '') } : null
+        );
+      };
+      img.src = String(ev.target?.result || '');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSaveManualCheckInSlot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!manualSlotModal || !manualSlotModal.photoBase64) return;
+    setIsSavingManualSlot(true);
+    try {
+      const cleanTime = /^\d{2}:\d{2}$/.test(manualSlotModal.time.trim())
+        ? manualSlotModal.time.trim()
+        : '08:30';
+      const isoCaracas = new Date(`${manualSlotModal.dayKey}T${cleanTime}:00-04:00`).toISOString();
+      const staffMatch = resolvePromoterIdentity(manualSlotModal.promoter);
+      const creatorId = staffMatch?.email || staffMatch?.id || manualSlotModal.promoter;
+
+      const res = await checkinsService.createCheckIn({
+        id: manualSlotModal.existingId,
+        date: isoCaracas,
+        promoter: manualSlotModal.promoter,
+        store: manualSlotModal.store || 'Punto de Venta',
+        type: manualSlotModal.type,
+        photoBase64: manualSlotModal.photoBase64,
+        location: manualSlotModal.location || { lat: 10.6542, lng: -71.6241, accuracy: 8 },
+        creatorId,
+      });
+
+      if (res.record?.id && manualSlotModal.photoBase64.startsWith('data:')) {
+        checkinPhotoMemoryCache.set(res.record.id, manualSlotModal.photoBase64);
+      }
+
+      setManualSlotModal(null);
+      await loadCheckIns(true);
+    } finally {
+      setIsSavingManualSlot(false);
+    }
+  };
 
   const loadCheckIns = async (forceRefresh: boolean = false) => {
     setIsRefreshingCheckIns(true);
@@ -4608,6 +4691,8 @@ export const TradeMarketing: React.FC = () => {
                                 stepNumber: string;
                                 label: string;
                                 sublabel: string;
+                                checkInType: CheckInType;
+                                defaultTime: string;
                                 record?: CheckInRecord;
                                 badgeBg: string;
                                 emptyText: string;
@@ -4617,6 +4702,8 @@ export const TradeMarketing: React.FC = () => {
                                   stepNumber: '1',
                                   label: 'Foto de Ingreso',
                                   sublabel: 'Apertura de jornada en PDV',
+                                  checkInType: 'Ingreso',
+                                  defaultTime: '08:30',
                                   record: pRow.ingreso,
                                   badgeBg: 'bg-emerald-600/90 border-emerald-400/40 text-white',
                                   emptyText: 'Sin registro de ingreso',
@@ -4626,6 +4713,8 @@ export const TradeMarketing: React.FC = () => {
                                   stepNumber: '2',
                                   label: 'Salida a Almorzar',
                                   sublabel: 'Cuando aplique',
+                                  checkInType: 'Salida a almorzar',
+                                  defaultTime: '12:00',
                                   record: pRow.salidaAlmorzar,
                                   badgeBg: 'bg-amber-600/90 border-amber-400/40 text-white',
                                   emptyText: 'No aplica / Sin salida a almorzar',
@@ -4635,6 +4724,8 @@ export const TradeMarketing: React.FC = () => {
                                   stepNumber: '3',
                                   label: 'Llegada de Almorzar',
                                   sublabel: 'Cuando aplique',
+                                  checkInType: 'Vuelta a almorzar',
+                                  defaultTime: '14:00',
                                   record: pRow.llegadaAlmorzar,
                                   badgeBg: 'bg-blue-600/90 border-blue-400/40 text-white',
                                   emptyText: 'No aplica / Sin llegada de almorzar',
@@ -4644,11 +4735,46 @@ export const TradeMarketing: React.FC = () => {
                                   stepNumber: '4',
                                   label: 'Salida',
                                   sublabel: 'Cierre de guardia en PDV',
+                                  checkInType: 'Salida',
+                                  defaultTime: '17:00',
                                   record: pRow.salida,
                                   badgeBg: 'bg-red-600/90 border-red-400/40 text-white',
                                   emptyText: 'Pendiente / Sin registro de salida',
                                 },
                               ];
+
+                              const openSlotUploadModal = (
+                                checkInType: CheckInType,
+                                defaultTime: string,
+                                existingRec?: CheckInRecord
+                              ) => {
+                                let initialTime = defaultTime;
+                                if (existingRec?.date) {
+                                  try {
+                                    const d = new Date(existingRec.date);
+                                    const caracas = new Date(d.getTime() - 4 * 60 * 60 * 1000);
+                                    const hh = String(caracas.getUTCHours()).padStart(2, '0');
+                                    const mm = String(caracas.getUTCMinutes()).padStart(2, '0');
+                                    initialTime = `${hh}:${mm}`;
+                                  } catch {}
+                                }
+                                setManualSlotModal({
+                                  existingId: existingRec?.id,
+                                  dayKey: pRow.dayKey,
+                                  dateFormatted: pRow.dateFormatted,
+                                  promoter: pRow.promoter,
+                                  store: existingRec?.store || pRow.stores[0] || 'Punto de Venta',
+                                  type: checkInType,
+                                  time: initialTime,
+                                  location:
+                                    pRow.primaryLocation &&
+                                    pRow.primaryLocation.lat !== 0 &&
+                                    pRow.primaryLocation.lng !== 0
+                                      ? pRow.primaryLocation
+                                      : { lat: 10.621332, lng: -71.660643, accuracy: 8 },
+                                  photoBase64: '',
+                                });
+                              };
 
                               return (
                                 <div
@@ -4766,6 +4892,17 @@ export const TradeMarketing: React.FC = () => {
                                                   type="button"
                                                   onClick={(e) => {
                                                     e.stopPropagation();
+                                                    openSlotUploadModal(slot.checkInType, slot.defaultTime, rec);
+                                                  }}
+                                                  className="p-1.5 rounded-lg bg-black/75 hover:bg-black text-emerald-400 border border-emerald-500/30 backdrop-blur-sm transition-colors cursor-pointer"
+                                                  title="Actualizar / Reemplazar Fotografía"
+                                                >
+                                                  <Camera className="w-3.5 h-3.5" />
+                                                </button>
+                                                <button
+                                                  type="button"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
                                                     setInspectCheckIn(rec);
                                                   }}
                                                   className="p-1.5 rounded-lg bg-black/75 hover:bg-black text-white border border-white/20 backdrop-blur-sm transition-colors cursor-pointer"
@@ -4802,11 +4939,19 @@ export const TradeMarketing: React.FC = () => {
                                               </div>
                                             </div>
                                           ) : (
-                                            <div className="aspect-[3/4] w-full flex flex-col items-center justify-center p-4 text-center bg-zinc-950/50 text-zinc-500 gap-2">
+                                            <div className="aspect-[3/4] w-full flex flex-col items-center justify-center p-4 text-center bg-zinc-950/50 text-zinc-500 gap-2.5">
                                               <Clock className="w-6 h-6 text-zinc-700" />
                                               <span className="text-[11px] font-semibold text-zinc-500">
                                                 {slot.emptyText}
                                               </span>
+                                              <button
+                                                type="button"
+                                                onClick={() => openSlotUploadModal(slot.checkInType, slot.defaultTime)}
+                                                className="mt-1 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-red-600/90 border border-white/15 hover:border-red-400 text-zinc-200 hover:text-white text-[10px] font-bold inline-flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+                                              >
+                                                <Camera className="w-3 h-3 text-red-400" />
+                                                <span>Cargar / Sincronizar Foto</span>
+                                              </button>
                                             </div>
                                           )}
                                         </div>
@@ -4855,11 +5000,38 @@ export const TradeMarketing: React.FC = () => {
                             const renderMilestoneCell = (
                               rec: CheckInRecord | undefined,
                               badgeCls: string,
-                              emptyLabel: string
+                              emptyLabel: string,
+                              slotType: CheckInType,
+                              defaultTime: string
                             ) => {
                               if (!rec) {
                                 return (
-                                  <span className="text-[11px] text-zinc-500 font-mono">{emptyLabel}</span>
+                                  <div className="space-y-1">
+                                    <span className="text-[11px] text-zinc-500 font-mono block">{emptyLabel}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setManualSlotModal({
+                                          dayKey: pRow.dayKey,
+                                          dateFormatted: pRow.dateFormatted,
+                                          promoter: pRow.promoter,
+                                          store: pRow.stores[0] || 'Punto de Venta',
+                                          type: slotType,
+                                          time: defaultTime,
+                                          location:
+                                            pRow.primaryLocation &&
+                                            pRow.primaryLocation.lat !== 0 &&
+                                            pRow.primaryLocation.lng !== 0
+                                              ? pRow.primaryLocation
+                                              : { lat: 10.621332, lng: -71.660643, accuracy: 8 },
+                                          photoBase64: '',
+                                        })
+                                      }
+                                      className="text-[10px] text-red-400 hover:text-red-300 font-bold underline cursor-pointer"
+                                    >
+                                      + Cargar foto
+                                    </button>
+                                  </div>
                                 );
                               }
                               const timeStr = new Date(rec.date).toLocaleTimeString('es-VE', {
@@ -4930,28 +5102,36 @@ export const TradeMarketing: React.FC = () => {
                                   {renderMilestoneCell(
                                     pRow.ingreso,
                                     'bg-emerald-950/70 border-emerald-500/40 text-emerald-400',
-                                    'Sin ingreso'
+                                    'Sin ingreso',
+                                    'Ingreso',
+                                    '08:30'
                                   )}
                                 </td>
                                 <td className="p-3.5 border-r border-white/10">
                                   {renderMilestoneCell(
                                     pRow.salidaAlmorzar,
                                     'bg-amber-950/70 border-amber-500/40 text-amber-400',
-                                    'No aplica'
+                                    'No aplica',
+                                    'Salida a almorzar',
+                                    '12:00'
                                   )}
                                 </td>
                                 <td className="p-3.5 border-r border-white/10">
                                   {renderMilestoneCell(
                                     pRow.llegadaAlmorzar,
                                     'bg-blue-950/70 border-blue-500/40 text-blue-400',
-                                    'No aplica'
+                                    'No aplica',
+                                    'Vuelta a almorzar',
+                                    '14:00'
                                   )}
                                 </td>
                                 <td className="p-3.5 border-r border-white/10">
                                   {renderMilestoneCell(
                                     pRow.salida,
                                     'bg-red-950/70 border-red-500/40 text-red-400',
-                                    'Pendiente'
+                                    'Pendiente',
+                                    'Salida',
+                                    '17:00'
                                   )}
                                 </td>
                                 <td className="p-3.5 text-center">
@@ -5110,6 +5290,133 @@ export const TradeMarketing: React.FC = () => {
                       </button>
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* MODAL 3: SINCRONIZAR / CARGAR SOPORTE FOTOGRÁFICO FALTANTE EN HITO DE ASISTENCIA */}
+              {manualSlotModal && (
+                <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+                  <form
+                    onSubmit={handleSaveManualCheckInSlot}
+                    className="bg-[#121316] border border-white/15 rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl max-h-[92vh] overflow-y-auto"
+                  >
+                    <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                      <div>
+                        <span className="text-[10px] font-mono text-emerald-400 uppercase tracking-wider block">
+                          Sincronización de Soporte de Asistencia en Nube
+                        </span>
+                        <h4 className="font-black text-white text-base flex items-center gap-2 mt-0.5">
+                          <span>{manualSlotModal.promoter}</span>
+                          <span className="px-2 py-0.5 rounded-lg text-xs font-bold bg-red-600 text-white">
+                            {manualSlotModal.type}
+                          </span>
+                        </h4>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setManualSlotModal(null)}
+                        className="p-2 rounded-xl bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800 transition cursor-pointer"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    <div className="space-y-3 text-xs">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="p-3 rounded-xl bg-zinc-900 border border-white/10 space-y-1">
+                          <span className="text-[10px] text-zinc-400 font-bold uppercase block">Fecha del Marcaje</span>
+                          <span className="font-mono font-bold text-white text-sm">{manualSlotModal.dateFormatted}</span>
+                        </div>
+                        <div className="p-3 rounded-xl bg-zinc-900 border border-white/10 space-y-1">
+                          <label className="text-[10px] text-zinc-400 font-bold uppercase block">
+                            Hora del Marcaje (VE)
+                          </label>
+                          <input
+                            type="time"
+                            value={manualSlotModal.time}
+                            onChange={(e) =>
+                              setManualSlotModal((prev) => (prev ? { ...prev, time: e.target.value } : null))
+                            }
+                            className="w-full bg-zinc-950 border border-white/15 rounded-lg px-2.5 py-1 text-white font-mono text-xs focus:outline-none focus:border-red-500"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-zinc-900 border border-white/10 space-y-1">
+                        <label className="text-[10px] text-zinc-400 font-bold uppercase block">
+                          Punto de Venta / Sucursal
+                        </label>
+                        <input
+                          type="text"
+                          value={manualSlotModal.store}
+                          onChange={(e) =>
+                            setManualSlotModal((prev) => (prev ? { ...prev, store: e.target.value } : null))
+                          }
+                          className="w-full bg-zinc-950 border border-white/15 rounded-lg px-3 py-1.5 text-white font-bold text-xs focus:outline-none focus:border-red-500"
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <span className="text-[10px] text-zinc-400 font-bold uppercase block">
+                          Fotografía de Evidencia ({manualSlotModal.type})
+                        </span>
+                        {manualSlotModal.photoBase64 ? (
+                          <div className="relative aspect-[3/4] max-h-64 mx-auto rounded-2xl overflow-hidden bg-black border border-emerald-500/40">
+                            <img
+                              src={manualSlotModal.photoBase64}
+                              alt="Vista previa"
+                              className="w-full h-full object-contain bg-zinc-950"
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setManualSlotModal((prev) => (prev ? { ...prev, photoBase64: '' } : null))
+                              }
+                              className="absolute top-2 right-2 px-2.5 py-1 rounded-lg bg-black/80 text-red-300 hover:text-white text-[10px] font-bold border border-white/15 cursor-pointer"
+                            >
+                              Cambiar foto
+                            </button>
+                          </div>
+                        ) : (
+                          <label className="flex flex-col items-center justify-center gap-2 p-6 rounded-2xl border-2 border-dashed border-white/20 hover:border-red-500/60 bg-zinc-900/60 hover:bg-zinc-900 cursor-pointer transition-all text-center">
+                            <Camera className="w-8 h-8 text-red-500" />
+                            <span className="text-xs font-bold text-white">
+                              Seleccionar fotografía de {manualSlotModal.type}
+                            </span>
+                            <span className="text-[10px] text-zinc-400">
+                              Formatos soportados: JPG, PNG, WEBP (se sincronizará en Supabase y Render)
+                            </span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleManualSlotPhotoFile}
+                              className="hidden"
+                            />
+                          </label>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-white/10">
+                      <button
+                        type="button"
+                        onClick={() => setManualSlotModal(null)}
+                        className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold text-xs cursor-pointer"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={!manualSlotModal.photoBase64 || isSavingManualSlot}
+                        className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-red-600/30 cursor-pointer"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>{isSavingManualSlot ? 'Sincronizando...' : 'Guardar & Sincronizar Foto'}</span>
+                      </button>
+                    </div>
+                  </form>
                 </div>
               )}
             </div>

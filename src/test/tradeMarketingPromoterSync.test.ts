@@ -278,6 +278,12 @@ describe('Restricción de Acceso a Trazabilidad y Sincronización App Promotoras
       expect(deduped.filter((c) => c.type === 'Ingreso').length).toBe(1);
       expect(deduped[0].promoter).toBe('SCARLETH PIÑA');
       expect(getCaracasDayKey('2026-10-21T13:10:00.000Z')).toBe('2026-10-21');
+
+      // Verifica que persistLocalCheckIns conserve la foto original en base64 para los marcajes recientes del día
+      const savedLocal = JSON.parse(localStorage.getItem('codizulca_checkins') || '[]');
+      const savedTania = savedLocal.find((c: any) => c.id === checkinRes.record.id);
+      expect(savedTania).toBeDefined();
+      expect(savedTania.photoBase64).toBe('data:image/jpeg;base64,selfie');
     });
 
     it('verifica que las 24 promotoras y mercaderistas tengan perfiles completos con correo e ID', () => {

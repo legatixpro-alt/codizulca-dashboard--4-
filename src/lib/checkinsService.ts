@@ -2814,8 +2814,10 @@ export const checkinsService = {
     );
 
     // Conservar todos los registros locales que aún no están en el servidor (incluyendo aquellos con ID 'chk-...'
-    // que anteriormente fueron rechazados por el tipo UUID de Supabase) y sincronizarlos automáticamente.
+    // que anteriormente fueron rechazados por el tipo UUID de Supabase) o que contienen la foto original en base64
+    // en el teléfono de la promotora, y sincronizarlos automáticamente hacia Supabase y el backend.
     const unsyncedToRecover: CheckInRecord[] = [];
+    const localPhotosByDayKey = new Map<string, string>();
     const localToKeep = localList
       .map((c) => {
         const validUuid = ensureValidCheckInUuid(
@@ -2825,14 +2827,42 @@ export const checkinsService = {
         return { ...c, id: validUuid };
       })
       .filter((c) => {
-        if (serverIds.has(c.id)) return false;
         const canonical = resolvePromoterNameFromRaw(c.promoter, c.creatorId);
         const normType = normalizeCheckInType(c.type) || c.type;
         const dayKey = `${getCaracasDayKey(c.date)}|${canonical.toUpperCase()}|${normType}`;
+        const hasRealBase64Photo =
+          Boolean(c.photoBase64?.startsWith('data:image/')) &&
+          c.photoBase64 !== 'data:image/jpeg;base64,selfie';
+
+        if (hasRealBase64Photo) {
+          localPhotosByDayKey.set(dayKey, c.photoBase64);
+        }
+
+        if (c.offlinePending) {
+          unsyncedToRecover.push(c);
+          return true;
+        }
+
+        if (serverIds.has(c.id)) return false;
         if (serverList.length > 0 && serverDayKeys.has(dayKey)) return false;
         unsyncedToRecover.push(c);
         return true;
       });
+
+    // Si algún registro del servidor coincide con un registro local que conserva la foto base64 original,
+    // preservar la foto en memoria para visualización inmediata sin depender de red adicional.
+    if (localPhotosByDayKey.size > 0) {
+      serverList = serverList.map((srv) => {
+        const canonical = resolvePromoterNameFromRaw(srv.promoter, srv.creatorId);
+        const normType = normalizeCheckInType(srv.type) || srv.type;
+        const dayKey = `${getCaracasDayKey(srv.date)}|${canonical.toUpperCase()}|${normType}`;
+        const localPhoto = localPhotosByDayKey.get(dayKey);
+        if (localPhoto && (!srv.photoBase64 || srv.photoBase64.startsWith('/api/checkins/'))) {
+          return { ...srv, photoBase64: localPhoto };
+        }
+        return srv;
+      });
+    }
 
     if (!isTestEnv && unsyncedToRecover.length > 0 && (typeof navigator === 'undefined' || navigator.onLine)) {
       (async () => {
@@ -2883,18 +2913,35 @@ export const checkinsService = {
   },
 
   /**
-   * Guarda la copia local sin fotos pesadas (evita exceder la cuota de localStorage)
+   * Guarda la copia local preservando las fotografías en base64 de los marcajes recientes
+   * (los últimos 12 marcajes o cualquier registro pendiente de sincronizar) para que el teléfono
+   * de la promotora nunca pierda sus fotos del día antes o después de sincronizar.
    */
   persistLocalCheckIns(list: CheckInRecord[]) {
     try {
-      const light = list.map((c) =>
-        !c.offlinePending && c.photoBase64?.startsWith('data:')
+      let keptBase64Count = 0;
+      const withRecentPhotos = list.map((c) => {
+        const isDataPhoto = Boolean(c.photoBase64?.startsWith('data:'));
+        if (isDataPhoto && (c.offlinePending || keptBase64Count < 12)) {
+          keptBase64Count += 1;
+          return c;
+        }
+        return !c.offlinePending && isDataPhoto
           ? { ...c, photoBase64: `/api/checkins/${encodeURIComponent(c.id)}/photo` }
-          : c
-      );
-      localStorage.setItem(STORAGE_KEY_CHECKINS, JSON.stringify(light));
-    } catch (e) {
-      console.warn('No se pudo guardar la copia local de asistencias:', e);
+          : c;
+      });
+      localStorage.setItem(STORAGE_KEY_CHECKINS, JSON.stringify(withRecentPhotos));
+    } catch {
+      try {
+        const fallbackLight = list.map((c) =>
+          !c.offlinePending && c.photoBase64?.startsWith('data:')
+            ? { ...c, photoBase64: `/api/checkins/${encodeURIComponent(c.id)}/photo` }
+            : c
+        );
+        localStorage.setItem(STORAGE_KEY_CHECKINS, JSON.stringify(fallbackLight));
+      } catch (e2) {
+        console.warn('No se pudo guardar la copia local de asistencias:', e2);
+      }
     }
   },
 
@@ -2903,19 +2950,21 @@ export const checkinsService = {
    */
   async createCheckIn(record: Omit<CheckInRecord, 'id' | 'created_at'> & { id?: string }): Promise<{ record: CheckInRecord; isOffline: boolean }> {
     const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
-    const nowIso = new Date().toISOString();
+    const nowIso = record.date || new Date().toISOString();
     const recordUuid = ensureValidCheckInUuid(
       record.id,
-      `${record.date || nowIso}|${record.promoter}|${record.type}|${record.store}|${Math.random()}`
+      `${nowIso}|${record.promoter}|${record.type}|${record.store}|${Math.random()}`
     );
     const newRecord: CheckInRecord = {
       ...record,
       id: recordUuid,
-      created_at: nowIso,
-      offlinePending: !isOnline
+      date: nowIso,
+      created_at: new Date().toISOString(),
+      // Se mantiene como pendiente hasta confirmar que fue guardado en Supabase o en el servidor
+      offlinePending: true
     };
 
-    // Actualizar almacenamiento local de inmediato de forma síncrona (sin bloquear el envío a la nube)
+    // Actualizar almacenamiento local de inmediato de forma síncrona conservando la fotografía original
     let existing: CheckInRecord[] = [];
     try {
       const rawLocal = localStorage.getItem(STORAGE_KEY_CHECKINS);
@@ -2974,16 +3023,41 @@ export const checkinsService = {
         if (response.ok) {
           const serverRecord = await response.json();
           newRecord.offlinePending = false;
-          const refreshed = updated.map(r => r.id === newRecord.id ? { ...newRecord, ...serverRecord, id: newRecord.id, offlinePending: false } : r);
+          const refreshed = updated.map((r) =>
+            r.id === newRecord.id
+              ? {
+                  ...newRecord,
+                  ...serverRecord,
+                  id: newRecord.id,
+                  photoBase64: newRecord.photoBase64 || serverRecord.photoBase64,
+                  offlinePending: false,
+                }
+              : r
+          );
           this.persistLocalCheckIns(refreshed);
-        } else if (!syncedToCloud) {
+        } else if (syncedToCloud) {
+          const refreshed = updated.map((r) =>
+            r.id === newRecord.id ? { ...newRecord, offlinePending: false } : r
+          );
+          this.persistLocalCheckIns(refreshed);
+        } else {
           this.enqueueOfflineCheckIn(newRecord);
         }
-      } else if (!syncedToCloud) {
+      } else if (syncedToCloud) {
+        const refreshed = updated.map((r) =>
+          r.id === newRecord.id ? { ...newRecord, offlinePending: false } : r
+        );
+        this.persistLocalCheckIns(refreshed);
+      } else {
         this.enqueueOfflineCheckIn(newRecord);
       }
-    } catch (err) {
-      if (!syncedToCloud) {
+    } catch {
+      if (syncedToCloud) {
+        const refreshed = updated.map((r) =>
+          r.id === newRecord.id ? { ...newRecord, offlinePending: false } : r
+        );
+        this.persistLocalCheckIns(refreshed);
+      } else {
         this.enqueueOfflineCheckIn(newRecord);
       }
     }

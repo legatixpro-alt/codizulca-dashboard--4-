@@ -16,9 +16,14 @@ import {
 import {
   CheckinPayload,
   FREQUENT_STORES,
-  campoService
+  campoService,
+  resolvePromoterNameFromRaw
 } from '../../lib/campoService';
-import { checkinsService } from '../../lib/checkinsService';
+import {
+  checkinsService,
+  CheckInRecord,
+  getCaracasDayKey
+} from '../../lib/checkinsService';
 import { CampoStoreSelector } from '../../components/mobile/CampoStoreSelector';
 import {
   trazabilidadService,
@@ -53,10 +58,53 @@ export const CampoAsistencia: React.FC<{ activePromoterName?: string }> = ({
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
   const [isOfflineSaved, setIsOfflineSaved] = useState<boolean>(false);
+  const [todayCheckIns, setTodayCheckIns] = useState<CheckInRecord[]>([]);
+  const [isSyncingToday, setIsSyncingToday] = useState<boolean>(false);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const nativeFileInputRef = useRef<HTMLInputElement | null>(null);
+  const galleryFileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const syncTodayAttendance = useCallback(async () => {
+    setIsSyncingToday(true);
+    try {
+      await checkinsService.flushOfflineQueue();
+      const all = await checkinsService.getAllCheckIns(true);
+      const activeProfile = campoService.getActivePromoter();
+      const canonicalMe = resolvePromoterNameFromRaw(
+        activePromoterName || activeProfile.name,
+        activeProfile.email || activeProfile.id
+      ).toUpperCase();
+      const todayKey = getCaracasDayKey(new Date().toISOString());
+      const mineToday = all.filter((c) => {
+        const cPromoter = resolvePromoterNameFromRaw(c.promoter, c.creatorId).toUpperCase();
+        return getCaracasDayKey(c.date) === todayKey && cPromoter === canonicalMe;
+      });
+      setTodayCheckIns(mineToday);
+      if (mineToday.length > 0 && mineToday[0].store) {
+        setStoreName(mineToday[0].store);
+      }
+      const order: Array<CheckinPayload['type']> = [
+        'Ingreso',
+        'Salida a almorzar',
+        'Vuelta a almorzar',
+        'Salida'
+      ];
+      const firstMissing = order.find((t) => !mineToday.some((m) => m.type === t));
+      if (firstMissing) {
+        setCheckInType(firstMissing);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setIsSyncingToday(false);
+    }
+  }, [activePromoterName]);
+
+  useEffect(() => {
+    syncTodayAttendance();
+  }, [syncTodayAttendance]);
 
   // 1. CAPTURA DE GPS EN TIEMPO REAL CON PRECISIÓN ESTRICTA + FALLBACK INTERIORES (iOS / Android)
   const requestGps = useCallback(() => {
@@ -442,6 +490,7 @@ export const CampoAsistencia: React.FC<{ activePromoterName?: string }> = ({
   const handleReset = () => {
     setSelfieDataUrl(null);
     setSaveSuccess(false);
+    syncTodayAttendance();
   };
 
   return (
@@ -511,6 +560,68 @@ export const CampoAsistencia: React.FC<{ activePromoterName?: string }> = ({
         </div>
       ) : (
         <>
+          {/* ESTADO DE MI ASISTENCIA DE HOY (4 HITOS CRONOLÓGICOS) */}
+          <div className="bg-[#0d0d0d] border border-neutral-800 rounded-2xl p-3.5 space-y-2.5 shadow-xl">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-300 flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Estado de Mi Jornada de Hoy (4 Hitos):</span>
+              </span>
+              <button
+                type="button"
+                onClick={syncTodayAttendance}
+                disabled={isSyncingToday}
+                className="px-2 py-0.5 rounded-md bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-[10px] font-mono flex items-center gap-1 cursor-pointer"
+              >
+                <RefreshCw className={`w-3 h-3 text-emerald-400 ${isSyncingToday ? 'animate-spin' : ''}`} />
+                <span>Sincronizar</span>
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-1.5">
+              {(
+                [
+                  { step: '1', type: 'Ingreso' as const, label: 'Ingreso' },
+                  { step: '2', type: 'Salida a almorzar' as const, label: 'Salida Almuerzo' },
+                  { step: '3', type: 'Vuelta a almorzar' as const, label: 'Llegada Almuerzo' },
+                  { step: '4', type: 'Salida' as const, label: 'Salida' }
+                ]
+              ).map((slot) => {
+                const found = todayCheckIns.find((c) => c.type === slot.type);
+                const timeStr = found
+                  ? new Date(found.date).toLocaleTimeString('es-VE', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      hour12: true,
+                      timeZone: 'America/Caracas'
+                    })
+                  : null;
+                return (
+                  <button
+                    key={slot.type}
+                    type="button"
+                    onClick={() => setCheckInType(slot.type)}
+                    className={`p-2 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between gap-1 ${
+                      found
+                        ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-300'
+                        : checkInType === slot.type
+                        ? 'bg-red-950/50 border-red-500/60 text-white'
+                        : 'bg-[#171717] border-neutral-800 text-amber-400/90'
+                    }`}
+                  >
+                    <div className="min-w-0">
+                      <span className="text-[10px] font-black block truncate">
+                        {slot.step}. {slot.label}
+                      </span>
+                      <span className="text-[9px] font-mono block truncate opacity-80">
+                        {found ? `✓ Sincronizado (${timeStr})` : 'Faltante • Tocar para cargar'}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {/* TIPO DE MARCAJE (4 BOTONES TÁCTILES) */}
           <div className="bg-[#0d0d0d] border border-neutral-800 rounded-2xl p-4 space-y-3 shadow-xl">
             <span className="text-[10px] font-bold uppercase tracking-wider text-red-400 block">
@@ -661,7 +772,7 @@ export const CampoAsistencia: React.FC<{ activePromoterName?: string }> = ({
               )}
             </div>
 
-            {/* Controles de Cámara (WebRTC In-App + Cámara Nativa Android/iOS) */}
+            {/* Controles de Cámara (WebRTC In-App + Cámara Nativa Android/iOS + Galería de Soporte) */}
             <div className="space-y-2">
               <input
                 ref={nativeFileInputRef}
@@ -671,23 +782,40 @@ export const CampoAsistencia: React.FC<{ activePromoterName?: string }> = ({
                 onChange={handleNativePhotoUpload}
                 className="hidden"
               />
+              <input
+                ref={galleryFileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleNativePhotoUpload}
+                className="hidden"
+              />
               {!isCameraActive && !selfieDataUrl ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="space-y-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsCameraActive(true)}
+                      className="w-full py-3.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-red-600/30 active:scale-[0.98] transition-all cursor-pointer"
+                    >
+                      <Camera className="w-4 h-4" />
+                      <span>Activar Cámara In-App</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => nativeFileInputRef.current?.click()}
+                      className="w-full py-3.5 rounded-xl bg-[#171717] hover:bg-neutral-800 border border-neutral-700 text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 active:scale-[0.98] transition-all cursor-pointer"
+                    >
+                      <Camera className="w-4 h-4 text-emerald-400" />
+                      <span>Cámara Nativa (iOS / Android)</span>
+                    </button>
+                  </div>
                   <button
                     type="button"
-                    onClick={() => setIsCameraActive(true)}
-                    className="w-full py-3.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-red-600/30 active:scale-[0.98] transition-all cursor-pointer"
+                    onClick={() => galleryFileInputRef.current?.click()}
+                    className="w-full py-2.5 rounded-xl bg-[#121212] hover:bg-neutral-800 border border-neutral-800 text-neutral-300 hover:text-white font-bold text-[11px] uppercase tracking-wider flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all cursor-pointer"
                   >
-                    <Camera className="w-4 h-4" />
-                    <span>Activar Cámara In-App</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => nativeFileInputRef.current?.click()}
-                    className="w-full py-3.5 rounded-xl bg-[#171717] hover:bg-neutral-800 border border-neutral-700 text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 active:scale-[0.98] transition-all cursor-pointer"
-                  >
-                    <Camera className="w-4 h-4 text-emerald-400" />
-                    <span>Cámara Nativa (iOS / Android)</span>
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Sincronizar Foto Guardada en el Teléfono (Galería)</span>
                   </button>
                 </div>
               ) : isCameraActive ? (
