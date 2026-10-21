@@ -9,16 +9,25 @@ import { ShareCuotasModal } from '../components/cuotas/ShareCuotasModal';
 import { INITIAL_SELLERS_ACTIVATION, SellerActivationRow } from '../components/cuotas/cuotasData';
 import { getSellerMetadata, normalizeSellerName } from '../components/cuotas/sellerSupervisorMap';
 import { RegionalManagerAuditSubmodule } from '../components/cuotas/regional/RegionalManagerAuditSubmodule';
+import { calculateMonthWorkingProgress } from '../components/cuotas/volumeQuotasData';
 
 export const Cuotas: React.FC = () => {
-  const currentPeriod = new Date().toISOString().slice(0, 7);
+  const autoProgress = calculateMonthWorkingProgress();
+  const currentPeriod = `${autoProgress.year}-${String(autoProgress.month).padStart(2, '0')}`;
   const [activeTab, setActiveTab] = useState<MainTab>('activacion');
   const [activeView, setActiveView] = useState<ViewLevel>('vendedor');
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [sellers, setSellers] = useState<SellerActivationRow[]>(INITIAL_SELLERS_ACTIVATION);
 
-  const diasLaborables = 26;
-  const diasTranscurridos = 13;
+  const [diasLaborables, setDiasLaborables] = useState<number>(autoProgress.diasLaborables);
+  const [diasTranscurridos, setDiasTranscurridos] = useState<number>(autoProgress.diasTranscurridos);
+  const [isCustomCutoff, setIsCustomCutoff] = useState<boolean>(false);
+
+  const handleUpdateProgress = (newLaborables: number, newTranscurridos: number, isCustom: boolean) => {
+    setDiasLaborables(newLaborables);
+    setDiasTranscurridos(newTranscurridos);
+    setIsCustomCutoff(isCustom);
+  };
 
   // Sincronización en vivo desde la pestaña "Cuotas de Activacion" del Google Sheet
   useEffect(() => {
@@ -141,6 +150,8 @@ export const Cuotas: React.FC = () => {
         onShare={() => setIsShareOpen(true)}
         diasLaborables={diasLaborables}
         diasTranscurridos={diasTranscurridos}
+        isCustomCutoff={isCustomCutoff}
+        onUpdateProgress={handleUpdateProgress}
       />
 
       {/* VISTA SUBMÓDULO GERENTE REGIONAL: AUDITORÍA Y EVALUACIÓN DE SUPERVISORES Y VENDEDORES */}
@@ -173,6 +184,8 @@ export const Cuotas: React.FC = () => {
             <MonthlyVolumeHistoryTable
               viewLevel={activeView}
               onOpenSkuVolume={() => setActiveTab('volumen_sku')}
+              diasLaborables={diasLaborables}
+              diasTranscurridos={diasTranscurridos}
             />
           )}
 

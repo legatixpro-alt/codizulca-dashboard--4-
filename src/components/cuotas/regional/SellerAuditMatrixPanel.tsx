@@ -26,6 +26,7 @@ import {
   AuditRiskLevel
 } from './regionalAuditTypes';
 import { formatAuditValue, getMetricBadgeLabel } from './regionalAuditUtils';
+import { DEFAULT_DIAS_LABORABLES, DEFAULT_DIAS_TRANSCURRIDOS } from '../volumeQuotasData';
 
 interface SellerAuditMatrixPanelProps {
   sellerRecords: SellerAuditRecord[];
@@ -43,8 +44,8 @@ export const SellerAuditMatrixPanel: React.FC<SellerAuditMatrixPanelProps> = ({
   selectedSupervisorFilter,
   onSupervisorFilterChange,
   onOpenAuditModal,
-  diasLaborables = 26,
-  diasTranscurridos = 19
+  diasLaborables = DEFAULT_DIAS_LABORABLES,
+  diasTranscurridos = DEFAULT_DIAS_TRANSCURRIDOS
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [riskFilter, setRiskFilter] = useState<'ALL' | AuditRiskLevel>('ALL');

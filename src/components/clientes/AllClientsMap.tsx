@@ -219,7 +219,9 @@ export const AllClientsMap: React.FC<AllClientsMapProps> = ({ clients, onSelectC
         const matchSeller = (c.survey?.vendedor || c.vendedor || '').toLowerCase().includes(q);
         const matchMuni = (c.survey?.municipio || '').toLowerCase().includes(q);
         const matchEstado = (c.survey?.estado || '').toLowerCase().includes(q);
-        if (!matchName && !matchId && !matchRif && !matchSeller && !matchMuni && !matchEstado) return false;
+        const matchSector = (c.sector || '').toLowerCase().includes(q);
+        const matchDir = (c.direccion || c.survey?.direccion || '').toLowerCase().includes(q);
+        if (!matchName && !matchId && !matchRif && !matchSeller && !matchMuni && !matchEstado && !matchSector && !matchDir) return false;
       }
 
       return true;
@@ -457,6 +459,10 @@ export const AllClientsMap: React.FC<AllClientsMapProps> = ({ clients, onSelectC
           <div style="font-size: 11px; font-weight: 700; color: #b91c1c; margin-bottom: 2px;">
             📍 <strong>Sector:</strong> ${c.sector}
           </div>
+          ${(c.direccion || c.survey?.direccion) ? `
+          <div style="font-size: 10px; color: #1e293b; margin-bottom: 3px; line-height: 1.3; background: #f8fafc; padding: 3px 5px; border-radius: 4px; border: 1px solid #e2e8f0;">
+            <strong>Dirección:</strong> ${c.direccion || c.survey?.direccion}
+          </div>` : ''}
           <div style="font-size: 11px; color: #475569; margin-bottom: 2px;">
             <strong>Vendedor:</strong> <span style="color: ${sellerColor}; font-weight: 700;">${seller}</span>
           </div>
@@ -700,6 +706,12 @@ export const AllClientsMap: React.FC<AllClientsMapProps> = ({ clients, onSelectC
                 {selectedPinClient.sector}
               </span>
             </div>
+            {(selectedPinClient.direccion || selectedPinClient.survey?.direccion) && (
+              <div className="bg-black/40 px-2 py-1.5 rounded border border-white/5 text-[11px] leading-snug">
+                <span className="text-zinc-400 font-bold block mb-0.5">Dirección Exacta GPS:</span>
+                <span className="text-zinc-200">{selectedPinClient.direccion || selectedPinClient.survey?.direccion}</span>
+              </div>
+            )}
             <div className="flex justify-between items-center">
               <span className="text-zinc-500">Vendedor Asignado:</span>
               <span

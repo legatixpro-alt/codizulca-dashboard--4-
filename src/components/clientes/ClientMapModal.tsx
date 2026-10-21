@@ -149,6 +149,10 @@ export const ClientMapModal: React.FC<ClientMapModalProps> = ({ client, isOpen, 
             <div style="font-size: 11px; font-weight: 700; color: #b91c1c; margin-bottom: 3px; display: flex; align-items: center; gap: 4px;">
               📍 <span>${client.sector}</span>
             </div>
+            ${(client.direccion || client.survey?.direccion) ? `
+            <div style="font-size: 10px; color: #1e293b; margin-bottom: 3px; line-height: 1.3; background: #f8fafc; padding: 3px 5px; border-radius: 4px; border: 1px solid #e2e8f0;">
+              <strong>Dirección Exacta:</strong> ${client.direccion || client.survey?.direccion}
+            </div>` : ''}
             <div style="font-size: 11px; color: #475569; margin-bottom: 2px;">
               <strong>Municipio:</strong> ${client.survey?.municipio || client.zona}
             </div>

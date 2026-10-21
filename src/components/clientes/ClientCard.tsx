@@ -142,6 +142,13 @@ export const ClientCard: React.FC<ClientCardProps> = ({ client, onOpenMap, canal
               {client.survey?.municipio ? `${client.survey.municipio}, ${client.survey.estado || 'Zulia'}` : client.zona}
             </span>
           </div>
+
+          {(client.direccion || client.survey?.direccion) && (
+            <div className="text-[11px] text-zinc-300 pt-1.5 border-t border-white/5 leading-snug">
+              <span className="text-zinc-500 font-bold block mb-0.5">Dirección Exacta GPS:</span>
+              <span className="text-zinc-200">{client.direccion || client.survey?.direccion}</span>
+            </div>
+          )}
         </div>
 
         {/* Commercial details (Vendedor & Supervisor) */}

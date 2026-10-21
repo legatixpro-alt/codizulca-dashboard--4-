@@ -20,6 +20,8 @@ export interface ClientSurveyData {
   notas: string;
   fecha: string;
   matchedWithCartera: boolean;
+  direccion?: string;
+  sector?: string;
 }
 
 export interface EnrichedClient {
@@ -32,6 +34,7 @@ export interface EnrichedClient {
   region: string;
   canal: string;
   sector: string;
+  direccion?: string;
   activo: boolean;
   hasLocation: boolean;
   survey?: ClientSurveyData;
@@ -191,6 +194,10 @@ const registerSurveyItem = (key: string, item: ClientSurveyData, map: Map<string
 SURVEY_DATA.forEach((item) => {
   if (item.clienteNombre) {
     registerSurveyItem(normalizeForMatch(item.clienteNombre), item, surveyByName);
+    const baseWithoutParens = item.clienteNombre.replace(/\([^)]*\)/g, '').trim();
+    if (baseWithoutParens && baseWithoutParens !== item.clienteNombre) {
+      registerSurveyItem(normalizeForMatch(baseWithoutParens), item, surveyByName);
+    }
   }
   if (item.clienteId) {
     registerSurveyItem(String(item.clienteId).trim().toUpperCase(), item, surveyById);
@@ -200,19 +207,29 @@ SURVEY_DATA.forEach((item) => {
   }
 });
 
-// Create fully consolidated client list strictly from MAESTRA CLIENTES ACTIVOS OCTUBRE 2026 (CARTERA_CLIENTES)
+// Create consolidated client list from CARTERA_CLIENTES + all GPS-verified points from attached survey CSV
 export const ENRICHED_CLIENTS: EnrichedClient[] = (() => {
   const result: EnrichedClient[] = [];
+  const usedSurveyIds = new Set<string>();
+  const usedClientIds = new Set<string>();
 
   CARTERA_CLIENTES.forEach((c) => {
     const norm = normalizeForMatch(c.nombre);
+    const baseNorm = normalizeForMatch(c.nombre.replace(/\([^)]*\)/g, ''));
     const cleanRif = normalizeRif(c.rif);
+    const cleanId = String(c.id).trim().toUpperCase();
 
-    // Look for survey match strictly by ID, RIF, or normalized Name
+    // Look for survey match strictly by ID, RIF, normalized Name, or base Name
     const rawSurveyMatch =
-      surveyById.get(String(c.id).trim().toUpperCase()) ||
+      surveyById.get(cleanId) ||
       (cleanRif ? surveyByRif.get(cleanRif) : undefined) ||
-      surveyByName.get(norm);
+      surveyByName.get(norm) ||
+      (baseNorm ? surveyByName.get(baseNorm) : undefined);
+
+    if (rawSurveyMatch?.surveyId) {
+      usedSurveyIds.add(rawSurveyMatch.surveyId);
+    }
+    usedClientIds.add(cleanId);
 
     // Strictly respect the assigned seller from MAESTRA CLIENTES ACTIVOS OCTUBRE 2026
     const effectiveVendedor = normalizeSellerName(c.vendedor || 'SIN ASIGNAR') || 'SIN ASIGNAR';
@@ -236,14 +253,19 @@ export const ENRICHED_CLIENTS: EnrichedClient[] = (() => {
 
     const clientZona = c.zona || meta.zona || 'ZULIA';
 
-    const calculatedSector = calculateClientSector({
-      latitud: surveyMatch?.latitud,
-      longitud: surveyMatch?.longitud,
-      municipio: surveyMatch?.municipio,
-      estado: surveyMatch?.estado,
-      vendedorZona: clientZona,
-      vendedor: effectiveVendedor,
-    });
+    const exactSector = hasGps
+      ? surveyMatch?.sector ||
+        calculateClientSector({
+          latitud: surveyMatch?.latitud,
+          longitud: surveyMatch?.longitud,
+          municipio: surveyMatch?.municipio,
+          estado: surveyMatch?.estado,
+          vendedorZona: clientZona,
+          vendedor: effectiveVendedor,
+        })
+      : 'Sin Ubicación GPS';
+
+    const exactDireccion = hasGps ? surveyMatch?.direccion || '' : '';
 
     result.push({
       id: String(c.id),
@@ -251,13 +273,70 @@ export const ENRICHED_CLIENTS: EnrichedClient[] = (() => {
       rif: c.rif || surveyMatch?.rifCedula || '',
       vendedor: effectiveVendedor,
       supervisor: meta.supervisor || 'NELSON FINOL',
-      zona: surveyMatch && surveyMatch.municipio ? `${surveyMatch.municipio}, ${surveyMatch.estado || 'ZULIA'}` : clientZona,
+      zona:
+        hasGps && surveyMatch?.municipio
+          ? `${surveyMatch.municipio}, ${surveyMatch.estado || 'Zulia'}`
+          : clientZona,
       region: c.region || 'OCCIDENTE',
       canal: c.canal || (surveyMatch ? surveyMatch.tipoCliente : 'GENERAL'),
-      sector: calculatedSector,
+      sector: exactSector,
+      direccion: exactDireccion,
       activo: c.activo !== false,
       hasLocation: hasGps,
       survey: surveyMatch,
+    });
+  });
+
+  // Include any remaining surveyed clients from the attached CSV that have valid GPS coordinates
+  SURVEY_DATA.forEach((s) => {
+    if (usedSurveyIds.has(s.surveyId)) return;
+    const hasGps =
+      typeof s.latitud === 'number' &&
+      typeof s.longitud === 'number' &&
+      !isNaN(s.latitud) &&
+      !isNaN(s.longitud);
+    if (!hasGps) return;
+
+    const cleanId = String(s.clienteId || '').trim().toUpperCase();
+    const finalId = cleanId && !usedClientIds.has(cleanId) ? cleanId : s.surveyId;
+    usedClientIds.add(finalId);
+    usedSurveyIds.add(s.surveyId);
+
+    const effectiveVendedor = normalizeSellerName(s.vendedor || 'SIN ASIGNAR') || 'SIN ASIGNAR';
+    const meta = getSellerMetadata(effectiveVendedor);
+    const clientZona =
+      s.municipio && s.estado
+        ? `${s.municipio}, ${s.estado}`
+        : meta.zona || s.estado || 'Zulia';
+
+    const exactSector =
+      s.sector ||
+      calculateClientSector({
+        latitud: s.latitud,
+        longitud: s.longitud,
+        municipio: s.municipio,
+        estado: s.estado,
+        vendedorZona: clientZona,
+        vendedor: effectiveVendedor,
+      });
+
+    result.push({
+      id: finalId,
+      nombre: s.clienteNombre,
+      rif: s.rifCedula || '',
+      vendedor: effectiveVendedor,
+      supervisor: meta.supervisor || 'NELSON FINOL',
+      zona: clientZona,
+      region: 'OCCIDENTE',
+      canal: s.tipoCliente || 'Comercio',
+      sector: exactSector,
+      direccion: s.direccion || '',
+      activo: true,
+      hasLocation: true,
+      survey: {
+        ...s,
+        vendedor: effectiveVendedor,
+      },
     });
   });
 

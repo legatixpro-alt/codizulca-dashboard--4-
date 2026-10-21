@@ -27,7 +27,7 @@ var import_dotenv = __toESM(require("dotenv"), 1);
 var import_path2 = __toESM(require("path"), 1);
 var import_fs2 = __toESM(require("fs"), 1);
 var import_genai = require("@google/genai");
-var import_supabase_js = require("@supabase/supabase-js");
+var import_supabase_js2 = require("@supabase/supabase-js");
 var import_papaparse = __toESM(require("papaparse"), 1);
 
 // src/server/codibotSqlEngine.ts
@@ -1111,8 +1111,252 @@ function parseCuotasVolumenCsv(csvText) {
 }
 
 // server.ts
-import_dotenv.default.config();
+var import_crypto = __toESM(require("crypto"), 1);
+
+// src/lib/supabase.ts
+var import_supabase_js = require("@supabase/supabase-js");
+var import_meta = {};
 var DEFAULT_SUPABASE_URL = "https://uterioexpfweghxfbvoa.supabase.co";
+var DEFAULT_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0ZXJpb2V4cGZ3ZWdoeGZidm9hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5NTg3ODYsImV4cCI6MjEwMzUzNDc4Nn0.bZnN4vrXUDlcoIaI7l39O-bU4GQp05SvJdio_cn6niI";
+var supabaseUrl = import_meta.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+if (supabaseUrl.endsWith("/rest/v1/")) {
+  supabaseUrl = supabaseUrl.replace("/rest/v1/", "");
+}
+var supabaseAnonKey = import_meta.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
+var supabase = (0, import_supabase_js.createClient)(supabaseUrl, supabaseAnonKey);
+
+// src/lib/campoService.ts
+var PROMOTERS_LIST = [
+  // Plantilla Fija (13)
+  { id: "STF-001", name: "NICOLE GODOY", role: "Impulsadora", zone: "CORO", phone: "0412-4352924", tag: "Plantilla Fija", email: "godoyaraujonicole@gmail.com", password: "Codi.123", photoUrl: "/avatars/nicole_godoy.jpg", assignedStore: "VARIAS" },
+  { id: "STF-002", name: "FERNANDA LEON", role: "Impulsadora", zone: "LA VILLA", phone: "0412-7808330", tag: "Plantilla Fija", email: "fer171205@gmail.com", password: "Codi.123", photoUrl: "/avatars/fernanda_leon.jpg", assignedStore: "VARIAS" },
+  { id: "STF-003", name: "NISMARY DERIZAN", role: "Impulsadora", zone: "LA VILLA", phone: "0412-7809301", tag: "Plantilla Fija", email: "Nismariderizan3@gmail.com", password: "Codi.123", photoUrl: "/avatars/nismary_derizan.jpg", assignedStore: "VARIAS" },
+  { id: "STF-004", name: "DARIANNYS FERRER", role: "Impulsadora", zone: "SANTA MARIA", phone: "0412-1985197", tag: "Plantilla Fija", email: "dariannysferrer23@gmail.com", password: "Codi.123", photoUrl: "/avatars/dariannys_ferrer.jpg", assignedStore: "ALKOSTO BELLA VISTA Y DELICIAS" },
+  { id: "STF-005", name: "CAMILA MORALES", role: "Impulsadora", zone: "MARA", phone: "0412-1680424", tag: "Plantilla Fija", email: "Camimi2507@gmail.com", password: "Codi.123", photoUrl: "/avatars/camila_morales.jpg", assignedStore: "VARIOS" },
+  { id: "STF-006", name: "CARELIZ REYES", role: "Impulsadora", zone: "PUNTO FIJO", phone: "04146103171", tag: "Plantilla Fija", email: "REYESCARELIZ3@GMAIL.COM", password: "Codi.123", photoUrl: "/avatars/careliz_reyes.jpg", assignedStore: "VARIAS" },
+  { id: "STF-007", name: "Maria de los \xC1ngeles Almarza Arnedo", role: "Impulsadora", zone: "Cabimas", phone: "+58 424-1431342", tag: "Plantilla Fija", email: "Mariaalmarza16@gmail.com", password: "Codi.123", photoUrl: "/avatars/maria_almarza.jpg", assignedStore: "Varios" },
+  { id: "STF-008", name: "SCARLETH PI\xD1A", role: "Impulsadora", zone: "CABIMAS", phone: "58 412-4514626", tag: "Plantilla Fija", email: "scarmichell22@gmail.com", password: "Codi.123", photoUrl: "/avatars/scarleth_pina.jpg", assignedStore: "ALKOSTO CABIMAS" },
+  { id: "STF-010", name: "ana echeverria", role: "Impulsadora", zone: "urb cuatricentenario", phone: "58 424-8133259", tag: "Plantilla Fija", email: "anavecheverriar@gmail.com", password: "Codi.123", photoUrl: "/avatars/ana_echeverria.jpg", assignedStore: "ALKOSTO ZONA INDUSTRIAL" },
+  { id: "STF-011", name: "OSMAIRY VILLASMIL", role: "Promotora", zone: "EL SILENCIO", phone: "58 414-6713750", tag: "Plantilla Fija", email: "luzz010203@gmail.com", password: "Codi.123", photoUrl: "/avatars/osmairy_villasmil.jpg", assignedStore: "ALKOSTO COROMOTO" },
+  { id: "STF-012", name: "TANIA CARDENAS", role: "Promotora", zone: "C3 CERCA DEL BARRIO INTEGRACION", phone: "+58 416-0177582", tag: "Plantilla Fija", email: "tataacardenas@gmail.com", password: "Codi.123", photoUrl: "/avatars/tania_cardenas.jpg", assignedStore: "ALKOSTO TRIBUNALES" },
+  { id: "STF-013", name: "NAIRELIS ANTUNEZ", role: "Impulsadora", zone: "BARRIO DIA DE LAS MADRES", phone: "58 424-7317216", tag: "Plantilla Fija", email: "antuneznairelis@gmail.com", password: "Codi.123", photoUrl: "/avatars/nairelis_antunez.jpg", assignedStore: "ALKOSTO LA LIMPIA" },
+  { id: "STF-014", name: "JAIVELIN FEREIRA", role: "Impulsadora", zone: "EL BAJO", phone: "58 412-8048525", tag: "Plantilla Fija", email: "jaivelinfereira20@gmail.com", password: "Codi.123", photoUrl: "/avatars/jaivelin_fereira.jpg", assignedStore: "OLIMPICA Y ALKOSTO" },
+  // Plantilla Eventual (9)
+  { id: "STF-016", name: "AHYRLET RUIZ", role: "Impulsadora", zone: "C2", phone: "58 414-3632102", tag: "Eventual", email: "ruizahyrleth22@gmail.com", password: "Codi.123", photoUrl: "/avatars/ahyrlet_ruiz.jpg", assignedStore: "TODAS" },
+  { id: "STF-017", name: "VALERIA ACEVEDO", role: "Promotora", zone: "URB CUATRICENTENARIO", phone: "58 412-6094222", tag: "Eventual", email: "valevalentina0111@gmail.com", password: "Codi.123", photoUrl: "/avatars/valeria_acevedo.jpg", assignedStore: "TODOS" },
+  { id: "STF-018", name: "CLAUDIA ALVAREZ", role: "Promotora", zone: "C2", phone: "58 424-6428938", tag: "Eventual", email: "clausofidaza@gmail.com", password: "Codi.123", photoUrl: "/avatars/claudia_alvarez.jpg", assignedStore: "TODAS" },
+  { id: "STF-019", name: "JELARY ACOSTA", role: "Promotora", zone: "VIA EL MOJAN", phone: "58 424-6832444", tag: "Eventual", email: "jelaryacosta@gmail.com", password: "Codi.123", photoUrl: "/avatars/jelary_acosta.jpg", assignedStore: "TODAS" },
+  { id: "STF-020", name: "MARIANGEL VALDIVIESO", role: "Promotora", zone: "URB LA POPULAR", phone: "58 412-6414929", tag: "Eventual", email: "mariangelulacio3110@gmail.com", password: "Codi.123", photoUrl: "/avatars/mariangel_valdivieso.jpg", assignedStore: "TODAS" },
+  { id: "STF-021", name: "ANGELICA SANCHEZ", role: "Promotora", zone: "PLAZA DE LAS MADRES", phone: "58 422-1652997", tag: "Eventual", email: "angelicaquero13@gmail.com", password: "Codi.123", photoUrl: "/avatars/angelica_sanchez.jpg", assignedStore: "TODAS" },
+  { id: "STF-022", name: "ENELIANGELA GONZALEZ", role: "Promotora", zone: "URB EL VARILLAL", phone: "58 412-0676693", tag: "Eventual", email: "eneliejoseph@gmail.com", password: "Codi.123", photoUrl: "/avatars/eneliangela_gonzalez.jpg", assignedStore: "TODAS" },
+  { id: "STF-024", name: "MARIANYEL ARANDA", role: "Promotora", zone: "SAN FRANCISCO", phone: "58 412-0800647", tag: "Eventual", email: "marianyelaranda@gmail.com", password: "Codi.123", photoUrl: "/avatars/marianyel_aranda.jpg", assignedStore: "TODAS" },
+  { id: "STF-025", name: "JULIANNYS GIL", role: "Promotora", zone: "AV LA LIMPIA", phone: "58 424-6779726", tag: "Eventual", email: "juliannys.gil.crespo@gmail.com", password: "Codi.123", photoUrl: "/avatars/juliannys_gil.jpg", assignedStore: "TODAS" },
+  // Mercaderistas (2)
+  { id: "STF-026", name: "JOSE BARROSO", role: "Promotor Merchandising", zone: "-", phone: "412-0696135", tag: "Merchandising", email: "joseabraham.barroso@gmail.com", password: "Codi.123", photoUrl: "/avatars/jose_barroso.jpg", assignedStore: "NORTE" },
+  { id: "STF-027", name: "ZIORELI GRANGGER", role: "Promotor Merchandising", zone: "cuatricentenario 1 etapa", phone: "0414-6069963", tag: "Merchandising", email: "Ziorelis.grangger@codizulca.com", password: "Codi.123", photoUrl: "/avatars/zioreli_grangger.jpg", assignedStore: "Merchandising" }
+];
+var OFFICIAL_BCV_RATE = 36.85;
+var PROMOTER_CREATOR_MAP = {
+  "godoyaraujonicole@gmail.com": "NICOLE GODOY",
+  "fer171205@gmail.com": "FERNANDA LEON",
+  "0307e464-374d-4e97-b0dd-b6128d939de3": "FERNANDA LEON",
+  "nismariderizan3@gmail.com": "NISMARY DERIZAN",
+  "caf6f131-97f0-48cb-9503-e55637efb45d": "NISMARY DERIZAN",
+  "dariannysferrer23@gmail.com": "DARIANNYS FERRER",
+  "1d60249d-6731-4c19-9e80-26399fedb866": "DARIANNYS FERRER",
+  "camimi2507@gmail.com": "CAMILA MORALES",
+  "cc6ee90c-1518-4faf-a5ca-6b17ad1057a3": "CAMILA MORALES",
+  "reyescareliz3@gmail.com": "CARELIZ REYES",
+  "mariaalmarza16@gmail.com": "MARIA ALMARZA",
+  "7ecc4132-41a1-457f-8b5b-a351d516eea7": "MARIA ALMARZA",
+  "f4b01b87-ddc6-4d57-b5ce-89f365d84bcc": "MARIA ALMARZA",
+  "scarmichell22@gmail.com": "SCARLETH PI\xD1A",
+  "anavecheverriar@gmail.com": "ANA ECHEVERRIA",
+  "luzz010203@gmail.com": "OSMAIRY VILLASMIL",
+  "11a20f7f-f9c9-4520-b759-e6cadae3693f": "OSMAIRY VILLASMIL",
+  "tataacardenas@gmail.com": "TANIA CARDENAS",
+  "3fb11b83-0fe8-4fbb-9206-9f97fab5f728": "TANIA CARDENAS",
+  "hxlloueipcm2uqncdotsdzuibc3": "TANIA CARDENAS",
+  "hxlcloueipcm2uqncdotsdzuibc3": "TANIA CARDENAS",
+  "antuneznairelis@gmail.com": "NAIRELIS ANTUNEZ",
+  "5695f4f2-88c9-450f-b6e0-d164147f97d8": "NAIRELIS ANTUNEZ",
+  "5p4txlh7hupfb2eyuxtwxvqyea53": "NAIRELIS ANTUNEZ",
+  "demo-uid": "NAIRELIS ANTUNEZ",
+  "demo-merch-uid": "NAIRELIS ANTUNEZ",
+  "jaivelinfereira20@gmail.com": "JAIVELIN FEREIRA",
+  "ruizahyrleth22@gmail.com": "AHYRLET RUIZ",
+  "93246df4-ccba-41dd-8400-b811157453d0": "AHYRLET RUIZ",
+  "valevalentina0111@gmail.com": "VALERIA ACEVEDO",
+  "43b38a3c-1bd7-4491-8a74-7ba138b3eed4": "VALERIA ACEVEDO",
+  "clausofidaza@gmail.com": "CLAUDIA ALVAREZ",
+  "738c0941-615b-4cd6-b6e9-0d09e7457a64": "CLAUDIA ALVAREZ",
+  "jelaryacosta@gmail.com": "JELARY ACOSTA",
+  "6fca1c0d-5df5-43a4-ba0e-acf9694362fb": "JELARY ACOSTA",
+  "mariangelulacio3110@gmail.com": "MARIANGEL VALDIVIESO",
+  "91550c4c-5fa8-4fa6-84cd-3cbd9835b5b7": "MARIANGEL VALDIVIESO",
+  "enuksqjurey0ilfujlxzalwl0fg1": "MARIANGEL VALDIVIESO",
+  "angelicaquero13@gmail.com": "ANGELICA SANCHEZ",
+  "eneliejoseph@gmail.com": "ENELIANGELA GONZALEZ",
+  "403c29c0-298d-46e5-a31a-b8056b0113db": "ENELIANGELA GONZALEZ",
+  "zwmq3nkkxxxwzqyachmw2bqzty1": "ENELIANGELA GONZALEZ",
+  "zwmq3nkkxxxwzqyachmw2bqzzty1": "ENELIANGELA GONZALEZ",
+  "marianyelaranda@gmail.com": "MARIANYEL ARANDA",
+  "juliannys.gil.crespo@gmail.com": "JULIANNYS GIL",
+  "3e0b2b81-4785-41f3-8a15-e66ff02ae0ad": "JULIANNYS GIL",
+  "joseabraham.barroso@gmail.com": "JOSE BARROSO",
+  "bd271523-05d7-430c-9dd7-d859f3d848f8": "JOSE BARROSO",
+  "jose-barroso-official": "JOSE BARROSO",
+  "ziorelis.grangger@codizulca.com": "ZIORELI GRANGGER",
+  "6a14294a-7ac4-4d0b-af3c-652b7ff06ce6": "ZIORELI GRANGGER",
+  "abmjyjm3rsfomc940zpp96ookqi1": "ANA ECHEVERRIA",
+  "8e39ef7e-1e3c-4f25-830b-8c80fcde519e": "ANA ECHEVERRIA",
+  "pw6cn7jc4hugm6msomg1kxyxiw53": "JAIVELIN FEREIRA",
+  "ff491544-e39b-42b7-b8ae-12676f784bd7": "JAIVELIN FEREIRA",
+  "43c070f1-f005-4843-868c-9ebb4caaf836": "CARELIZ REYES",
+  "b49a24e1-f634-4323-a393-6e4c83090a17": "SCARLETH PI\xD1A",
+  "tata cardenas": "TANIA CARDENAS",
+  "tata c\xE1rdenas": "TANIA CARDENAS",
+  "maria de los angeles almarza arnedo": "MARIA ALMARZA",
+  "maria de los \xE1ngeles almarza arnedo": "MARIA ALMARZA"
+};
+var SYNTHETIC_SEED_IDS = /* @__PURE__ */ new Set([
+  "ef235819-47b1-4523-ac24-3c39bea18ad5",
+  "2842e4ec-f1a5-4a1f-917b-41a3e22692b8",
+  "f66d88fa-cf5b-4809-88ab-a16407fd50bf",
+  "2d84d199-70e6-4466-acb1-c158873068d3",
+  "a3569c63-dd0c-4f92-a5fd-738be016ecc0",
+  "a98ddc9d-afe9-4041-abef-d808b8ce1a7e",
+  "d12385d7-5c4a-48a5-adc2-81f2226be449",
+  "b8c153f9-0b47-462a-a0e8-01043d4eea2d",
+  "f19ac9d4-4687-4083-9c67-2297b592141c",
+  "e9cde11f-03fc-43ba-a995-c404bb42a7ac"
+]);
+var SYNTHETIC_DEMO_PROMOTERS = /* @__PURE__ */ new Set([
+  "maria gonzalez",
+  "ana silva",
+  "ana perez",
+  "grecia castillo"
+]);
+function isSyntheticPriceOrInventoryRow(row) {
+  if (!row || !row.id) return true;
+  const idStr = String(row.id).trim();
+  if (SYNTHETIC_SEED_IDS.has(idStr)) return true;
+  if (/^(PRICE|INV|SURV|SCAN)-TEST-/i.test(idStr)) return true;
+  if (String(row.creatorId || "").trim().toLowerCase() === "admin") return true;
+  const rawPromoter = String(row.promoter || "").trim().toLowerCase();
+  if (SYNTHETIC_DEMO_PROMOTERS.has(rawPromoter)) return true;
+  const rawStore = String(row.store || "").trim().toLowerCase();
+  if (rawStore === "supermercado a" || rawStore === "abasto b") return true;
+  if (!rawPromoter && !String(row.creatorId || "").trim()) return true;
+  return false;
+}
+function resolvePromoterNameFromRaw(rawPromoter, creatorId) {
+  const cleanRaw = String(rawPromoter || "").trim();
+  const cleanCreator = String(creatorId || "").trim().toLowerCase();
+  if (cleanRaw && !cleanRaw.includes("@")) {
+    const byCreator = PROMOTER_CREATOR_MAP[cleanRaw.toLowerCase()];
+    if (byCreator) return byCreator;
+    const matchedInList = PROMOTERS_LIST.find(
+      (p) => p.name.trim().toLowerCase() === cleanRaw.toLowerCase()
+    );
+    if (matchedInList) return matchedInList.name;
+    return cleanRaw;
+  }
+  if (cleanRaw && cleanRaw.includes("@")) {
+    const mapped = PROMOTER_CREATOR_MAP[cleanRaw.toLowerCase()];
+    if (mapped) return mapped;
+  }
+  if (cleanCreator && PROMOTER_CREATOR_MAP[cleanCreator]) {
+    return PROMOTER_CREATOR_MAP[cleanCreator];
+  }
+  return cleanRaw || "Promotora";
+}
+function mapSupabasePriceRowToPayload(row) {
+  const rate = Number(row?.bcvRate) || OFFICIAL_BCV_RATE;
+  const ownUsd = Number(row?.ourPrice ?? row?.ownPriceUsd) || 0;
+  const ownBs = Number(row?.ownPriceBs) || Number((ownUsd * rate).toFixed(2));
+  if (row && Array.isArray(row.competitors) && row.productName !== void 0) {
+    return {
+      ...row,
+      id: String(row.id),
+      date: row.date || row.created_at || (/* @__PURE__ */ new Date()).toISOString(),
+      store: String(row.store || "Punto de Venta").trim(),
+      promoter: resolvePromoterNameFromRaw(row.promoter, row.creatorId),
+      productName: String(row.productName || row.ourProduct || "Producto Codizulca").trim(),
+      ownPriceUsd: ownUsd,
+      ownPriceBs: ownBs,
+      bcvRate: rate,
+      competitors: row.competitors.map((c) => {
+        const cUsd = Number(c?.priceUsd) || 0;
+        return {
+          name: String(c?.name || "").trim(),
+          priceUsd: cUsd,
+          priceBs: Number(c?.priceBs) || Number((cUsd * rate).toFixed(2)),
+          diffPercent: c?.diffPercent !== void 0 ? Number(c.diffPercent) : ownUsd > 0 && cUsd > 0 ? Number(((cUsd - ownUsd) / ownUsd * 100).toFixed(1)) : 0
+        };
+      }),
+      observations: String(row.observations ?? row.comments ?? "").trim(),
+      created_at: row.created_at || row.date
+    };
+  }
+  const rawPairs = [
+    { brand: row?.competitor1Brand, price: row?.competitor1Price },
+    { brand: row?.competitor2Brand, price: row?.competitor2Price },
+    { brand: row?.competitor3Brand, price: row?.competitor3Price }
+  ];
+  if (rawPairs.every((p) => !p.brand && (p.price === null || p.price === void 0 || p.price === "")) && (row?.competitorBrand || row?.competitorPrice)) {
+    rawPairs.push({ brand: row.competitorBrand, price: row.competitorPrice });
+  }
+  const competitors = rawPairs.filter(
+    (p) => p.brand && String(p.brand).trim() !== "" || p.price !== null && p.price !== void 0 && Number(p.price) > 0
+  ).map((p) => {
+    const name = String(p.brand || "Competidor").trim();
+    const priceUsd = Number(p.price) || 0;
+    const priceBs = Number((priceUsd * rate).toFixed(2));
+    const diffPercent = ownUsd > 0 && priceUsd > 0 ? Number(((priceUsd - ownUsd) / ownUsd * 100).toFixed(1)) : 0;
+    return { name, priceUsd, priceBs, diffPercent };
+  });
+  const rawComments = String(row?.comments ?? row?.observations ?? "").trim();
+  const cleanObs = rawComments === "AI_SCANNED" ? "Escaneo de etiqueta en anaquel (App Promotora)" : rawComments;
+  return {
+    id: String(row?.id),
+    date: row?.date || row?.created_at || (/* @__PURE__ */ new Date()).toISOString(),
+    store: String(row?.store || "Punto de Venta").trim(),
+    promoter: resolvePromoterNameFromRaw(row?.promoter, row?.creatorId),
+    productName: String(row?.ourProduct || row?.productName || "Producto Codizulca").trim(),
+    ownPriceUsd: ownUsd,
+    ownPriceBs: ownBs,
+    bcvRate: rate,
+    competitors,
+    observations: cleanObs,
+    created_at: row?.created_at || row?.date
+  };
+}
+function mapSupabaseInventoryRowToPayload(row) {
+  const init = Number(row?.initialQuantity ?? row?.initialStock) || 0;
+  const fin = Number(row?.finalQuantity ?? row?.finalStock) || 0;
+  const tastings = Number(row?.degustations ?? row?.tastingsGiven) || 0;
+  const rawDiff = Number((init - fin).toFixed(3));
+  const calculatedNet = tastings > 0 && rawDiff > tastings ? Number((rawDiff - tastings).toFixed(3)) : Math.max(0, rawDiff);
+  const netRotation = row?.netRotation !== void 0 && row?.netRotation !== null && !Number.isNaN(Number(row.netRotation)) ? Number(row.netRotation) : calculatedNet;
+  return {
+    id: String(row?.id),
+    date: row?.date || row?.created_at || (/* @__PURE__ */ new Date()).toISOString(),
+    store: String(row?.store || "Punto de Venta").trim(),
+    promoter: resolvePromoterNameFromRaw(row?.promoter, row?.creatorId),
+    productName: String(row?.product || row?.productName || "Producto Codizulca").trim(),
+    initialStock: init,
+    tastingsGiven: tastings,
+    finalStock: fin,
+    netRotation,
+    observations: String(row?.comments ?? row?.observations ?? "").trim(),
+    created_at: row?.created_at || row?.date
+  };
+}
+
+// server.ts
+import_dotenv.default.config();
+var DEFAULT_SUPABASE_URL2 = "https://uterioexpfweghxfbvoa.supabase.co";
 var DEFAULT_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0ZXJpb2V4cGZ3ZWdoeGZidm9hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5NTg3ODYsImV4cCI6MjEwMzUzNDc4Nn0.bZnN4vrXUDlcoIaI7l39O-bU4GQp05SvJdio_cn6niI";
 async function startServer() {
   const app = (0, import_express.default)();
@@ -1159,15 +1403,15 @@ async function startServer() {
       if (orClauses && historicalAllCache && historicalAllCache.length > 0) {
         return res.json(historicalAllCache);
       }
-      const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+      const supabaseUrl2 = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL2;
       const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
-      if (!supabaseUrl || !supabaseKey) {
+      if (!supabaseUrl2 || !supabaseKey) {
         if (historicalAllCache) return res.json(historicalAllCache);
         return res.status(500).json({ error: "Supabase credentials missing on server" });
       }
-      const supabase = (0, import_supabase_js.createClient)(supabaseUrl.replace("/rest/v1/", ""), supabaseKey);
+      const supabase2 = (0, import_supabase_js2.createClient)(supabaseUrl2.replace("/rest/v1/", ""), supabaseKey);
       const limit = 1e3;
-      let countQuery = supabase.from("history_sales").select("*", { count: "exact", head: true });
+      let countQuery = supabase2.from("history_sales").select("*", { count: "exact", head: true });
       if (orClauses) {
         countQuery = countQuery.or(orClauses);
       }
@@ -1180,7 +1424,7 @@ async function startServer() {
       for (let i = 0; i < maxPages; i += BATCH_SIZE) {
         const promises = [];
         for (let j = 0; j < BATCH_SIZE && i + j < maxPages; j++) {
-          let q = supabase.from("history_sales").select("id_articulo, articulo, monto, cajas, kgs_lts, ano, mes").range((i + j) * limit, (i + j + 1) * limit - 1);
+          let q = supabase2.from("history_sales").select("id_articulo, articulo, monto, cajas, kgs_lts, ano, mes").range((i + j) * limit, (i + j + 1) * limit - 1);
           if (orClauses) q = q.or(orClauses);
           promises.push(q);
         }
@@ -1325,17 +1569,17 @@ async function startServer() {
     return "NELSON FINOL";
   };
   const syncSellersMonthlyVolumeFromSupabase = async () => {
-    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+    const supabaseUrl2 = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL2;
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
     const sellerMonthMap = /* @__PURE__ */ new Map();
     const monthlyTotalsMap = /* @__PURE__ */ new Map();
     let totalCount = 267148;
     let sheetRowsCount = 0;
-    if (supabaseUrl && supabaseKey) {
+    if (supabaseUrl2 && supabaseKey) {
       try {
-        const supabase = (0, import_supabase_js.createClient)(supabaseUrl.replace("/rest/v1/", ""), supabaseKey);
+        const supabase2 = (0, import_supabase_js2.createClient)(supabaseUrl2.replace("/rest/v1/", ""), supabaseKey);
         const limit = 1e3;
-        const countRes = await supabase.from("history_sales").select("*", { count: "exact", head: true }).eq("ano", 2026);
+        const countRes = await supabase2.from("history_sales").select("*", { count: "exact", head: true }).eq("ano", 2026);
         if (countRes.count && countRes.count > 0) {
           totalCount = countRes.count;
           const totalPages = Math.ceil(totalCount / limit);
@@ -1345,7 +1589,7 @@ async function startServer() {
             for (let j = 0; j < BATCH_SIZE && i + j < totalPages; j++) {
               const page = i + j;
               promises.push(
-                supabase.from("history_sales").select("vendedor, ano, mes, cajas, kgs_lts, monto, tipo_doc").eq("ano", 2026).order("id", { ascending: true }).range(page * limit, (page + 1) * limit - 1)
+                supabase2.from("history_sales").select("vendedor, ano, mes, cajas, kgs_lts, monto, tipo_doc").eq("ano", 2026).order("id", { ascending: true }).range(page * limit, (page + 1) * limit - 1)
               );
             }
             const chunks = await Promise.all(promises);
@@ -1976,9 +2220,9 @@ async function startServer() {
         }
       } catch (e) {
       }
-      const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+      const supabaseUrl2 = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL2;
       const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
-      if (!supabaseUrl || !supabaseKey) {
+      if (!supabaseUrl2 || !supabaseKey) {
         const emptyResult = {
           id_articulo: Number(idArt),
           articulo: productName || `Art\xEDculo #${idArt}`,
@@ -1990,13 +2234,13 @@ async function startServer() {
         };
         return res.json(emptyResult);
       }
-      const { createClient: createClient2 } = await import("@supabase/supabase-js");
-      const supabase = createClient2(supabaseUrl.replace("/rest/v1/", ""), supabaseKey);
+      const { createClient: createClient3 } = await import("@supabase/supabase-js");
+      const supabase2 = createClient3(supabaseUrl2.replace("/rest/v1/", ""), supabaseKey);
       let allRows = [];
       let page = 0;
       const pageSize = 1e3;
       while (page < 50) {
-        const { data, error } = await supabase.from("history_sales").select("id, id_cliente, cliente, vendedor, cajas, kgs_lts, monto, mes").eq("id_articulo", Number(idArt)).order("id", { ascending: true }).range(page * pageSize, (page + 1) * pageSize - 1);
+        const { data, error } = await supabase2.from("history_sales").select("id, id_cliente, cliente, vendedor, cajas, kgs_lts, monto, mes").eq("id_articulo", Number(idArt)).order("id", { ascending: true }).range(page * pageSize, (page + 1) * pageSize - 1);
         if (error || !data || data.length === 0) break;
         allRows.push(...data);
         if (data.length < pageSize) break;
@@ -2298,12 +2542,12 @@ Responde EXCLUSIVAMENTE con un objeto JSON v\xE1lido con la siguiente estructura
   });
   app.get("/api/sales/transactions", async (req, res) => {
     try {
-      const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+      const supabaseUrl2 = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL2;
       const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
-      if (!supabaseUrl || !supabaseKey) {
+      if (!supabaseUrl2 || !supabaseKey) {
         return res.status(500).json({ error: "Supabase credentials missing on server" });
       }
-      const supabase = (0, import_supabase_js.createClient)(supabaseUrl.replace("/rest/v1/", ""), supabaseKey);
+      const supabase2 = (0, import_supabase_js2.createClient)(supabaseUrl2.replace("/rest/v1/", ""), supabaseKey);
       const rawMes = req.query.mes || req.query.meses;
       let selectedMonths = [];
       if (Array.isArray(rawMes)) {
@@ -2333,7 +2577,7 @@ Responde EXCLUSIVAMENTE con un objeto JSON v\xE1lido con la siguiente estructura
         return [norm];
       };
       try {
-        let q = supabase.from("history_sales").select("id, numero, tipo_doc, mes, ano, cliente, vendedor, articulo, cajas, kgs_lts, monto").eq("ano", ano);
+        let q = supabase2.from("history_sales").select("id, numero, tipo_doc, mes, ano, cliente, vendedor, articulo, cajas, kgs_lts, monto").eq("ano", ano);
         if (selectedMonths.length === 1) {
           q = q.eq("mes", selectedMonths[0]);
         } else if (selectedMonths.length > 1) {
@@ -2619,19 +2863,19 @@ Responde EXCLUSIVAMENTE con un objeto JSON v\xE1lido con la siguiente estructura
   });
   app.get("/api/sales/client-history", async (req, res) => {
     try {
-      const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+      const supabaseUrl2 = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL2;
       const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
-      if (!supabaseUrl || !supabaseKey) {
+      if (!supabaseUrl2 || !supabaseKey) {
         return res.status(500).json({ error: "Supabase credentials missing on server" });
       }
-      const supabase = (0, import_supabase_js.createClient)(supabaseUrl.replace("/rest/v1/", ""), supabaseKey);
+      const supabase2 = (0, import_supabase_js2.createClient)(supabaseUrl2.replace("/rest/v1/", ""), supabaseKey);
       const client = req.query.client || "";
       if (!client) {
         return res.status(400).json({ error: "Client name is required" });
       }
       let rows = [];
       try {
-        const { data: supRows, error } = await supabase.from("history_sales").select("id, numero, tipo_doc, mes, ano, cliente, vendedor, articulo, cajas, kgs_lts, monto").eq("ano", 2026).ilike("cliente", `%${client.trim()}%`).order("id", { ascending: false }).limit(1500);
+        const { data: supRows, error } = await supabase2.from("history_sales").select("id, numero, tipo_doc, mes, ano, cliente, vendedor, articulo, cajas, kgs_lts, monto").eq("ano", 2026).ilike("cliente", `%${client.trim()}%`).order("id", { ascending: false }).limit(1500);
         if (!error && supRows && supRows.length > 0) {
           rows = supRows;
         }
@@ -3068,7 +3312,7 @@ Responde EXCLUSIVAMENTE con un objeto JSON v\xE1lido con la siguiente estructura
           avgPriceKg
         };
       });
-      const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+      const supabaseUrl2 = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL2;
       const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
       let topClients = [];
       let topSellers = [];
@@ -3100,9 +3344,9 @@ Responde EXCLUSIVAMENTE con un objeto JSON v\xE1lido con la siguiente estructura
       const clientMap = /* @__PURE__ */ new Map();
       const sellerMap = /* @__PURE__ */ new Map();
       const channelMap = /* @__PURE__ */ new Map();
-      if (supabaseUrl && supabaseKey) {
-        const supabase = (0, import_supabase_js.createClient)(supabaseUrl.replace("/rest/v1/", ""), supabaseKey);
-        const { data: salesRows } = await supabase.from("history_sales").select("id, numero, tipo_doc, mes, ano, cliente, vendedor, cajas, kgs_lts, monto").eq("ano", 2026).eq("id_articulo", idArticulo).order("monto", { ascending: false }).limit(3e3);
+      if (supabaseUrl2 && supabaseKey) {
+        const supabase2 = (0, import_supabase_js2.createClient)(supabaseUrl2.replace("/rest/v1/", ""), supabaseKey);
+        const { data: salesRows } = await supabase2.from("history_sales").select("id, numero, tipo_doc, mes, ano, cliente, vendedor, cajas, kgs_lts, monto").eq("ano", 2026).eq("id_articulo", idArticulo).order("monto", { ascending: false }).limit(3e3);
         if (salesRows && salesRows.length > 0) {
           totalTransactions = salesRows.length;
           for (const r of salesRows) {
@@ -3154,7 +3398,7 @@ Responde EXCLUSIVAMENTE con un objeto JSON v\xE1lido con la siguiente estructura
         }
         const firstWord = (baseProduct.articulo || "").split(" ")[0];
         if (firstWord && firstWord.length > 2) {
-          const { data: invRows } = await supabase.from("inventory").select("*").ilike("product", `%${firstWord}%`).order("created_at", { ascending: false }).limit(20);
+          const { data: invRows } = await supabase2.from("inventory").select("*").ilike("product", `%${firstWord}%`).order("created_at", { ascending: false }).limit(20);
           if (invRows) {
             storeAudits = invRows;
           }
@@ -4423,15 +4667,15 @@ Responde con un JSON estructurado con:
         return res.json(checkinsListCache.payload);
       }
       let remoteRows = null;
-      const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
-      if (supabaseUrl && supabaseKey) {
+      const supabaseUrl2 = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL2;
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
+      if (supabaseUrl2 && supabaseKey) {
         try {
-          const supabase = (0, import_supabase_js.createClient)(supabaseUrl.replace("/rest/v1/", ""), supabaseKey);
+          const supabase2 = (0, import_supabase_js2.createClient)(supabaseUrl2.replace("/rest/v1/", ""), supabaseKey);
           const pageSize = 1e3;
           const rows = [];
           for (let from = 0; from < 5e4; from += pageSize) {
-            const { data, error } = await supabase.from("checkins").select(CHECKIN_TABLE_COLUMNS.join(",")).order("date", { ascending: false }).range(from, from + pageSize - 1);
+            const { data, error } = await supabase2.from("checkins").select(CHECKIN_TABLE_COLUMNS.join(",")).order("date", { ascending: false }).range(from, from + pageSize - 1);
             if (error) throw error;
             if (!Array.isArray(data) || data.length === 0) break;
             rows.push(...data);
@@ -4461,11 +4705,11 @@ Responde con un JSON estructurado con:
       const id = req.params.id;
       let photo = readMemoryCheckins().find((c) => c.id === id)?.photoBase64;
       if (!photo) {
-        const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
-        if (supabaseUrl && supabaseKey) {
-          const supabase = (0, import_supabase_js.createClient)(supabaseUrl.replace("/rest/v1/", ""), supabaseKey);
-          const { data } = await supabase.from("checkins").select("photoBase64").eq("id", id).maybeSingle();
+        const supabaseUrl2 = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL2;
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
+        if (supabaseUrl2 && supabaseKey) {
+          const supabase2 = (0, import_supabase_js2.createClient)(supabaseUrl2.replace("/rest/v1/", ""), supabaseKey);
+          const { data } = await supabase2.from("checkins").select("photoBase64").eq("id", id).maybeSingle();
           photo = data?.photoBase64;
         }
       }
@@ -4499,15 +4743,15 @@ Responde con un JSON estructurado con:
         console.warn("[CheckIns] Error al persistir asistencias en disco:", err);
       }
       try {
-        const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
-        if (supabaseUrl && supabaseKey) {
-          const supabase = (0, import_supabase_js.createClient)(supabaseUrl.replace("/rest/v1/", ""), supabaseKey);
+        const supabaseUrl2 = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL2;
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
+        if (supabaseUrl2 && supabaseKey) {
+          const supabase2 = (0, import_supabase_js2.createClient)(supabaseUrl2.replace("/rest/v1/", ""), supabaseKey);
           const dbRecord = {};
           for (const col of [...CHECKIN_TABLE_COLUMNS, "photoBase64"]) {
             if (record[col] !== void 0) dbRecord[col] = record[col];
           }
-          const { error: upsertError } = await supabase.from("checkins").upsert(dbRecord);
+          const { error: upsertError } = await supabase2.from("checkins").upsert(dbRecord);
           if (upsertError) console.warn("[CheckIns] Supabase upsert fall\xF3:", upsertError.message);
         }
       } catch (e) {
@@ -4528,11 +4772,11 @@ Responde con un JSON estructurado con:
         console.warn("[CheckIns] Error al guardar tras eliminar:", err);
       }
       try {
-        const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+        const supabaseUrl2 = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
         const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
-        if (supabaseUrl && supabaseKey) {
-          const supabase = (0, import_supabase_js.createClient)(supabaseUrl.replace("/rest/v1/", ""), supabaseKey);
-          await supabase.from("checkins").delete().eq("id", id);
+        if (supabaseUrl2 && supabaseKey) {
+          const supabase2 = (0, import_supabase_js2.createClient)(supabaseUrl2.replace("/rest/v1/", ""), supabaseKey);
+          await supabase2.from("checkins").delete().eq("id", id);
         }
       } catch (e) {
       }
@@ -4947,37 +5191,137 @@ Responde con un JSON estructurado con:
       res.status(500).json({ error: "Error al eliminar escaneo", details: err?.message });
     }
   });
+  const isValidUuid = (val) => typeof val === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val.trim());
   const campoPricesPath = import_path2.default.join(process.cwd(), "data_price_surveys.json");
   let memoryPriceSurveys = [];
+  const deletedPriceSurveyIds = /* @__PURE__ */ new Set();
+  let priceSurveysCache = null;
   try {
     if (import_fs2.default.existsSync(campoPricesPath)) {
-      memoryPriceSurveys = JSON.parse(import_fs2.default.readFileSync(campoPricesPath, "utf8"));
+      const rawDisk = JSON.parse(import_fs2.default.readFileSync(campoPricesPath, "utf8"));
+      if (Array.isArray(rawDisk)) {
+        memoryPriceSurveys = rawDisk.filter((r) => !isSyntheticPriceOrInventoryRow(r)).map(mapSupabasePriceRowToPayload);
+      }
     }
   } catch (e) {
   }
-  app.get("/api/price-surveys", (req, res) => {
-    res.json(memoryPriceSurveys);
-  });
-  app.post("/api/price-surveys", (req, res) => {
+  app.get("/api/price-surveys", async (req, res) => {
     try {
-      const survey = req.body;
+      const now = Date.now();
+      if (req.query.refresh !== "true" && priceSurveysCache && now - priceSurveysCache.timestamp < 4e3) {
+        return res.json(priceSurveysCache.payload);
+      }
+      let remoteRows = null;
+      const supabaseUrl2 = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL2;
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
+      if (supabaseUrl2 && supabaseKey) {
+        try {
+          const supabase2 = (0, import_supabase_js2.createClient)(supabaseUrl2.replace("/rest/v1/", ""), supabaseKey);
+          const pageSize = 1e3;
+          const rows = [];
+          for (let from = 0; from < 5e4; from += pageSize) {
+            const { data, error } = await supabase2.from("prices").select("*").order("date", { ascending: false }).range(from, from + pageSize - 1);
+            if (error) throw error;
+            if (!Array.isArray(data) || data.length === 0) break;
+            rows.push(...data);
+            if (data.length < pageSize) break;
+          }
+          remoteRows = rows.filter((r) => !isSyntheticPriceOrInventoryRow(r) && !deletedPriceSurveyIds.has(String(r.id))).map(mapSupabasePriceRowToPayload);
+        } catch (e) {
+          console.warn("[PriceSurveys] No se pudo leer Supabase prices, usando respaldo local:", e?.message);
+        }
+      }
+      const localFiltered = memoryPriceSurveys.filter((r) => !isSyntheticPriceOrInventoryRow(r) && !deletedPriceSurveyIds.has(String(r.id))).map(mapSupabasePriceRowToPayload);
+      const remoteIds = new Set((remoteRows || []).map((r) => r.id));
+      const merged = [
+        ...remoteRows || [],
+        ...localFiltered.filter((r) => !remoteIds.has(r.id))
+      ].sort(
+        (a, b) => new Date(b.date || b.created_at || 0).getTime() - new Date(a.date || a.created_at || 0).getTime()
+      );
+      memoryPriceSurveys = merged;
+      priceSurveysCache = { payload: merged, timestamp: now };
+      try {
+        import_fs2.default.writeFileSync(campoPricesPath, JSON.stringify(merged, null, 2), "utf8");
+      } catch {
+      }
+      return res.json(merged);
+    } catch (err) {
+      return res.json(memoryPriceSurveys);
+    }
+  });
+  app.post("/api/price-surveys", async (req, res) => {
+    try {
+      const rawBody = req.body || {};
+      if (isSyntheticPriceOrInventoryRow(rawBody)) {
+        return res.status(201).json(rawBody);
+      }
+      const finalId = isValidUuid(rawBody.id) ? rawBody.id.trim() : import_crypto.default.randomUUID();
+      const survey = mapSupabasePriceRowToPayload({
+        ...rawBody,
+        id: finalId,
+        date: rawBody.date || (/* @__PURE__ */ new Date()).toISOString(),
+        created_at: rawBody.created_at || (/* @__PURE__ */ new Date()).toISOString()
+      });
+      deletedPriceSurveyIds.delete(survey.id);
       memoryPriceSurveys = [survey, ...memoryPriceSurveys.filter((s) => s.id !== survey.id)];
+      priceSurveysCache = null;
       try {
         import_fs2.default.writeFileSync(campoPricesPath, JSON.stringify(memoryPriceSurveys, null, 2), "utf8");
       } catch (err) {
+      }
+      try {
+        const supabaseUrl2 = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL2;
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
+        if (supabaseUrl2 && supabaseKey) {
+          const supabase2 = (0, import_supabase_js2.createClient)(supabaseUrl2.replace("/rest/v1/", ""), supabaseKey);
+          const comps = Array.isArray(survey.competitors) ? survey.competitors : [];
+          const dbRow = {
+            id: finalId,
+            date: survey.date,
+            store: survey.store,
+            ourProduct: survey.productName,
+            ourPrice: Number(survey.ownPriceUsd) || 0,
+            competitor1Brand: comps[0]?.name || "",
+            competitor1Price: comps[0]?.priceUsd !== void 0 ? Number(comps[0].priceUsd) : null,
+            competitor2Brand: comps[1]?.name || "",
+            competitor2Price: comps[1]?.priceUsd !== void 0 ? Number(comps[1].priceUsd) : null,
+            competitor3Brand: comps[2]?.name || "",
+            competitor3Price: comps[2]?.priceUsd !== void 0 ? Number(comps[2].priceUsd) : null,
+            competitorBrand: comps[0]?.name || null,
+            competitorPrice: comps[0]?.priceUsd !== void 0 ? Number(comps[0].priceUsd) : null,
+            comments: survey.observations || "",
+            creatorId: String(rawBody.creatorId || rawBody.promoterEmail || survey.promoter || ""),
+            promoter: survey.promoter
+          };
+          const { error: upsertErr } = await supabase2.from("prices").upsert(dbRow);
+          if (upsertErr) console.warn("[PriceSurveys] Supabase upsert fall\xF3:", upsertErr.message);
+        }
+      } catch {
       }
       res.status(201).json(survey);
     } catch (err) {
       res.status(500).json({ error: "Error al guardar precios", details: err?.message });
     }
   });
-  app.delete("/api/price-surveys/:id", (req, res) => {
+  app.delete("/api/price-surveys/:id", async (req, res) => {
     try {
       const { id } = req.params;
+      deletedPriceSurveyIds.add(id);
       memoryPriceSurveys = memoryPriceSurveys.filter((s) => s.id !== id);
+      priceSurveysCache = null;
       try {
         import_fs2.default.writeFileSync(campoPricesPath, JSON.stringify(memoryPriceSurveys, null, 2), "utf8");
       } catch (err) {
+      }
+      try {
+        const supabaseUrl2 = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL2;
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
+        if (supabaseUrl2 && supabaseKey && isValidUuid(id)) {
+          const supabase2 = (0, import_supabase_js2.createClient)(supabaseUrl2.replace("/rest/v1/", ""), supabaseKey);
+          await supabase2.from("prices").delete().eq("id", id);
+        }
+      } catch {
       }
       res.json({ success: true, id });
     } catch (err) {
@@ -4986,35 +5330,127 @@ Responde con un JSON estructurado con:
   });
   const campoInvPath = import_path2.default.join(process.cwd(), "data_inventory_logs.json");
   let memoryInvLogs = [];
+  const deletedInvLogIds = /* @__PURE__ */ new Set();
+  let inventoryLogsCache = null;
   try {
     if (import_fs2.default.existsSync(campoInvPath)) {
-      memoryInvLogs = JSON.parse(import_fs2.default.readFileSync(campoInvPath, "utf8"));
+      const rawDisk = JSON.parse(import_fs2.default.readFileSync(campoInvPath, "utf8"));
+      if (Array.isArray(rawDisk)) {
+        memoryInvLogs = rawDisk.filter((r) => !isSyntheticPriceOrInventoryRow(r)).map(mapSupabaseInventoryRowToPayload);
+      }
     }
   } catch (e) {
   }
-  app.get("/api/inventory-logs", (req, res) => {
-    res.json(memoryInvLogs);
-  });
-  app.post("/api/inventory-logs", (req, res) => {
+  app.get("/api/inventory-logs", async (req, res) => {
     try {
-      const log = req.body;
+      const now = Date.now();
+      if (req.query.refresh !== "true" && inventoryLogsCache && now - inventoryLogsCache.timestamp < 4e3) {
+        return res.json(inventoryLogsCache.payload);
+      }
+      let remoteRows = null;
+      const supabaseUrl2 = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL2;
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
+      if (supabaseUrl2 && supabaseKey) {
+        try {
+          const supabase2 = (0, import_supabase_js2.createClient)(supabaseUrl2.replace("/rest/v1/", ""), supabaseKey);
+          const pageSize = 1e3;
+          const rows = [];
+          for (let from = 0; from < 5e4; from += pageSize) {
+            const { data, error } = await supabase2.from("inventory").select("*").order("date", { ascending: false }).range(from, from + pageSize - 1);
+            if (error) throw error;
+            if (!Array.isArray(data) || data.length === 0) break;
+            rows.push(...data);
+            if (data.length < pageSize) break;
+          }
+          remoteRows = rows.filter((r) => !isSyntheticPriceOrInventoryRow(r) && !deletedInvLogIds.has(String(r.id))).map(mapSupabaseInventoryRowToPayload);
+        } catch (e) {
+          console.warn("[InventoryLogs] No se pudo leer Supabase inventory, usando respaldo local:", e?.message);
+        }
+      }
+      const localFiltered = memoryInvLogs.filter((r) => !isSyntheticPriceOrInventoryRow(r) && !deletedInvLogIds.has(String(r.id))).map(mapSupabaseInventoryRowToPayload);
+      const remoteIds = new Set((remoteRows || []).map((r) => r.id));
+      const merged = [
+        ...remoteRows || [],
+        ...localFiltered.filter((r) => !remoteIds.has(r.id))
+      ].sort(
+        (a, b) => new Date(b.date || b.created_at || 0).getTime() - new Date(a.date || a.created_at || 0).getTime()
+      );
+      memoryInvLogs = merged;
+      inventoryLogsCache = { payload: merged, timestamp: now };
+      try {
+        import_fs2.default.writeFileSync(campoInvPath, JSON.stringify(merged, null, 2), "utf8");
+      } catch {
+      }
+      return res.json(merged);
+    } catch (err) {
+      return res.json(memoryInvLogs);
+    }
+  });
+  app.post("/api/inventory-logs", async (req, res) => {
+    try {
+      const rawBody = req.body || {};
+      if (isSyntheticPriceOrInventoryRow(rawBody)) {
+        return res.status(201).json(rawBody);
+      }
+      const finalId = isValidUuid(rawBody.id) ? rawBody.id.trim() : import_crypto.default.randomUUID();
+      const log = mapSupabaseInventoryRowToPayload({
+        ...rawBody,
+        id: finalId,
+        date: rawBody.date || (/* @__PURE__ */ new Date()).toISOString(),
+        created_at: rawBody.created_at || (/* @__PURE__ */ new Date()).toISOString()
+      });
+      deletedInvLogIds.delete(log.id);
       memoryInvLogs = [log, ...memoryInvLogs.filter((s) => s.id !== log.id)];
+      inventoryLogsCache = null;
       try {
         import_fs2.default.writeFileSync(campoInvPath, JSON.stringify(memoryInvLogs, null, 2), "utf8");
       } catch (err) {
+      }
+      try {
+        const supabaseUrl2 = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL2;
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
+        if (supabaseUrl2 && supabaseKey) {
+          const supabase2 = (0, import_supabase_js2.createClient)(supabaseUrl2.replace("/rest/v1/", ""), supabaseKey);
+          const dbRow = {
+            id: finalId,
+            date: log.date,
+            store: log.store,
+            product: log.productName,
+            initialQuantity: Number(log.initialStock) || 0,
+            finalQuantity: Number(log.finalStock) || 0,
+            degustations: Number(log.tastingsGiven) || 0,
+            comments: log.observations || "",
+            creatorId: String(rawBody.creatorId || rawBody.promoterEmail || log.promoter || ""),
+            promoter: log.promoter
+          };
+          const { error: upsertErr } = await supabase2.from("inventory").upsert(dbRow);
+          if (upsertErr) console.warn("[InventoryLogs] Supabase upsert fall\xF3:", upsertErr.message);
+        }
+      } catch {
       }
       res.status(201).json(log);
     } catch (err) {
       res.status(500).json({ error: "Error al guardar inventario", details: err?.message });
     }
   });
-  app.delete("/api/inventory-logs/:id", (req, res) => {
+  app.delete("/api/inventory-logs/:id", async (req, res) => {
     try {
       const { id } = req.params;
+      deletedInvLogIds.add(id);
       memoryInvLogs = memoryInvLogs.filter((s) => s.id !== id);
+      inventoryLogsCache = null;
       try {
         import_fs2.default.writeFileSync(campoInvPath, JSON.stringify(memoryInvLogs, null, 2), "utf8");
       } catch (err) {
+      }
+      try {
+        const supabaseUrl2 = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL2;
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
+        if (supabaseUrl2 && supabaseKey && isValidUuid(id)) {
+          const supabase2 = (0, import_supabase_js2.createClient)(supabaseUrl2.replace("/rest/v1/", ""), supabaseKey);
+          await supabase2.from("inventory").delete().eq("id", id);
+        }
+      } catch {
       }
       res.json({ success: true, id });
     } catch (err) {
@@ -5115,12 +5551,12 @@ Responde con un JSON estructurado con:
     if (!forceRefresh && now - lastSupabaseDegustacionSync < 3e4 && memoryDegustaciones.length > 0) {
       return memoryDegustaciones;
     }
-    const supabaseUrl = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "https://uterioexpfweghxfbvoa.supabase.co/rest/v1/").replace(/\/?$/, "/");
+    const supabaseUrl2 = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "https://uterioexpfweghxfbvoa.supabase.co/rest/v1/").replace(/\/?$/, "/");
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0ZXJpb2V4cGZ3ZWdoeGZidm9hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5NTg3ODYsImV4cCI6MjEwMzUzNDc4Nn0.bZnN4vrXUDlcoIaI7l39O-bU4GQp05SvJdio_cn6niI";
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 8e3);
-      const response = await fetch(`${supabaseUrl}surveys?select=*&order=date.desc&limit=1000`, {
+      const response = await fetch(`${supabaseUrl2}surveys?select=*&order=date.desc&limit=1000`, {
         headers: {
           apikey: supabaseKey,
           Authorization: `Bearer ${supabaseKey}`
@@ -5325,7 +5761,7 @@ Responde con un JSON estructurado con:
       } catch (err) {
       }
       const rawDegId = id.replace(/^DEG-/, "");
-      const supabaseDegUrl = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL).replace(/\/$/, "");
+      const supabaseDegUrl = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL2).replace(/\/$/, "");
       const supabaseDegKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY;
       (async () => {
         try {

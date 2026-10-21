@@ -16,9 +16,14 @@ import {
   isSyntheticPriceOrInventoryRow,
   resolvePromoterNameFromRaw,
 } from '../lib/campoService';
-import { checkinsService } from '../lib/checkinsService';
+import {
+  checkinsService,
+  normalizeAndDeduplicateCheckIns,
+  getCaracasDayKey,
+} from '../lib/checkinsService';
 import { merchandisingService } from '../lib/merchandisingService';
 import { degustacionesService } from '../lib/degustacionesService';
+import { calculateMonthWorkingProgress } from '../components/cuotas/volumeQuotasData';
 
 describe('Restricción de Acceso a Trazabilidad y Sincronización App Promotoras -> Trade Marketing', () => {
   beforeEach(() => {
@@ -215,7 +220,7 @@ describe('Restricción de Acceso a Trazabilidad y Sincronización App Promotoras
       expect(foundScanInMerch?.metrics?.shareOfShelfPercent).toBe(58);
     });
 
-    it('sincroniza Asistencia con GPS y Selfie hacia Trade Marketing', async () => {
+    it('sincroniza Asistencia con GPS y Selfie hacia Trade Marketing y elimina duplicados del mismo día', async () => {
       const checkinRes = await checkinsService.createCheckIn({
         date: '2026-10-18T13:00:00.000Z',
         type: 'Ingreso',
@@ -231,6 +236,48 @@ describe('Restricción de Acceso a Trazabilidad y Sincronización App Promotoras
       expect(found).toBeDefined();
       expect(found?.promoter).toBe('TANIA CARDENAS');
       expect(found?.store).toBe('ALKOSTO TRIBUNALES');
+
+      // Verifica deduplicación por día, promotora e hito (Ingreso, Salida a almorzar, Vuelta a almorzar, Salida)
+      const deduped = normalizeAndDeduplicateCheckIns([
+        {
+          id: 'chk-dup-1',
+          date: '2026-10-21T13:10:00.000Z',
+          type: 'Ingreso',
+          store: 'Supermercado De Candido',
+          photoBase64: 'data:image/jpeg;base64,img1',
+          location: { lat: 10.661, lng: -71.612, accuracy: 6 },
+          promoter: 'scarmichell22@gmail.com',
+          creatorId: 'b49a24e1-f634-4323-a393-6e4c83090a17',
+          created_at: '2026-10-21T13:10:00.000Z',
+        },
+        {
+          id: 'chk-dup-2',
+          date: '2026-10-21T13:12:00.000Z',
+          type: 'Ingreso',
+          store: 'Supermercado De Candido',
+          photoBase64: '/api/checkins/chk-dup-2/photo',
+          location: { lat: 10.661, lng: -71.612, accuracy: 5 },
+          promoter: 'SCARLETH PIÑA',
+          creatorId: 'b49a24e1-f634-4323-a393-6e4c83090a17',
+          created_at: '2026-10-21T13:12:00.000Z',
+        },
+        {
+          id: 'chk-lunch-out',
+          date: '2026-10-21T16:05:00.000Z',
+          type: 'Salida a almorzar',
+          store: 'Supermercado De Candido',
+          photoBase64: 'data:image/jpeg;base64,img2',
+          location: { lat: 10.661, lng: -71.612, accuracy: 6 },
+          promoter: 'SCARLETH PIÑA',
+          creatorId: 'b49a24e1-f634-4323-a393-6e4c83090a17',
+          created_at: '2026-10-21T16:05:00.000Z',
+        },
+      ]);
+
+      expect(deduped.length).toBe(2);
+      expect(deduped.filter((c) => c.type === 'Ingreso').length).toBe(1);
+      expect(deduped[0].promoter).toBe('SCARLETH PIÑA');
+      expect(getCaracasDayKey('2026-10-21T13:10:00.000Z')).toBe('2026-10-21');
     });
 
     it('verifica que las 24 promotoras y mercaderistas tengan perfiles completos con correo e ID', () => {
@@ -308,6 +355,19 @@ describe('Restricción de Acceso a Trazabilidad y Sincronización App Promotoras
           store: 'Supermercado De Candido',
         })
       ).toBe(true);
+    });
+
+    it('calcula dinámicamente el progreso y recorrido del mes en calendario comercial Lunes a Sábado', () => {
+      // Miércoles 21 de Octubre 2026 (12:00 VET)
+      const oct21 = new Date('2026-10-21T16:00:00Z');
+      const progress = calculateMonthWorkingProgress(oct21);
+      expect(progress.year).toBe(2026);
+      expect(progress.month).toBe(10);
+      expect(progress.dayOfMonth).toBe(21);
+      expect(progress.diasLaborables).toBe(26);
+      expect(progress.diasTranscurridos).toBe(18);
+      expect(progress.diasRestantes).toBe(8);
+      expect(progress.recorridoPct).toBe(69.2);
     });
   });
 });

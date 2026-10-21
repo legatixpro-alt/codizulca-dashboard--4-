@@ -4,6 +4,7 @@
  */
 
 import { staffService, StaffMember } from './staffService';
+import { supabase } from './supabase';
 
 export interface CheckinPayload {
   id?: string;
@@ -351,6 +352,17 @@ const PROMOTER_CREATOR_MAP: Record<string, string> = {
   'bd271523-05d7-430c-9dd7-d859f3d848f8': 'JOSE BARROSO',
   'jose-barroso-official': 'JOSE BARROSO',
   'ziorelis.grangger@codizulca.com': 'ZIORELI GRANGGER',
+  '6a14294a-7ac4-4d0b-af3c-652b7ff06ce6': 'ZIORELI GRANGGER',
+  'abmjyjm3rsfomc940zpp96ookqi1': 'ANA ECHEVERRIA',
+  '8e39ef7e-1e3c-4f25-830b-8c80fcde519e': 'ANA ECHEVERRIA',
+  'pw6cn7jc4hugm6msomg1kxyxiw53': 'JAIVELIN FEREIRA',
+  'ff491544-e39b-42b7-b8ae-12676f784bd7': 'JAIVELIN FEREIRA',
+  '43c070f1-f005-4843-868c-9ebb4caaf836': 'CARELIZ REYES',
+  'b49a24e1-f634-4323-a393-6e4c83090a17': 'SCARLETH PIÑA',
+  'tata cardenas': 'TANIA CARDENAS',
+  'tata cárdenas': 'TANIA CARDENAS',
+  'maria de los angeles almarza arnedo': 'MARIA ALMARZA',
+  'maria de los ángeles almarza arnedo': 'MARIA ALMARZA',
 };
 
 const SYNTHETIC_SEED_IDS = new Set([
@@ -909,6 +921,44 @@ export const campoService = {
       return { success: true, offline: true };
     }
 
+    let syncedDirectSupabase = false;
+    if (!isSyntheticPriceOrInventoryRow(normalized)) {
+      try {
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(normalized.id);
+        const dbId = isUuid
+          ? normalized.id
+          : typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+          ? crypto.randomUUID()
+          : normalized.id;
+        const comps = Array.isArray(normalized.competitors) ? normalized.competitors : [];
+        const dbRow: Record<string, any> = {
+          id: dbId,
+          date: normalized.date,
+          store: normalized.store,
+          ourProduct: normalized.productName,
+          ourPrice: Number(normalized.ownPriceUsd) || 0,
+          competitor1Brand: comps[0]?.name || '',
+          competitor1Price: comps[0]?.priceUsd !== undefined ? Number(comps[0].priceUsd) : null,
+          competitor2Brand: comps[1]?.name || '',
+          competitor2Price: comps[1]?.priceUsd !== undefined ? Number(comps[1].priceUsd) : null,
+          competitor3Brand: comps[2]?.name || '',
+          competitor3Price: comps[2]?.priceUsd !== undefined ? Number(comps[2].priceUsd) : null,
+          competitorBrand: comps[0]?.name || null,
+          competitorPrice: comps[0]?.priceUsd !== undefined ? Number(comps[0].priceUsd) : null,
+          comments: normalized.observations || '',
+          creatorId: normalized.promoter || '',
+          promoter: normalized.promoter,
+        };
+        const { error } = await (supabase.from('prices') as any).upsert(dbRow);
+        if (!error) {
+          syncedDirectSupabase = true;
+          normalized.id = dbId;
+        }
+      } catch {
+        // ignore direct supabase error
+      }
+    }
+
     try {
       const res = await fetch('/api/price-surveys', {
         method: 'POST',
@@ -926,9 +976,11 @@ export const campoService = {
       notifyCampoDataChanged();
       return { success: true, offline: false };
     } catch {
-      this.enqueue('price_survey', normalized);
+      if (!syncedDirectSupabase) {
+        this.enqueue('price_survey', normalized);
+      }
       notifyCampoDataChanged();
-      return { success: true, offline: true };
+      return { success: true, offline: !syncedDirectSupabase };
     }
   },
 
@@ -950,6 +1002,37 @@ export const campoService = {
       return { success: true, offline: true };
     }
 
+    let syncedDirectSupabase = false;
+    if (!isSyntheticPriceOrInventoryRow(normalized)) {
+      try {
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(normalized.id);
+        const dbId = isUuid
+          ? normalized.id
+          : typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+          ? crypto.randomUUID()
+          : normalized.id;
+        const dbRow: Record<string, any> = {
+          id: dbId,
+          date: normalized.date,
+          store: normalized.store,
+          product: normalized.productName,
+          initialQuantity: Number(normalized.initialStock) || 0,
+          finalQuantity: Number(normalized.finalStock) || 0,
+          degustations: Number(normalized.tastingsGiven) || 0,
+          comments: normalized.observations || '',
+          creatorId: normalized.promoter || '',
+          promoter: normalized.promoter,
+        };
+        const { error } = await (supabase.from('inventory') as any).upsert(dbRow);
+        if (!error) {
+          syncedDirectSupabase = true;
+          normalized.id = dbId;
+        }
+      } catch {
+        // ignore direct supabase error
+      }
+    }
+
     try {
       const res = await fetch('/api/inventory-logs', {
         method: 'POST',
@@ -967,9 +1050,11 @@ export const campoService = {
       notifyCampoDataChanged();
       return { success: true, offline: false };
     } catch {
-      this.enqueue('inventory_log', normalized);
+      if (!syncedDirectSupabase) {
+        this.enqueue('inventory_log', normalized);
+      }
       notifyCampoDataChanged();
-      return { success: true, offline: true };
+      return { success: true, offline: !syncedDirectSupabase };
     }
   },
 
@@ -1051,17 +1136,45 @@ export const campoService = {
       const url = forceRefresh ? '/api/price-surveys?refresh=true' : '/api/price-surveys';
       const res = await fetch(url);
       if (res.ok) {
-        serverResponded = true;
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          serverList = data
-            .filter((row) => !isSyntheticPriceOrInventoryRow(row))
-            .map(mapSupabasePriceRowToPayload);
+        const contentType = res.headers?.get?.('content-type') || 'application/json';
+        if (contentType.includes('application/json') || !contentType.includes('text/html')) {
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            serverResponded = true;
+            serverList = data
+              .filter((row) => !isSyntheticPriceOrInventoryRow(row))
+              .map(mapSupabasePriceRowToPayload);
+          }
         }
       }
     } catch {
-      // fallback to localStorage
+      // fallback to direct Supabase / localStorage
     }
+
+    const isTestEnv = typeof import.meta !== 'undefined' && import.meta.env?.MODE === 'test';
+    if (!isTestEnv && (forceRefresh || serverList.length === 0)) {
+      try {
+        const { data: sbData, error: sbErr } = await supabase
+          .from('prices')
+          .select('*')
+          .order('date', { ascending: false })
+          .limit(2000);
+        if (!sbErr && Array.isArray(sbData) && sbData.length > 0) {
+          serverResponded = true;
+          const mappedSb = sbData
+            .filter((row) => !isSyntheticPriceOrInventoryRow(row))
+            .map(mapSupabasePriceRowToPayload);
+          const sbMap = new Map<string, PriceSurveyPayload>();
+          [...serverList, ...mappedSb].forEach((item) => {
+            if (item && item.id) sbMap.set(item.id, item);
+          });
+          serverList = Array.from(sbMap.values());
+        }
+      } catch {
+        // ignore direct Supabase error
+      }
+    }
+
     let localList: PriceSurveyPayload[] = [];
     try {
       localList = JSON.parse(localStorage.getItem(KEY) || '[]');
@@ -1095,17 +1208,45 @@ export const campoService = {
       const url = forceRefresh ? '/api/inventory-logs?refresh=true' : '/api/inventory-logs';
       const res = await fetch(url);
       if (res.ok) {
-        serverResponded = true;
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          serverList = data
-            .filter((row) => !isSyntheticPriceOrInventoryRow(row))
-            .map(mapSupabaseInventoryRowToPayload);
+        const contentType = res.headers?.get?.('content-type') || 'application/json';
+        if (contentType.includes('application/json') || !contentType.includes('text/html')) {
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            serverResponded = true;
+            serverList = data
+              .filter((row) => !isSyntheticPriceOrInventoryRow(row))
+              .map(mapSupabaseInventoryRowToPayload);
+          }
         }
       }
     } catch {
-      // fallback to localStorage
+      // fallback to direct Supabase / localStorage
     }
+
+    const isTestEnv = typeof import.meta !== 'undefined' && import.meta.env?.MODE === 'test';
+    if (!isTestEnv && (forceRefresh || serverList.length === 0)) {
+      try {
+        const { data: sbData, error: sbErr } = await supabase
+          .from('inventory')
+          .select('*')
+          .order('date', { ascending: false })
+          .limit(2000);
+        if (!sbErr && Array.isArray(sbData) && sbData.length > 0) {
+          serverResponded = true;
+          const mappedSb = sbData
+            .filter((row) => !isSyntheticPriceOrInventoryRow(row))
+            .map(mapSupabaseInventoryRowToPayload);
+          const sbMap = new Map<string, InventoryLogPayload>();
+          [...serverList, ...mappedSb].forEach((item) => {
+            if (item && item.id) sbMap.set(item.id, item);
+          });
+          serverList = Array.from(sbMap.values());
+        }
+      } catch {
+        // ignore direct Supabase error
+      }
+    }
+
     let localList: InventoryLogPayload[] = [];
     try {
       localList = JSON.parse(localStorage.getItem(KEY) || '[]');

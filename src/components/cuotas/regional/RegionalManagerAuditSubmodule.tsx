@@ -41,6 +41,7 @@ import { AuditCommitmentsPanel } from './AuditCommitmentsPanel';
 import { AuditSellerActionModal } from './AuditSellerActionModal';
 import { isExcludedVolumeSeller, normalizeSellerName, getSellerMetadata, OFFICIAL_SELLERS_LIST } from '../sellerSupervisorMap';
 import { SellerActivationRow } from '../cuotasData';
+import { DEFAULT_DIAS_LABORABLES, DEFAULT_DIAS_TRANSCURRIDOS } from '../volumeQuotasData';
 
 interface RegionalManagerAuditSubmoduleProps {
   activeTab?: string;
@@ -69,8 +70,8 @@ export const RegionalManagerAuditSubmodule: React.FC<RegionalManagerAuditSubmodu
   activeTab = 'volumen',
   onTabChange,
   sellers = [],
-  diasLaborables = 26,
-  diasTranscurridos = 13
+  diasLaborables = DEFAULT_DIAS_LABORABLES,
+  diasTranscurridos = DEFAULT_DIAS_TRANSCURRIDOS
 }) => {
   // Estado de Navegación interna del Gerente Regional
   const [activeSubtab, setActiveSubtab] = useState<RegionalAuditTab>('matriz_auditoria');
@@ -615,6 +616,8 @@ export const RegionalManagerAuditSubmodule: React.FC<RegionalManagerAuditSubmodu
         <SupervisorScorecardPanel
           scorecards={supervisorScorecards}
           metric={metric}
+          diasLaborables={diasLaborables}
+          diasTranscurridos={diasTranscurridos}
           onSelectSupervisorForAudit={(sup) => {
             setSupervisorFilter(sup);
             setActiveSubtab('matriz_auditoria');

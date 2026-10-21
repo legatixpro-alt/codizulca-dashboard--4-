@@ -26,7 +26,11 @@ import { getSellerMetadata, isExcludedVolumeSeller, normalizeSellerName, OFFICIA
 import { SellerMultiSelect, SellerOption } from './SellerMultiSelect';
 import { SupervisorVolumeComparativeAnalysis } from './SupervisorVolumeComparativeAnalysis';
 import { SellerVolumeHistoryModal } from './SellerVolumeHistoryModal';
-import { syncVolumeQuotasFromGoogleSheet } from './volumeQuotasData';
+import {
+  DEFAULT_DIAS_LABORABLES,
+  DEFAULT_DIAS_TRANSCURRIDOS,
+  syncVolumeQuotasFromGoogleSheet,
+} from './volumeQuotasData';
 
 export interface MonthlyTotalItem {
   mes: string;
@@ -57,6 +61,8 @@ export interface SellerMonthItem {
 interface MonthlyVolumeHistoryTableProps {
   viewLevel: ViewLevel;
   onOpenSkuVolume?: () => void;
+  diasLaborables?: number;
+  diasTranscurridos?: number;
 }
 
 const MONTH_ORDER = [
@@ -94,6 +100,8 @@ type MetricType = 'cajas' | 'monto' | 'kgs';
 export const MonthlyVolumeHistoryTable: React.FC<MonthlyVolumeHistoryTableProps> = ({
   viewLevel,
   onOpenSkuVolume,
+  diasLaborables = DEFAULT_DIAS_LABORABLES,
+  diasTranscurridos = DEFAULT_DIAS_TRANSCURRIDOS,
 }) => {
   const [data, setData] = useState<{
     ano: number;
@@ -1042,8 +1050,8 @@ export const MonthlyVolumeHistoryTable: React.FC<MonthlyVolumeHistoryTableProps>
         supervisorRows={supervisorRows}
         metric={metric}
         selectedMonth={comparisonInfo.currMonth || 'OCTUBRE'}
-        diasLaborables={26}
-        diasTranscurridos={13}
+        diasLaborables={diasLaborables}
+        diasTranscurridos={diasTranscurridos}
         rawSellerMonthlyData={data?.sellerMonthlyData || []}
         availableMonths={sortedMonths}
         onOpenSellerHistory={(sellerName) => setHistoryModalSeller(sellerName)}

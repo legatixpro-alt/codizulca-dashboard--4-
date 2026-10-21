@@ -360,10 +360,106 @@ export const SELLER_VOLUME_QUOTAS: Record<string, SellerVolumeQuota> = {
   },
 };
 
-// Días laborables y transcurridos de corte
-export const DEFAULT_DIAS_LABORABLES = 26;
-export const DEFAULT_DIAS_TRANSCURRIDOS = 13;
-export const META_AL_DIA_PCT = Number(((DEFAULT_DIAS_TRANSCURRIDOS / DEFAULT_DIAS_LABORABLES) * 100).toFixed(1));
+// Feriados regionales/nacionales no laborables por mes (YYYY-MM -> días del mes sin despacho)
+// En Octubre 2026 en Zulia: Sábado 24 de Octubre (Natalicio de Rafael Urdaneta) -> 27 L-S menos 1 = 26 días laborables
+const NON_WORKING_HOLIDAYS_BY_PERIOD: Record<string, number[]> = {
+  '2026-10': [24],
+};
+
+export interface MonthWorkingProgress {
+  year: number;
+  month: number; // 1-12
+  dayOfMonth: number;
+  monthName: string;
+  cutoffDateLabel: string;
+  diasLaborables: number;
+  diasTranscurridos: number;
+  diasRestantes: number;
+  recorridoPct: number;
+}
+
+const MONTH_NAMES_ES = [
+  'Enero',
+  'Febrero',
+  'Marzo',
+  'Abril',
+  'Mayo',
+  'Junio',
+  'Julio',
+  'Agosto',
+  'Septiembre',
+  'Octubre',
+  'Noviembre',
+  'Diciembre',
+];
+
+export const calculateMonthWorkingProgress = (referenceDate: Date = new Date()): MonthWorkingProgress => {
+  let year = referenceDate.getFullYear();
+  let month = referenceDate.getMonth() + 1;
+  let dayOfMonth = referenceDate.getDate();
+
+  try {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Caracas',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(referenceDate);
+    const y = Number(parts.find((p) => p.type === 'year')?.value);
+    const m = Number(parts.find((p) => p.type === 'month')?.value);
+    const d = Number(parts.find((p) => p.type === 'day')?.value);
+    if (y && m && d) {
+      year = y;
+      month = m;
+      dayOfMonth = d;
+    }
+  } catch {
+    // Fallback a hora local del navegador
+  }
+
+  const periodKey = `${year}-${String(month).padStart(2, '0')}`;
+  const holidays = new Set(NON_WORKING_HOLIDAYS_BY_PERIOD[periodKey] || []);
+  const daysInMonth = new Date(year, month, 0).getDate();
+
+  let diasLaborables = 0;
+  let diasTranscurridos = 0;
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dow = new Date(year, month - 1, d).getDay(); // 0 = Domingo, 1..6 = Lunes..Sábado
+    const isWorkingDay = dow !== 0 && !holidays.has(d);
+    if (isWorkingDay) {
+      diasLaborables++;
+      if (d <= dayOfMonth) {
+        diasTranscurridos++;
+      }
+    }
+  }
+
+  diasLaborables = Math.max(1, diasLaborables);
+  diasTranscurridos = Math.min(diasLaborables, Math.max(1, diasTranscurridos));
+  const diasRestantes = Math.max(0, diasLaborables - diasTranscurridos);
+  const recorridoPct = Number(((diasTranscurridos / diasLaborables) * 100).toFixed(1));
+  const monthName = MONTH_NAMES_ES[month - 1] || 'Octubre';
+  const cutoffDateLabel = `${String(dayOfMonth).padStart(2, '0')} ${monthName.slice(0, 3)} ${year}`;
+
+  return {
+    year,
+    month,
+    dayOfMonth,
+    monthName,
+    cutoffDateLabel,
+    diasLaborables,
+    diasTranscurridos,
+    diasRestantes,
+    recorridoPct,
+  };
+};
+
+// Días laborables y transcurridos calculados dinámicamente al día actual (Calendario Comercial Lunes a Sábado)
+const INITIAL_MONTH_PROGRESS = calculateMonthWorkingProgress();
+export const DEFAULT_DIAS_LABORABLES = INITIAL_MONTH_PROGRESS.diasLaborables;
+export const DEFAULT_DIAS_TRANSCURRIDOS = INITIAL_MONTH_PROGRESS.diasTranscurridos;
+export const META_AL_DIA_PCT = INITIAL_MONTH_PROGRESS.recorridoPct;
 
 export const SKU_FILTER_OPTIONS = [
   { id: 'ALL', label: 'Todos los SKUs (Cuotas Volumen)' },

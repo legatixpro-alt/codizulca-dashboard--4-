@@ -28,10 +28,13 @@ import {
   RegionalAuditMetric
 } from './regionalAuditTypes';
 import { formatAuditValue, getMetricBadgeLabel } from './regionalAuditUtils';
+import { DEFAULT_DIAS_LABORABLES, DEFAULT_DIAS_TRANSCURRIDOS } from '../volumeQuotasData';
 
 interface SupervisorScorecardPanelProps {
   scorecards: SupervisorScorecardData[];
   metric: RegionalAuditMetric;
+  diasLaborables?: number;
+  diasTranscurridos?: number;
   onSelectSupervisorForAudit: (supervisor: string) => void;
   onOpenNewCommitment: (supervisor: string) => void;
 }
@@ -39,9 +42,12 @@ interface SupervisorScorecardPanelProps {
 export const SupervisorScorecardPanel: React.FC<SupervisorScorecardPanelProps> = ({
   scorecards,
   metric,
+  diasLaborables = DEFAULT_DIAS_LABORABLES,
+  diasTranscurridos = DEFAULT_DIAS_TRANSCURRIDOS,
   onSelectSupervisorForAudit,
   onOpenNewCommitment
 }) => {
+  const metaAlDiaPct = Number(((diasTranscurridos / Math.max(1, diasLaborables)) * 100).toFixed(1));
   // Datos para gráfico comparativo
   const chartData = scorecards.map((s) => ({
     name: s.supervisor,
@@ -210,13 +216,13 @@ export const SupervisorScorecardPanel: React.FC<SupervisorScorecardPanelProps> =
                       {s.pctCumplimientoTotal.toFixed(1)}%
                     </span>
                     <span className="text-[10px] text-zinc-500">
-                      (Meta al corte: 73.1%)
+                      (Meta al corte: {metaAlDiaPct}%)
                     </span>
                   </div>
                   <span className={`text-[10px] font-bold ${
-                    s.pctCumplimientoTotal >= 73.1 ? 'text-emerald-400' : 'text-amber-400'
+                    s.pctCumplimientoTotal >= metaAlDiaPct ? 'text-emerald-400' : 'text-amber-400'
                   }`}>
-                    {s.pctCumplimientoTotal >= 73.1 ? '▲ En ritmo proyectado' : '▼ Requiere aceleración'}
+                    {s.pctCumplimientoTotal >= metaAlDiaPct ? '▲ En ritmo proyectado' : '▼ Requiere aceleración'}
                   </span>
                 </div>
 

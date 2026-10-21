@@ -178,6 +178,7 @@ export const Clientes: React.FC = () => {
         'Zona': c.zona,
         'Región': c.region,
         'Canal Comercial': c.canal,
+        'Dirección Exacta GPS': c.direccion || c.survey?.direccion || '',
         'Geocerca Sincronizada': hasGps ? 'SÍ (Activa 50m)' : 'NO (Pendiente)',
         'Estatus Geocerca / Encuesta': c.survey?.estadoEncuesta || (hasGps ? 'COMPLETA' : 'PENDIENTE GPS'),
         'Latitud': lat ?? '',
@@ -663,11 +664,16 @@ export const Clientes: React.FC = () => {
                       </td>
 
                       {/* Columna Sector de Ubicación */}
-                      <td className="p-4">
+                      <td className="p-4 max-w-[280px]">
                         <p className="font-bold text-white text-xs flex items-center gap-1.5">
                           <MapPin className="w-3.5 h-3.5 text-red-500 shrink-0" />
                           <span>{client.sector}</span>
                         </p>
+                        {(client.direccion || client.survey?.direccion) && (
+                          <p className="text-[11px] text-zinc-300 mt-0.5 leading-snug">
+                            {client.direccion || client.survey?.direccion}
+                          </p>
+                        )}
                         <p className="text-[11px] text-zinc-400 mt-0.5">
                           {client.survey?.municipio ? `${client.survey.municipio}, ${client.survey.estado || 'Zulia'}` : client.zona}
                         </p>

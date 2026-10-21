@@ -10,7 +10,13 @@ import {
   FieldSupervisionLevel
 } from './regionalAuditTypes';
 import { getSellerMetadata } from '../sellerSupervisorMap';
-import { getSellerVolumeQuota, getSellerOctoberRealFromSheet, hasVolumeQuota } from '../volumeQuotasData';
+import {
+  DEFAULT_DIAS_LABORABLES,
+  DEFAULT_DIAS_TRANSCURRIDOS,
+  getSellerVolumeQuota,
+  getSellerOctoberRealFromSheet,
+  hasVolumeQuota,
+} from '../volumeQuotasData';
 
 // Formato de moneda / números
 export const formatAuditValue = (val: number, metric: RegionalAuditMetric): string => {
@@ -126,10 +132,10 @@ export const buildSellerAuditRecords = (
   }>,
   metric: RegionalAuditMetric,
   activeMonth: string,
-  diasLaborables: number = 26,
-  diasTranscurridos: number = 13
+  diasLaborables: number = DEFAULT_DIAS_LABORABLES,
+  diasTranscurridos: number = DEFAULT_DIAS_TRANSCURRIDOS
 ): SellerAuditRecord[] => {
-  const metaAlDiaPct = (diasTranscurridos / diasLaborables) * 100; // 50.0%
+  const metaAlDiaPct = (diasTranscurridos / Math.max(1, diasLaborables)) * 100;
 
   // Semillas reproducibles de auditoría de supervisión basadas en el vendedor
   const getSupervisionAuditDetails = (name: string, supervisor: string) => {
@@ -246,8 +252,8 @@ export const buildSellerAuditRecords = (
 export const buildSupervisorScorecards = (
   sellerAuditRecords: SellerAuditRecord[],
   commitments: AuditCommitment[],
-  diasLaborables: number = 26,
-  diasTranscurridos: number = 13
+  diasLaborables: number = DEFAULT_DIAS_LABORABLES,
+  diasTranscurridos: number = DEFAULT_DIAS_TRANSCURRIDOS
 ): SupervisorScorecardData[] => {
   const supervisors = ['JOHNATAN SOTO', 'ALI PEREZ', 'NELSON FINOL'];
   const metaAlDiaPct = Math.max(1, (diasTranscurridos / diasLaborables) * 100);

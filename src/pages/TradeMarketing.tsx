@@ -67,7 +67,7 @@ import {
 import * as XLSX from 'xlsx';
 import { InventoryProduct } from '../components/inventario/types';
 import { ENRICHED_CLIENTS } from '../data/clientsWithLocation';
-import { checkinsService, CheckInRecord, CheckInType } from '../lib/checkinsService';
+import { checkinsService, CheckInRecord, CheckInType, getCaracasDayKey } from '../lib/checkinsService';
 import { merchandisingService, MerchandisingReport } from '../lib/merchandisingService';
 import { staffService, StaffMember } from '../lib/staffService';
 import { campoService } from '../lib/campoService';
@@ -208,14 +208,75 @@ interface AttendanceItem {
   batteryLevel?: string;
 }
 
-// Foto de evidencia de asistencia: si la imagen no carga, se muestra un recuadro limpio en lugar del texto alternativo cortado
-const CheckInPhoto: React.FC<{ src?: string; alt: string; className?: string }> = ({ src, alt, className }) => {
-  const [failed, setFailed] = useState(false);
-  useEffect(() => {
-    setFailed(false);
-  }, [src]);
+const checkinPhotoMemoryCache = new Map<string, string>();
 
-  if (!src || failed) {
+// Foto de evidencia de asistencia: carga desde URL o directamente desde Supabase si el endpoint local no responde,
+// y utiliza object-contain para que la fotografía jamás aparezca cortada.
+const CheckInPhoto: React.FC<{ src?: string; checkInId?: string; alt: string; className?: string }> = ({
+  src,
+  checkInId,
+  alt,
+  className,
+}) => {
+  const resolvedId = useMemo(() => {
+    if (checkInId) return checkInId;
+    if (src && src.startsWith('/api/checkins/')) {
+      const m = src.match(/^\/api\/checkins\/([^/]+)\/photo/);
+      if (m) return decodeURIComponent(m[1]);
+    }
+    return undefined;
+  }, [checkInId, src]);
+
+  const [resolvedSrc, setResolvedSrc] = useState<string | undefined>(() => {
+    if (resolvedId && checkinPhotoMemoryCache.has(resolvedId)) {
+      return checkinPhotoMemoryCache.get(resolvedId);
+    }
+    return src;
+  });
+  const [failed, setFailed] = useState(false);
+  const [triedSupabase, setTriedSupabase] = useState(false);
+
+  useEffect(() => {
+    if (resolvedId && checkinPhotoMemoryCache.has(resolvedId)) {
+      setResolvedSrc(checkinPhotoMemoryCache.get(resolvedId));
+      setFailed(false);
+      return;
+    }
+    setResolvedSrc(src);
+    setFailed(false);
+    setTriedSupabase(false);
+  }, [src, resolvedId]);
+
+  const fetchPhotoFromSupabase = async () => {
+    if (!resolvedId || triedSupabase) {
+      setFailed(true);
+      return;
+    }
+    setTriedSupabase(true);
+    try {
+      const { data, error } = await supabase
+        .from('checkins')
+        .select('photoBase64')
+        .eq('id', resolvedId)
+        .maybeSingle();
+      const rawPhoto = (data as any)?.photoBase64;
+      if (!error && rawPhoto && typeof rawPhoto === 'string' && rawPhoto.trim().length > 10) {
+        const normalized =
+          rawPhoto.startsWith('data:') || rawPhoto.startsWith('http') || rawPhoto.startsWith('/')
+            ? rawPhoto
+            : `data:image/jpeg;base64,${rawPhoto}`;
+        checkinPhotoMemoryCache.set(resolvedId, normalized);
+        setResolvedSrc(normalized);
+        setFailed(false);
+        return;
+      }
+    } catch {
+      // ignore
+    }
+    setFailed(true);
+  };
+
+  if (!resolvedSrc || failed) {
     return (
       <div className="w-full h-full flex flex-col items-center justify-center gap-1.5 bg-zinc-900 text-zinc-500">
         <Camera className="w-6 h-6" />
@@ -225,12 +286,12 @@ const CheckInPhoto: React.FC<{ src?: string; alt: string; className?: string }> 
   }
   return (
     <img
-      src={src}
+      src={resolvedSrc}
       alt={alt}
       loading="lazy"
       decoding="async"
-      onError={() => setFailed(true)}
-      className={className}
+      onError={fetchPhotoFromSupabase}
+      className={className ? className.replace(/\bobject-cover\b/g, 'object-contain') : 'w-full h-full object-contain bg-zinc-950'}
     />
   );
 };
@@ -1019,6 +1080,10 @@ export const TradeMarketing: React.FC = () => {
           loadCampoSynchronizedData(true);
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory' }, () => {
+          loadCampoSynchronizedData(true);
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'checkins' }, () => {
+          loadCheckIns();
           loadCampoSynchronizedData(true);
         })
         .subscribe();
@@ -1874,7 +1939,7 @@ export const TradeMarketing: React.FC = () => {
         item.type.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesPromoter =
-        promoterFilter === 'todos' || item.promoter === promoterFilter;
+        promoterFilter === 'todos' || matchPromoterName(item.promoter, promoterFilter);
 
       const matchesType =
         checkInTypeFilter === 'todos' || item.type === checkInTypeFilter;
@@ -1882,6 +1947,119 @@ export const TradeMarketing: React.FC = () => {
       return matchesSearch && matchesPromoter && matchesType;
     });
   }, [checkIns, searchTerm, promoterFilter, checkInTypeFilter]);
+
+  // Organización de Asistencias por Día (Fecha) y Promotora con los 4 hitos cronológicos:
+  // 1. Foto de Ingreso | 2. Salida a Almorzar (Cuando aplique) | 3. Llegada de Almorzar (Cuando aplique) | 4. Salida
+  const dailyGroupedCheckIns = useMemo(() => {
+    interface PromoterDailyAttendance {
+      key: string;
+      dayKey: string;
+      dateFormatted: string;
+      promoter: string;
+      stores: string[];
+      primaryLocation: { lat: number; lng: number; accuracy: number };
+      ingreso?: CheckInRecord;
+      salidaAlmorzar?: CheckInRecord;
+      llegadaAlmorzar?: CheckInRecord;
+      salida?: CheckInRecord;
+      recordsCount: number;
+    }
+
+    interface DayAttendanceSection {
+      dayKey: string;
+      dateFormatted: string;
+      dateLongLabel: string;
+      promoters: PromoterDailyAttendance[];
+      totalCheckIns: number;
+    }
+
+    const dayMap = new Map<string, Map<string, PromoterDailyAttendance>>();
+
+    for (const item of filteredCheckIns) {
+      const dayKey = getCaracasDayKey(item.date); // YYYY-MM-DD en America/Caracas
+      const [yyyy, mm, dd] = dayKey.split('-');
+      const dateFormatted = dd && mm && yyyy ? `${dd}/${mm}/${yyyy}` : dayKey;
+      const promoterKey = (item.promoter || 'Promotora').trim().toUpperCase();
+
+      if (!dayMap.has(dayKey)) {
+        dayMap.set(dayKey, new Map());
+      }
+      const pMap = dayMap.get(dayKey)!;
+      if (!pMap.has(promoterKey)) {
+        pMap.set(promoterKey, {
+          key: `${dayKey}|${promoterKey}`,
+          dayKey,
+          dateFormatted,
+          promoter: item.promoter || 'Promotora',
+          stores: [],
+          primaryLocation: item.location || { lat: 0, lng: 0, accuracy: 0 },
+          recordsCount: 0,
+        });
+      }
+
+      const entry = pMap.get(promoterKey)!;
+      entry.recordsCount += 1;
+
+      const storeClean = (item.store || '').trim();
+      if (storeClean && !entry.stores.some((s) => s.toLowerCase() === storeClean.toLowerCase())) {
+        entry.stores.push(storeClean);
+      }
+
+      if (
+        item.location &&
+        item.location.lat !== 0 &&
+        item.location.lng !== 0 &&
+        (entry.primaryLocation.lat === 0 || entry.primaryLocation.lng === 0)
+      ) {
+        entry.primaryLocation = item.location;
+      }
+
+      if (item.type === 'Ingreso') {
+        entry.ingreso = item;
+      } else if (item.type === 'Salida a almorzar') {
+        entry.salidaAlmorzar = item;
+      } else if (item.type === 'Vuelta a almorzar') {
+        entry.llegadaAlmorzar = item;
+      } else if (item.type === 'Salida') {
+        entry.salida = item;
+      }
+    }
+
+    const sortedDays = Array.from(dayMap.keys()).sort((a, b) => b.localeCompare(a));
+    const sections: DayAttendanceSection[] = sortedDays.map((dayKey) => {
+      const [yyyy, mm, dd] = dayKey.split('-');
+      const dateFormatted = dd && mm && yyyy ? `${dd}/${mm}/${yyyy}` : dayKey;
+      let dateLongLabel = dateFormatted;
+      try {
+        const refDate = new Date(`${dayKey}T12:00:00-04:00`);
+        if (!Number.isNaN(refDate.getTime())) {
+          dateLongLabel = refDate.toLocaleDateString('es-VE', {
+            weekday: 'long',
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric',
+            timeZone: 'America/Caracas',
+          });
+        }
+      } catch {}
+
+      const pMap = dayMap.get(dayKey)!;
+      const promoters = Array.from(pMap.values()).sort((a, b) =>
+        a.promoter.localeCompare(b.promoter, 'es')
+      );
+      const totalCheckIns = promoters.reduce((acc, p) => acc + p.recordsCount, 0);
+
+      return {
+        dayKey,
+        dateFormatted,
+        dateLongLabel,
+        promoters,
+        totalCheckIns,
+      };
+    });
+
+    return sections;
+  }, [filteredCheckIns]);
 
   // Filtrado de Informes de Merchandising Certificados & Evaluados con IA
   const filteredMerchandisingReports = useMemo(() => {
@@ -2022,22 +2200,40 @@ export const TradeMarketing: React.FC = () => {
     const wsInv = XLSX.utils.json_to_sheet(invRows);
     XLSX.utils.book_append_sheet(wb, wsInv, 'Inventario en Campo');
 
-    // Hoja 6: Asistencias en PDV
-    const attRows = attendances.map((att) => ({
-      ID: att.id,
-      Promotora: att.promoter,
-      Rol: att.promoterRole,
-      PDV_Tienda: att.client,
-      Zona: att.zone,
-      Fecha: att.date,
-      CheckIn: att.checkInTime,
-      CheckOut: att.checkOutTime || 'En Curso',
-      Horas_Rendered: att.hoursRendered,
-      GPS_Verificado: att.gpsVerified ? `SÍ (${att.distanceMeters}m)` : 'NO',
-      Estado: att.status.toUpperCase()
-    }));
+    // Hoja 6: Asistencias en PDV (Organizadas por Fecha y Promotora: Ingreso, Salida Almorzar, Llegada Almorzar y Salida)
+    const formatCheckInHour = (rec?: CheckInRecord) =>
+      rec
+        ? new Date(rec.date).toLocaleTimeString('es-VE', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true,
+            timeZone: 'America/Caracas',
+          })
+        : 'No aplica';
+
+    const attRows = dailyGroupedCheckIns.flatMap((daySection) =>
+      daySection.promoters.map((p) => {
+        const staffMatch = resolvePromoterIdentity(p.promoter);
+        const hasGps = p.primaryLocation && p.primaryLocation.lat !== 0 && p.primaryLocation.lng !== 0;
+        return {
+          Fecha: daySection.dateFormatted,
+          Promotora: p.promoter,
+          Rol: staffMatch?.role || 'Impulsadora',
+          PDV_Tienda: p.stores.join(' / ') || 'Punto de Venta',
+          Zona: staffMatch?.zone || 'Zulia / Falcón',
+          Hora_Ingreso: formatCheckInHour(p.ingreso),
+          Salida_Almorzar: formatCheckInHour(p.salidaAlmorzar),
+          Llegada_Almorzar: formatCheckInHour(p.llegadaAlmorzar),
+          Hora_Salida: p.salida ? formatCheckInHour(p.salida) : 'Pendiente / En Curso',
+          Coordenadas_GPS: hasGps
+            ? `${p.primaryLocation.lat.toFixed(6)}, ${p.primaryLocation.lng.toFixed(6)} (±${Math.round(p.primaryLocation.accuracy || 0)}m)`
+            : 'Sin GPS',
+          Estado: p.ingreso && p.salida ? 'JORNADA COMPLETA' : 'EN GUARDIA ACTIVA',
+        };
+      })
+    );
     const wsAtt = XLSX.utils.json_to_sheet(attRows);
-    XLSX.utils.book_append_sheet(wb, wsAtt, 'Asistencias en PDV');
+    XLSX.utils.book_append_sheet(wb, wsAtt, 'Asistencias por Día');
 
     XLSX.writeFile(wb, `TradeMarketing_Codizulca_Consolidado_${new Date().toISOString().slice(0, 10)}.xlsx`);
   };
@@ -4396,13 +4592,13 @@ export const TradeMarketing: React.FC = () => {
                 </div>
               </div>
 
-              {/* VISTA 1: GALERÍA DE TARJETAS DE EVIDENCIA (ASPECT RATIO 3:4 VERTICAL) */}
+              {/* VISTA 1: ASISTENCIA ORGANIZADA POR FECHA (DÍA) Y PROMOTORA CON LOS 4 HITOS CRONOLÓGICOS */}
               {checkInViewMode === 'gallery' && (
                 <div>
-                  {filteredCheckIns.length === 0 ? (
+                  {dailyGroupedCheckIns.length === 0 ? (
                     <div className="bg-[#121316] border border-white/10 rounded-2xl p-12 text-center text-zinc-400 space-y-3">
                       <Camera className="w-12 h-12 text-zinc-600 mx-auto" />
-                      <h4 className="text-sm font-bold text-white">No hay marcajes que coincidan con los filtros</h4>
+                      <h4 className="text-sm font-bold text-white">No hay asistencias que coincidan con los filtros</h4>
                       <p className="text-xs text-zinc-500 max-w-md mx-auto">
                         Intenta cambiando el filtro de promotora o el tipo de marcaje, o realiza un nuevo registro desde la app móvil.
                       </p>
@@ -4418,239 +4614,428 @@ export const TradeMarketing: React.FC = () => {
                       </button>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                      {filteredCheckIns.map((item) => {
-                        const dateObj = new Date(item.date);
-                        const dateFormatted = dateObj.toLocaleDateString('es-VE', {
-                          day: '2-digit',
-                          month: '2-digit',
-                          year: 'numeric',
-                          timeZone: 'America/Caracas'
-                        });
-                        const timeFormatted = dateObj.toLocaleTimeString('es-VE', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          hour12: true,
-                          timeZone: 'America/Caracas'
-                        });
-
-                        // Color badge según tipo de marcaje
-                        let badgeBg = 'bg-emerald-600/90 border-emerald-400/40 text-white';
-                        if (item.type === 'Salida a almorzar') {
-                          badgeBg = 'bg-amber-600/90 border-amber-400/40 text-white';
-                        } else if (item.type === 'Vuelta a almorzar') {
-                          badgeBg = 'bg-blue-600/90 border-blue-400/40 text-white';
-                        } else if (item.type === 'Salida') {
-                          badgeBg = 'bg-red-600/90 border-red-400/40 text-white';
-                        }
-
-                        const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${item.location.lat},${item.location.lng}`;
-
-                        return (
-                          <div
-                            key={item.id}
-                            className="bg-[#121316] border border-white/10 hover:border-red-500/40 rounded-2xl overflow-hidden shadow-xl flex flex-col transition-all group duration-200"
-                          >
-                            {/* CONTENEDOR DE FOTO: ASPECT RATIO 3:4 VERTICAL */}
-                            <div className="relative aspect-[3/4] w-full bg-zinc-950 overflow-hidden cursor-pointer"
-                              onClick={() => setInspectCheckIn(item)}
-                            >
-                              <CheckInPhoto
-                                src={item.photoBase64}
-                                alt={`Evidencia de ${item.promoter}`}
-                                className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
-                              />
-
-                              {/* INSIGNIA FLOTANTE DE MARCAJE (SUPERIOR IZQUIERDA) */}
-                              <div className="absolute top-3 left-3 z-10">
-                                <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border shadow-lg backdrop-blur-md inline-flex items-center gap-1 ${badgeBg}`}>
-                                  <Clock className="w-3 h-3" />
-                                  {item.type}
-                                </span>
+                    <div className="space-y-6">
+                      {dailyGroupedCheckIns.map((daySection) => (
+                        <div
+                          key={daySection.dayKey}
+                          className="bg-[#121316] border border-white/10 rounded-2xl overflow-hidden shadow-xl"
+                        >
+                          {/* ENCABEZADO DE FECHA (DÍA) */}
+                          <div className="px-4 py-3 bg-gradient-to-r from-red-950/50 via-zinc-900 to-zinc-900 border-b border-white/10 flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-8 h-8 rounded-xl bg-red-600/20 border border-red-500/40 flex items-center justify-center text-red-400 shrink-0">
+                                <CalendarDays className="w-4 h-4" />
                               </div>
-
-                              {/* BOTONES FLOTANTES DE ACCIÓN RÁPIDA (SUPERIOR DERECHA) */}
-                              <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setInspectCheckIn(item);
-                                  }}
-                                  className="p-1.5 rounded-lg bg-black/70 hover:bg-black text-white border border-white/20 backdrop-blur-sm transition-colors cursor-pointer"
-                                  title="Ver Evidencia en Tamaño Completo"
-                                >
-                                  <Maximize2 className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setDeleteConfirmCheckIn(item);
-                                  }}
-                                  className="p-1.5 rounded-lg bg-red-950/80 hover:bg-red-800 text-red-200 border border-red-500/40 backdrop-blur-sm transition-colors cursor-pointer"
-                                  title="Eliminar Asistencia (Auditoría)"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-
-                              {/* GRADIENTE DE INFORMACIÓN INFERIOR */}
-                              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/85 to-transparent pt-12 pb-3 px-3.5 z-10 text-white">
-                                <div className="flex items-center justify-between gap-1 mb-1">
-                                  <span className="font-black text-sm text-white tracking-tight line-clamp-1 drop-shadow">
-                                    {item.promoter}
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-black text-white uppercase tracking-tight capitalize">
+                                    {daySection.dateLongLabel}
                                   </span>
-                                  <span className="text-[10px] font-mono text-zinc-300 bg-white/10 px-2 py-0.5 rounded backdrop-blur-sm">
-                                    {timeFormatted}
+                                  <span className="px-2 py-0.5 rounded-md bg-white/10 text-zinc-200 font-mono text-[11px] font-bold">
+                                    {daySection.dateFormatted}
                                   </span>
                                 </div>
-
-                                <div className="text-[11px] text-zinc-200 font-semibold line-clamp-1 flex items-center gap-1">
-                                  <Store className="w-3 h-3 text-red-400 shrink-0" />
-                                  <span>{item.store}</span>
-                                </div>
-
-                                <div className="flex items-center justify-between text-[10px] text-zinc-400 font-mono mt-2 pt-2 border-t border-white/10">
-                                  <span>{dateFormatted}</span>
-                                  <span className="text-emerald-400 font-bold">
-                                    ±{item.location.accuracy}m GPS Satelital
-                                  </span>
-                                </div>
+                                <p className="text-[11px] text-zinc-400">
+                                  Secuencia diaria certificada: 1. Foto de Ingreso • 2. Salida a Almorzar (Cuando aplique) • 3. Llegada de Almorzar (Cuando aplique) • 4. Salida
+                                </p>
                               </div>
                             </div>
 
-                            {/* BARRA DE AUDITORÍA GEOGRÁFICA DIRECTA */}
-                            <div className="p-2.5 bg-zinc-900/90 border-t border-white/5 flex items-center justify-between text-xs">
-                              <div className="text-[10px] font-mono text-zinc-400">
-                                Coords: {item.location.lat.toFixed(4)}, {item.location.lng.toFixed(4)}
-                              </div>
-                              <a
-                                href={mapsUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="px-2.5 py-1 rounded-lg bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-400 text-[11px] font-bold inline-flex items-center gap-1 transition-colors cursor-pointer"
-                                title="Abrir ubicación satelital en Google Maps"
-                              >
-                                <MapPin className="w-3 h-3" />
-                                <span>Google Maps</span>
-                                <ExternalLink className="w-2.5 h-2.5" />
-                              </a>
+                            <div className="flex items-center gap-2 text-xs font-mono">
+                              <span className="px-2.5 py-1 rounded-lg bg-zinc-800 border border-white/10 text-zinc-200 font-bold">
+                                {daySection.promoters.length} promotora(s)
+                              </span>
+                              <span className="px-2.5 py-1 rounded-lg bg-emerald-950/70 border border-emerald-500/30 text-emerald-400 font-bold">
+                                {daySection.totalCheckIns} marcaje(s)
+                              </span>
                             </div>
                           </div>
-                        );
-                      })}
+
+                          {/* TARJETAS CONSOLIDADAS POR PROMOTORA EN EL DÍA */}
+                          <div className="p-4 space-y-4">
+                            {daySection.promoters.map((pRow) => {
+                              const hasValidGps =
+                                pRow.primaryLocation &&
+                                pRow.primaryLocation.lat !== 0 &&
+                                pRow.primaryLocation.lng !== 0;
+                              const mapsUrl = hasValidGps
+                                ? `https://www.google.com/maps/search/?api=1&query=${pRow.primaryLocation.lat},${pRow.primaryLocation.lng}`
+                                : null;
+                              const isCompleteDay = Boolean(pRow.ingreso && pRow.salida);
+
+                              const slots: Array<{
+                                key: string;
+                                stepNumber: string;
+                                label: string;
+                                sublabel: string;
+                                record?: CheckInRecord;
+                                badgeBg: string;
+                                emptyText: string;
+                              }> = [
+                                {
+                                  key: 'ingreso',
+                                  stepNumber: '1',
+                                  label: 'Foto de Ingreso',
+                                  sublabel: 'Apertura de jornada en PDV',
+                                  record: pRow.ingreso,
+                                  badgeBg: 'bg-emerald-600/90 border-emerald-400/40 text-white',
+                                  emptyText: 'Sin registro de ingreso',
+                                },
+                                {
+                                  key: 'salida_almorzar',
+                                  stepNumber: '2',
+                                  label: 'Salida a Almorzar',
+                                  sublabel: 'Cuando aplique',
+                                  record: pRow.salidaAlmorzar,
+                                  badgeBg: 'bg-amber-600/90 border-amber-400/40 text-white',
+                                  emptyText: 'No aplica / Sin salida a almorzar',
+                                },
+                                {
+                                  key: 'llegada_almorzar',
+                                  stepNumber: '3',
+                                  label: 'Llegada de Almorzar',
+                                  sublabel: 'Cuando aplique',
+                                  record: pRow.llegadaAlmorzar,
+                                  badgeBg: 'bg-blue-600/90 border-blue-400/40 text-white',
+                                  emptyText: 'No aplica / Sin llegada de almorzar',
+                                },
+                                {
+                                  key: 'salida',
+                                  stepNumber: '4',
+                                  label: 'Salida',
+                                  sublabel: 'Cierre de guardia en PDV',
+                                  record: pRow.salida,
+                                  badgeBg: 'bg-red-600/90 border-red-400/40 text-white',
+                                  emptyText: 'Pendiente / Sin registro de salida',
+                                },
+                              ];
+
+                              return (
+                                <div
+                                  key={pRow.key}
+                                  className="bg-zinc-950/90 border border-white/10 hover:border-white/20 rounded-2xl overflow-hidden shadow-lg transition-all"
+                                >
+                                  {/* Cabecera de la Promotora en ese Día */}
+                                  <div className="px-4 py-3 bg-zinc-900/90 border-b border-white/10 flex flex-wrap items-center justify-between gap-2">
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-8 h-8 rounded-full bg-red-600/20 border border-red-500/40 text-red-400 font-black text-xs flex items-center justify-center shrink-0">
+                                        {pRow.promoter.slice(0, 2).toUpperCase()}
+                                      </div>
+                                      <div>
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                          <span className="font-black text-sm text-white tracking-tight">
+                                            {pRow.promoter}
+                                          </span>
+                                          <span
+                                            className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border ${
+                                              isCompleteDay
+                                                ? 'bg-emerald-950/80 border-emerald-500/40 text-emerald-400'
+                                                : 'bg-amber-950/80 border-amber-500/40 text-amber-400'
+                                            }`}
+                                          >
+                                            {isCompleteDay ? 'Jornada Completa' : 'En Guardia / Marcaje Parcial'}
+                                          </span>
+                                        </div>
+                                        <div className="text-xs text-zinc-300 font-semibold flex items-center gap-1.5 mt-0.5">
+                                          <Store className="w-3.5 h-3.5 text-red-400 shrink-0" />
+                                          <span>{pRow.stores.join(' / ') || 'Punto de Venta'}</span>
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-2 text-xs">
+                                      <span className="text-[11px] font-mono text-zinc-400">
+                                        Fecha: <strong className="text-white">{pRow.dateFormatted}</strong>
+                                      </span>
+                                      {mapsUrl && (
+                                        <a
+                                          href={mapsUrl}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="px-2.5 py-1 rounded-lg bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-400 text-[11px] font-bold inline-flex items-center gap-1 transition-colors cursor-pointer"
+                                          title="Abrir ubicación satelital en Google Maps"
+                                        >
+                                          <MapPin className="w-3 h-3" />
+                                          <span>
+                                            {pRow.primaryLocation.lat.toFixed(4)}, {pRow.primaryLocation.lng.toFixed(4)}
+                                          </span>
+                                          <ExternalLink className="w-2.5 h-2.5" />
+                                        </a>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Cuadrícula de los 4 Hitos del Día */}
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 p-3.5">
+                                    {slots.map((slot) => {
+                                      const rec = slot.record;
+                                      const timeStr = rec
+                                        ? new Date(rec.date).toLocaleTimeString('es-VE', {
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                            hour12: true,
+                                            timeZone: 'America/Caracas',
+                                          })
+                                        : null;
+
+                                      return (
+                                        <div
+                                          key={slot.key}
+                                          className={`rounded-xl border overflow-hidden flex flex-col ${
+                                            rec
+                                              ? 'bg-[#121316] border-white/15 shadow-md'
+                                              : 'bg-zinc-900/40 border-white/5 opacity-75'
+                                          }`}
+                                        >
+                                          {/* Encabezado del Hito */}
+                                          <div className="px-3 py-2 bg-zinc-900/90 border-b border-white/10 flex items-center justify-between gap-1">
+                                            <div>
+                                              <span className="text-[11px] font-black text-white uppercase tracking-wider block">
+                                                {slot.stepNumber}. {slot.label}
+                                              </span>
+                                              <span className="text-[10px] text-zinc-400 block">
+                                                {slot.sublabel}
+                                              </span>
+                                            </div>
+                                            {timeStr ? (
+                                              <span className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-black border ${slot.badgeBg}`}>
+                                                {timeStr}
+                                              </span>
+                                            ) : (
+                                              <span className="px-2 py-0.5 rounded-md text-[10px] font-mono text-zinc-500 bg-zinc-800/70">
+                                                —
+                                              </span>
+                                            )}
+                                          </div>
+
+                                          {/* Cuerpo Fotográfico o Estado Vacío */}
+                                          {rec ? (
+                                            <div
+                                              className="relative aspect-[3/4] w-full bg-zinc-950 overflow-hidden cursor-pointer group"
+                                              onClick={() => setInspectCheckIn(rec)}
+                                            >
+                                              <CheckInPhoto
+                                                src={rec.photoBase64}
+                                                checkInId={rec.id}
+                                                alt={`${slot.label} - ${pRow.promoter}`}
+                                                className="w-full h-full object-contain bg-zinc-950 group-hover:scale-105 transition-transform duration-300"
+                                              />
+
+                                              <div className="absolute top-2.5 right-2.5 z-10 flex items-center gap-1 opacity-90 group-hover:opacity-100 transition-opacity">
+                                                <button
+                                                  type="button"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setInspectCheckIn(rec);
+                                                  }}
+                                                  className="p-1.5 rounded-lg bg-black/75 hover:bg-black text-white border border-white/20 backdrop-blur-sm transition-colors cursor-pointer"
+                                                  title="Ver Evidencia en Tamaño Completo"
+                                                >
+                                                  <Maximize2 className="w-3.5 h-3.5" />
+                                                </button>
+                                                <button
+                                                  type="button"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setDeleteConfirmCheckIn(rec);
+                                                  }}
+                                                  className="p-1.5 rounded-lg bg-red-950/85 hover:bg-red-800 text-red-200 border border-red-500/40 backdrop-blur-sm transition-colors cursor-pointer"
+                                                  title="Eliminar Marcaje (Auditoría)"
+                                                >
+                                                  <Trash2 className="w-3.5 h-3.5" />
+                                                </button>
+                                              </div>
+
+                                              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/75 to-transparent pt-8 pb-2.5 px-3 text-white">
+                                                <div className="text-[11px] font-bold text-zinc-100 line-clamp-1 flex items-center gap-1">
+                                                  <Store className="w-3 h-3 text-red-400 shrink-0" />
+                                                  <span>{rec.store}</span>
+                                                </div>
+                                                <div className="flex items-center justify-between text-[10px] font-mono text-zinc-300 mt-1">
+                                                  <span>{pRow.dateFormatted}</span>
+                                                  <span className="text-emerald-400 font-bold">
+                                                    {rec.location?.lat
+                                                      ? `±${Math.round(rec.location.accuracy || 5)}m GPS`
+                                                      : 'Verificado'}
+                                                  </span>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          ) : (
+                                            <div className="aspect-[3/4] w-full flex flex-col items-center justify-center p-4 text-center bg-zinc-950/50 text-zinc-500 gap-2">
+                                              <Clock className="w-6 h-6 text-zinc-700" />
+                                              <span className="text-[11px] font-semibold text-zinc-500">
+                                                {slot.emptyText}
+                                              </span>
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
               )}
 
-              {/* VISTA 2: TABLA DE CONTROL HORARIO Y AUDITORÍA DE GEOCERCA */}
+              {/* VISTA 2: TABLA DE CONTROL HORARIO ORGANIZADA POR DÍA (FECHA) Y PROMOTORA */}
               {checkInViewMode === 'table' && (
                 <div className="bg-[#121316] border border-white/10 rounded-2xl shadow-xl overflow-hidden">
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse min-w-[1050px] text-xs">
+                    <table className="w-full text-left border-collapse min-w-[1150px] text-xs">
                       <thead>
                         <tr className="bg-zinc-900/90 text-zinc-400 font-bold uppercase tracking-wider border-b border-white/10 text-[11px] select-none">
-                          <th className="p-4 border-r border-white/10 min-w-[170px]">Promotora & Evidencia</th>
-                          <th className="p-4 border-r border-white/10 min-w-[140px]">Tipo de Marcaje</th>
-                          <th className="p-4 border-r border-white/10 min-w-[220px]">Punto de Venta / PDV</th>
-                          <th className="p-4 border-r border-white/10 min-w-[110px]">Fecha</th>
-                          <th className="p-4 border-r border-white/10 min-w-[100px]">Hora Certificada</th>
-                          <th className="p-4 border-r border-white/10 text-center min-w-[160px]">Geolocalización GPS</th>
-                          <th className="p-4 text-center min-w-[110px]">Acciones</th>
+                          <th className="p-3.5 border-r border-white/10 min-w-[110px]">Fecha</th>
+                          <th className="p-3.5 border-r border-white/10 min-w-[175px]">Promotora</th>
+                          <th className="p-3.5 border-r border-white/10 min-w-[210px]">Punto de Venta / PDV</th>
+                          <th className="p-3.5 border-r border-white/10 min-w-[145px]">1. Foto Ingreso</th>
+                          <th className="p-3.5 border-r border-white/10 min-w-[155px]">2. Salida Almorzar</th>
+                          <th className="p-3.5 border-r border-white/10 min-w-[155px]">3. Llegada Almorzar</th>
+                          <th className="p-3.5 border-r border-white/10 min-w-[145px]">4. Salida</th>
+                          <th className="p-3.5 text-center min-w-[150px]">Geolocalización GPS</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-white/5">
-                        {filteredCheckIns.map((item) => {
-                          const dateObj = new Date(item.date);
-                          const dateStr = dateObj.toLocaleDateString('es-VE', { timeZone: 'America/Caracas' });
-                          const timeStr = dateObj.toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'America/Caracas' });
-                          const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${item.location.lat},${item.location.lng}`;
+                        {dailyGroupedCheckIns.flatMap((daySection) =>
+                          daySection.promoters.map((pRow) => {
+                            const hasValidGps =
+                              pRow.primaryLocation &&
+                              pRow.primaryLocation.lat !== 0 &&
+                              pRow.primaryLocation.lng !== 0;
+                            const mapsUrl = hasValidGps
+                              ? `https://www.google.com/maps/search/?api=1&query=${pRow.primaryLocation.lat},${pRow.primaryLocation.lng}`
+                              : null;
 
-                          let badgeCls = 'bg-emerald-950/70 border-emerald-500/40 text-emerald-400';
-                          if (item.type === 'Salida a almorzar') badgeCls = 'bg-amber-950/70 border-amber-500/40 text-amber-400';
-                          if (item.type === 'Vuelta a almorzar') badgeCls = 'bg-blue-950/70 border-blue-500/40 text-blue-400';
-                          if (item.type === 'Salida') badgeCls = 'bg-red-950/70 border-red-500/40 text-red-400';
-
-                          return (
-                            <tr key={item.id} className="hover:bg-white/[0.02] transition-colors group">
-                              {/* Promotora & Thumbnail */}
-                              <td className="p-4 border-r border-white/10">
-                                <div className="flex items-center gap-3">
+                            const renderMilestoneCell = (
+                              rec: CheckInRecord | undefined,
+                              badgeCls: string,
+                              emptyLabel: string
+                            ) => {
+                              if (!rec) {
+                                return (
+                                  <span className="text-[11px] text-zinc-500 font-mono">{emptyLabel}</span>
+                                );
+                              }
+                              const timeStr = new Date(rec.date).toLocaleTimeString('es-VE', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                hour12: true,
+                                timeZone: 'America/Caracas',
+                              });
+                              return (
+                                <div className="flex items-center gap-2.5">
                                   <div
-                                    onClick={() => setInspectCheckIn(item)}
-                                    className="w-10 h-13 rounded-lg overflow-hidden bg-zinc-900 border border-white/10 shrink-0 cursor-pointer hover:border-red-400 transition"
+                                    onClick={() => setInspectCheckIn(rec)}
+                                    className="w-10 h-13 rounded-lg overflow-hidden bg-zinc-950 border border-white/15 shrink-0 cursor-pointer hover:border-red-400 transition"
+                                    title="Clic para ampliar foto de evidencia"
                                   >
-                                    <CheckInPhoto src={item.photoBase64} alt={item.promoter} className="w-full h-full object-cover object-top" />
+                                    <CheckInPhoto
+                                      src={rec.photoBase64}
+                                      checkInId={rec.id}
+                                      alt={rec.promoter}
+                                      className="w-full h-full object-contain bg-zinc-950"
+                                    />
                                   </div>
-                                  <div>
-                                    <div className="font-bold text-white text-sm">{item.promoter}</div>
-                                    <span className="text-[10px] text-zinc-500 font-mono">ID: {item.id.slice(0, 10)}</span>
+                                  <div className="space-y-1">
+                                    <span
+                                      className={`px-2 py-0.5 rounded-md border text-[11px] font-mono font-bold inline-block ${badgeCls}`}
+                                    >
+                                      {timeStr}
+                                    </span>
+                                    <div className="flex items-center gap-1">
+                                      <button
+                                        type="button"
+                                        onClick={() => setInspectCheckIn(rec)}
+                                        className="text-[10px] text-zinc-400 hover:text-white underline cursor-pointer"
+                                      >
+                                        Ver foto
+                                      </button>
+                                      <span className="text-zinc-600">•</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => setDeleteConfirmCheckIn(rec)}
+                                        className="text-[10px] text-red-400 hover:text-red-300 underline cursor-pointer"
+                                      >
+                                        Borrar
+                                      </button>
+                                    </div>
                                   </div>
                                 </div>
-                              </td>
+                              );
+                            };
 
-                              {/* Tipo de Marcaje */}
-                              <td className="p-4 border-r border-white/10">
-                                <span className={`px-2.5 py-1 rounded-lg border text-[11px] font-black uppercase tracking-wider inline-flex items-center gap-1 ${badgeCls}`}>
-                                  {item.type}
-                                </span>
-                              </td>
-
-                              {/* PDV */}
-                              <td className="p-4 border-r border-white/10">
-                                <div className="font-bold text-white leading-snug">{item.store}</div>
-                              </td>
-
-                              {/* Fecha */}
-                              <td className="p-4 border-r border-white/10 font-mono text-zinc-300">
-                                {dateStr}
-                              </td>
-
-                              {/* Hora */}
-                              <td className="p-4 border-r border-white/10 font-mono font-bold text-emerald-400">
-                                {timeStr}
-                              </td>
-
-                              {/* GPS */}
-                              <td className="p-4 border-r border-white/10 text-center">
-                                <a
-                                  href={mapsUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-950/60 border border-emerald-500/30 text-emerald-400 font-mono text-[11px] hover:bg-emerald-900 transition"
-                                >
-                                  <MapPin className="w-3 h-3" />
-                                  <span>{item.location.lat.toFixed(4)}, {item.location.lng.toFixed(4)} (±{item.location.accuracy}m)</span>
-                                  <ExternalLink className="w-2.5 h-2.5" />
-                                </a>
-                              </td>
-
-                              {/* Acciones */}
-                              <td className="p-4 text-center">
-                                <div className="flex items-center justify-center gap-1.5">
-                                  <button
-                                    type="button"
-                                    onClick={() => setInspectCheckIn(item)}
-                                    className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition cursor-pointer"
-                                    title="Ver detalle de asistencia"
-                                  >
-                                    <Eye className="w-3.5 h-3.5" />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => setDeleteConfirmCheckIn(item)}
-                                    className="p-1.5 rounded-lg bg-red-950/60 hover:bg-red-800 text-red-300 border border-red-500/30 transition cursor-pointer"
-                                    title="Eliminar asistencia"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
+                            return (
+                              <tr key={pRow.key} className="hover:bg-white/[0.02] transition-colors">
+                                <td className="p-3.5 border-r border-white/10 font-mono font-bold text-white">
+                                  {pRow.dateFormatted}
+                                </td>
+                                <td className="p-3.5 border-r border-white/10">
+                                  <div className="font-bold text-white text-sm">{pRow.promoter}</div>
+                                  <span className="text-[10px] text-zinc-400 font-mono">
+                                    {pRow.ingreso && pRow.salida ? 'Jornada Completa' : 'En Guardia'}
+                                  </span>
+                                </td>
+                                <td className="p-3.5 border-r border-white/10">
+                                  <div className="font-bold text-zinc-200 leading-snug">
+                                    {pRow.stores.join(' / ') || 'Punto de Venta'}
+                                  </div>
+                                </td>
+                                <td className="p-3.5 border-r border-white/10">
+                                  {renderMilestoneCell(
+                                    pRow.ingreso,
+                                    'bg-emerald-950/70 border-emerald-500/40 text-emerald-400',
+                                    'Sin ingreso'
+                                  )}
+                                </td>
+                                <td className="p-3.5 border-r border-white/10">
+                                  {renderMilestoneCell(
+                                    pRow.salidaAlmorzar,
+                                    'bg-amber-950/70 border-amber-500/40 text-amber-400',
+                                    'No aplica'
+                                  )}
+                                </td>
+                                <td className="p-3.5 border-r border-white/10">
+                                  {renderMilestoneCell(
+                                    pRow.llegadaAlmorzar,
+                                    'bg-blue-950/70 border-blue-500/40 text-blue-400',
+                                    'No aplica'
+                                  )}
+                                </td>
+                                <td className="p-3.5 border-r border-white/10">
+                                  {renderMilestoneCell(
+                                    pRow.salida,
+                                    'bg-red-950/70 border-red-500/40 text-red-400',
+                                    'Pendiente'
+                                  )}
+                                </td>
+                                <td className="p-3.5 text-center">
+                                  {mapsUrl ? (
+                                    <a
+                                      href={mapsUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-950/60 border border-emerald-500/30 text-emerald-400 font-mono text-[11px] hover:bg-emerald-900 transition"
+                                    >
+                                      <MapPin className="w-3 h-3" />
+                                      <span>
+                                        {pRow.primaryLocation.lat.toFixed(4)}, {pRow.primaryLocation.lng.toFixed(4)}
+                                      </span>
+                                      <ExternalLink className="w-2.5 h-2.5" />
+                                    </a>
+                                  ) : (
+                                    <span className="text-[11px] text-zinc-500 font-mono">Sin GPS</span>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -4726,8 +5111,9 @@ export const TradeMarketing: React.FC = () => {
                       <div className="aspect-[3/4] rounded-2xl overflow-hidden bg-black border border-white/10 shadow-lg relative">
                         <CheckInPhoto
                           src={inspectCheckIn.photoBase64}
+                          checkInId={inspectCheckIn.id}
                           alt={inspectCheckIn.promoter}
-                          className="w-full h-full object-cover object-top"
+                          className="w-full h-full object-contain bg-zinc-950"
                         />
                         <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-black/70 backdrop-blur-sm text-white text-[10px] font-mono">
                           Evidencia Inalterable

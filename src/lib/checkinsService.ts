@@ -2,8 +2,154 @@
  * Submódulo de Asistencia en Punto de Venta (PDV / Check-in)
  * Servicio de datos, persistencia híbrida (Supabase + LocalStorage) y sincronización offline
  */
+import { supabase } from './supabase';
+import { resolvePromoterNameFromRaw } from './campoService';
 
 export type CheckInType = 'Ingreso' | 'Salida a almorzar' | 'Vuelta a almorzar' | 'Salida';
+
+export function getCaracasDayKey(isoDate: string): string {
+  try {
+    const d = new Date(isoDate);
+    if (Number.isNaN(d.getTime())) return String(isoDate || '').slice(0, 10);
+    // America/Caracas es UTC-4 fijo todo el año
+    const caracasMs = d.getTime() - 4 * 60 * 60 * 1000;
+    return new Date(caracasMs).toISOString().slice(0, 10); // YYYY-MM-DD
+  } catch {
+    return String(isoDate || '').slice(0, 10);
+  }
+}
+
+export function normalizeCheckInType(rawType?: string): CheckInType | null {
+  const clean = String(rawType || '').trim().toLowerCase();
+  if (!clean) return null;
+  if (clean === 'ingreso' || clean.includes('entrada')) return 'Ingreso';
+  if (clean.includes('salida a almorzar') || clean.includes('salida almorzar') || clean.includes('salida almuerzo')) {
+    return 'Salida a almorzar';
+  }
+  if (
+    clean.includes('vuelta a almorzar') ||
+    clean.includes('llegada de almorzar') ||
+    clean.includes('llegada almorzar') ||
+    clean.includes('regreso')
+  ) {
+    return 'Vuelta a almorzar';
+  }
+  if (clean === 'salida' || clean.includes('cierre')) return 'Salida';
+  return null;
+}
+
+const SYNTHETIC_CHECKIN_PROMOTERS = new Set([
+  'grecia castillo',
+  'ana perez',
+  'ana silva',
+  'maria gonzalez',
+]);
+
+export function normalizeAndDeduplicateCheckIns(records: CheckInRecord[]): CheckInRecord[] {
+  const validNormalized: CheckInRecord[] = [];
+
+  for (const c of records) {
+    if (!c || !c.id) continue;
+    const idStr = String(c.id).trim();
+    if (/^CHK-LIVE-/i.test(idStr) || idStr.startsWith('chk-00')) continue;
+    if (c.store?.includes('Palos Grandes') || c.photoBase64?.includes('unsplash')) continue;
+    if (String(c.creatorId || '').trim().toLowerCase() === 'admin') continue;
+    const rawPromoterLower = String(c.promoter || '').trim().toLowerCase();
+    if (SYNTHETIC_CHECKIN_PROMOTERS.has(rawPromoterLower)) continue;
+
+    const normalizedType = normalizeCheckInType(c.type);
+    if (!normalizedType) continue;
+
+    const canonicalPromoter = resolvePromoterNameFromRaw(c.promoter, c.creatorId);
+    if (!canonicalPromoter || SYNTHETIC_CHECKIN_PROMOTERS.has(canonicalPromoter.toLowerCase())) continue;
+
+    const dateIso = c.date || c.created_at || new Date().toISOString();
+    const photo =
+      c.photoBase64 && String(c.photoBase64).trim() !== ''
+        ? c.photoBase64
+        : `/api/checkins/${encodeURIComponent(idStr)}/photo`;
+
+    validNormalized.push({
+      ...c,
+      id: idStr,
+      date: dateIso,
+      created_at: c.created_at || dateIso,
+      type: normalizedType,
+      promoter: canonicalPromoter,
+      store: String(c.store || 'Punto de Venta').trim(),
+      photoBase64: photo,
+      location: c.location && typeof c.location === 'object'
+        ? {
+            lat: Number(c.location.lat) || 0,
+            lng: Number(c.location.lng) || 0,
+            accuracy: Number(c.location.accuracy) || 0,
+            ...(c.location.error ? { error: c.location.error } : {}),
+          }
+        : { lat: 0, lng: 0, accuracy: 0 },
+    });
+  }
+
+  // Deduplicar por (Día en Caracas | Promotora Canónica | Tipo de Marcaje)
+  // para eliminar marcajes duplicados del mismo hito en el mismo día.
+  const grouped = new Map<string, CheckInRecord[]>();
+  for (const rec of validNormalized) {
+    const dayKey = getCaracasDayKey(rec.date);
+    const groupKey = `${dayKey}|${rec.promoter.toUpperCase()}|${rec.type}`;
+    const bucket = grouped.get(groupKey);
+    if (bucket) {
+      bucket.push(rec);
+    } else {
+      grouped.set(groupKey, [rec]);
+    }
+  }
+
+  const deduplicated: CheckInRecord[] = [];
+  for (const [, bucket] of grouped.entries()) {
+    if (bucket.length === 1) {
+      deduplicated.push(bucket[0]);
+      continue;
+    }
+
+    // Ordenar cronológicamente ascendente dentro del mismo día e hito
+    bucket.sort(
+      (a, b) => new Date(a.date || a.created_at || 0).getTime() - new Date(b.date || b.created_at || 0).getTime()
+    );
+
+    // Para Ingreso y Salida a almorzar tomamos el primer marcaje válido;
+    // para Vuelta a almorzar y Salida tomamos el último marcaje del día.
+    const isFirstMilestone = bucket[0].type === 'Ingreso' || bucket[0].type === 'Salida a almorzar';
+    const primary = isFirstMilestone ? bucket[0] : bucket[bucket.length - 1];
+
+    // Conservar todos los PDV distintos visitados si hubiera más de uno
+    const uniqueStores: string[] = [];
+    for (const item of bucket) {
+      const st = item.store.trim();
+      if (st && !uniqueStores.some((u) => u.toLowerCase() === st.toLowerCase())) {
+        uniqueStores.push(st);
+      }
+    }
+
+    // Preferir ubicación con coordenadas GPS reales si alguno de los intentos la capturó
+    const recordWithGps =
+      bucket.find((item) => item.location && item.location.lat !== 0 && item.location.lng !== 0) ||
+      primary;
+
+    // Preferir foto data:image directa si alguno la tiene en memoria
+    const recordWithDirectPhoto =
+      bucket.find((item) => item.photoBase64?.startsWith('data:image')) || primary;
+
+    deduplicated.push({
+      ...primary,
+      store: uniqueStores.join(' / ') || primary.store,
+      location: recordWithGps.location,
+      photoBase64: recordWithDirectPhoto.photoBase64,
+    });
+  }
+
+  return deduplicated.sort(
+    (a, b) => new Date(b.date || b.created_at || 0).getTime() - new Date(a.date || a.created_at || 0).getTime()
+  );
+}
 
 export interface CheckInLocation {
   lat: number;
@@ -1010,13 +1156,45 @@ export const checkinsService = {
     try {
       const response = await fetch('/api/checkins');
       if (response.ok) {
-        const data = await response.json();
-        if (Array.isArray(data)) {
-          serverList = data.filter(isRealRecord);
+        const contentType = response.headers?.get?.('content-type') || 'application/json';
+        if (contentType.includes('application/json') || !contentType.includes('text/html')) {
+          const data = await response.json();
+          if (Array.isArray(data)) {
+            serverList = data.filter(isRealRecord);
+          }
         }
       }
     } catch {
-      // Si la red falla o está offline, continuar con almacenamiento local
+      // Si la red falla o está offline, continuar con Supabase directo / almacenamiento local
+    }
+
+    const isTestEnv = typeof import.meta !== 'undefined' && import.meta.env?.MODE === 'test';
+    if (!isTestEnv && serverList.length === 0) {
+      try {
+        const { data: sbData, error: sbErr } = await supabase
+          .from('checkins')
+          .select('id,date,store,type,location,creatorId,promoter,created_at')
+          .order('date', { ascending: false })
+          .limit(2000);
+        if (!sbErr && Array.isArray(sbData) && sbData.length > 0) {
+          serverList = (sbData as any[])
+            .map((row) => ({
+              id: String(row.id),
+              date: row.date || row.created_at || new Date().toISOString(),
+              type: row.type,
+              store: String(row.store || 'Punto de Venta').trim(),
+              photoBase64: `/api/checkins/${encodeURIComponent(String(row.id))}/photo`,
+              location: row.location || { lat: 0, lng: 0, accuracy: 0 },
+              promoter: String(row.promoter || ''),
+              creatorId: String(row.creatorId || ''),
+              created_at: row.created_at || row.date || new Date().toISOString(),
+              offlinePending: false,
+            }))
+            .filter(isRealRecord);
+        }
+      } catch {
+        // Ignorar error directo de Supabase
+      }
     }
 
     let localList: CheckInRecord[] = [];
@@ -1044,9 +1222,7 @@ export const checkinsService = {
       if (c && c.id) map.set(c.id, c);
     });
 
-    const merged = Array.from(map.values()).sort(
-      (a, b) => new Date(b.date || b.created_at || 0).getTime() - new Date(a.date || a.created_at || 0).getTime()
-    );
+    const merged = normalizeAndDeduplicateCheckIns(Array.from(map.values()));
     this.persistLocalCheckIns(merged);
     return merged;
   },
