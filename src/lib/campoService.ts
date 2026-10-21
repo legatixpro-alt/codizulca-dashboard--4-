@@ -1151,7 +1151,9 @@ export const campoService = {
       // fallback to direct Supabase / localStorage
     }
 
-    const isTestEnv = typeof import.meta !== 'undefined' && import.meta.env?.MODE === 'test';
+    const isTestEnv =
+      typeof process !== 'undefined' &&
+      Boolean(process.env?.NODE_ENV === 'test' || process.env?.VITEST);
     if (!isTestEnv && (forceRefresh || serverList.length === 0)) {
       try {
         const { data: sbData, error: sbErr } = await supabase
@@ -1223,7 +1225,9 @@ export const campoService = {
       // fallback to direct Supabase / localStorage
     }
 
-    const isTestEnv = typeof import.meta !== 'undefined' && import.meta.env?.MODE === 'test';
+    const isTestEnv =
+      typeof process !== 'undefined' &&
+      Boolean(process.env?.NODE_ENV === 'test' || process.env?.VITEST);
     if (!isTestEnv && (forceRefresh || serverList.length === 0)) {
       try {
         const { data: sbData, error: sbErr } = await supabase

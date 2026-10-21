@@ -1115,14 +1115,14 @@ var import_crypto = __toESM(require("crypto"), 1);
 
 // src/lib/supabase.ts
 var import_supabase_js = require("@supabase/supabase-js");
-var import_meta = {};
 var DEFAULT_SUPABASE_URL = "https://uterioexpfweghxfbvoa.supabase.co";
 var DEFAULT_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0ZXJpb2V4cGZ3ZWdoeGZidm9hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5NTg3ODYsImV4cCI6MjEwMzUzNDc4Nn0.bZnN4vrXUDlcoIaI7l39O-bU4GQp05SvJdio_cn6niI";
-var supabaseUrl = import_meta.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+var nodeEnv = typeof process !== "undefined" && process?.env || {};
+var supabaseUrl = nodeEnv.VITE_SUPABASE_URL || nodeEnv.SUPABASE_URL || DEFAULT_SUPABASE_URL;
 if (supabaseUrl.endsWith("/rest/v1/")) {
   supabaseUrl = supabaseUrl.replace("/rest/v1/", "");
 }
-var supabaseAnonKey = import_meta.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
+var supabaseAnonKey = nodeEnv.VITE_SUPABASE_ANON_KEY || nodeEnv.SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
 var supabase = (0, import_supabase_js.createClient)(supabaseUrl, supabaseAnonKey);
 
 // src/lib/campoService.ts

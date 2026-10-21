@@ -1168,7 +1168,9 @@ export const checkinsService = {
       // Si la red falla o está offline, continuar con Supabase directo / almacenamiento local
     }
 
-    const isTestEnv = typeof import.meta !== 'undefined' && import.meta.env?.MODE === 'test';
+    const isTestEnv =
+      typeof process !== 'undefined' &&
+      Boolean(process.env?.NODE_ENV === 'test' || process.env?.VITEST);
     if (!isTestEnv && serverList.length === 0) {
       try {
         const { data: sbData, error: sbErr } = await supabase

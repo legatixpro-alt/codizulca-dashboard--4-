@@ -11,14 +11,29 @@ process.env.NODE_ENV = process.env.NODE_ENV || 'production';
 
 const distServerPath = path.join(__dirname, 'dist', 'server.cjs');
 const distIndexPath = path.join(__dirname, 'dist', 'index.html');
-const srcIndexPath = path.join(__dirname, 'index.html');
+const watchedSourcePaths = [
+  path.join(__dirname, 'index.html'),
+  path.join(__dirname, 'server.ts'),
+  path.join(__dirname, 'src', 'lib', 'supabase.ts'),
+  path.join(__dirname, 'src', 'lib', 'campoService.ts'),
+  path.join(__dirname, 'src', 'lib', 'checkinsService.ts'),
+];
 
 const needsRebuild = () => {
   if (!fs.existsSync(distServerPath) || !fs.existsSync(distIndexPath)) return true;
   try {
-    const distTime = fs.statSync(distIndexPath).mtimeMs;
-    const srcIndexTime = fs.statSync(srcIndexPath).mtimeMs;
-    if (srcIndexTime > distTime) return true;
+    const distServerTime = fs.statSync(distServerPath).mtimeMs;
+    const distIndexTime = fs.statSync(distIndexPath).mtimeMs;
+    const minDistTime = Math.min(distServerTime, distIndexTime);
+    for (const srcPath of watchedSourcePaths) {
+      if (fs.existsSync(srcPath) && fs.statSync(srcPath).mtimeMs > minDistTime) {
+        return true;
+      }
+    }
+    const serverCode = fs.readFileSync(distServerPath, 'utf8');
+    if (serverCode.includes('import_meta.env.')) {
+      return true;
+    }
   } catch {
     return true;
   }
